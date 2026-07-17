@@ -12,6 +12,7 @@ class CreateOrderEvent extends OrderEvent {
   final String description;
   final String phone;
   final List<String> imagePaths;
+  final String? area;
 
   const CreateOrderEvent({
     required this.token,
@@ -19,8 +20,9 @@ class CreateOrderEvent extends OrderEvent {
     required this.description,
     required this.phone,
     this.imagePaths = const [],
+    this.area,
   });
 
   @override
-  List<Object?> get props => [token, type, description, phone, imagePaths];
+  List<Object?> get props => [token, type, description, phone, imagePaths, area];
 }

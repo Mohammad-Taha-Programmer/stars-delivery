@@ -6,6 +6,7 @@ import '../bloc/auth/auth_bloc.dart';
 import '../bloc/auth/auth_event.dart';
 import '../bloc/auth/auth_state.dart';
 import '../bloc/provider/provider_bloc.dart';
+import '../services/responsive.dart';
 import 'home_screen.dart';
 import 'provider_home_screen.dart';
 
@@ -57,16 +58,20 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Responsive.isMobile(context);
+    final hPad = Responsive.paddingHorizontal(context);
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SizedBox(
-        width: double.infinity,
-        child: SafeArea(
-          child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: Column(
-              children: [
-                const SizedBox(height: 60),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 480),
+              child: Padding(
+                padding: EdgeInsets.symmetric(horizontal: hPad, vertical: Responsive.paddingVertical(context)),
+                child: Column(
+                  children: [
+                    SizedBox(height: isMobile ? 60 : 40),
                 // Logo & Title
                 Container(
                   padding: const EdgeInsets.all(20),
@@ -176,41 +181,23 @@ color: Colors.black.withValues(alpha: 0.1),
                         BlocConsumer<AuthBloc, AuthState>(
                           listener: (context, state) {
                             if (state is AuthSuccess) {
-                              if (_isLogin) {
-                                final home = state.user.role == 'provider'
-                                    ? BlocProvider(
-                                        create: (_) => ProviderBloc(),
-                                        child: ProviderHomeScreen(
-                                          user: state.user,
-                                          token: state.token,
-                                        ),
-                                      )
-                                    : HomeScreen(
+                              final home = state.user.role == 'provider'
+                                  ? BlocProvider(
+                                      create: (_) => ProviderBloc(),
+                                      child: ProviderHomeScreen(
                                         user: state.user,
-                                        role: state.user.role,
                                         token: state.token,
-                                      );
-                                Navigator.pushReplacement(
-                                  context,
-                                  MaterialPageRoute(builder: (_) => home),
-                                );
-                              } else {
-                                setState(() {
-                                  _isLogin = true;
-                                  _emailController.clear();
-                                  _passwordController.clear();
-                                  _nameController.clear();
-                                  _phoneController.clear();
-                                  _selectedArea = null;
-                                });
-                                context.read<AuthBloc>().add(ToggleAuthModeEvent(isLogin: true));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Account created! Please sign in.'),
-                                    backgroundColor: Colors.green,
-                                  ),
-                                );
-                              }
+                                      ),
+                                    )
+                                  : HomeScreen(
+                                      user: state.user,
+                                      role: state.user.role,
+                                      token: state.token,
+                                    );
+                              Navigator.pushReplacement(
+                                context,
+                                MaterialPageRoute(builder: (_) => home),
+                              );
                             }
                             if (state is AuthError) {
                               ScaffoldMessenger.of(context).showSnackBar(
@@ -272,7 +259,9 @@ color: Colors.black.withValues(alpha: 0.1),
                   ),
                 ),
                 const SizedBox(height: 40),
-              ],
+                  ],
+                ),
+              ),
             ),
           ),
         ),

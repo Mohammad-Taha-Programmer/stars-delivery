@@ -1,33 +1,111 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/app/app_bloc.dart';
+import '../bloc/app/app_event.dart';
+import '../bloc/app/app_state.dart';
+import '../bloc/auth/auth_bloc.dart';
+import '../bloc/auth/auth_event.dart';
 import '../bloc/provider/provider_bloc.dart';
 import '../bloc/provider/provider_event.dart';
 import '../bloc/provider/provider_state.dart';
+import '../bloc/notification/notification_bloc.dart';
+import '../bloc/notification/notification_event.dart';
+import '../bloc/notification/notification_state.dart';
 import '../models/user_model.dart';
+import '../services/responsive.dart';
+import '../services/localization_service.dart';
+import '../services/api_config.dart';
+import '../services/location_service.dart';
+import '../services/socket_service.dart';
 import 'login_screen.dart';
 import 'pending_orders_screen.dart';
+import 'provider_active_orders_screen.dart';
+import 'notifications_screen.dart';
 
 class ProviderHomeScreen extends StatefulWidget {
   final UserModel user;
   final String token;
-
-  const ProviderHomeScreen({super.key, required this.user, required this.token});
-
+  const ProviderHomeScreen({
+    super.key,
+    required this.user,
+    required this.token,
+  });
   @override
   State<ProviderHomeScreen> createState() => _ProviderHomeScreenState();
 }
 
-class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
+class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBindingObserver {
+  Timer? _notifTimer;
+  StreamSubscription? _newOrderSub;
+  StreamSubscription? _notifCountSub;
+  StreamSubscription? _offerAcceptedSub;
+
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    LocationService.syncToBackend(widget.token);
+
+    SocketService.instance.connect(
+      token: widget.token,
+      area: ApiConfig.detectedArea,
+    );
+
     context.read<ProviderBloc>().add(LoadProviderStats(token: widget.token));
+    context.read<ProviderBloc>().add(LoadPendingOrders(token: widget.token));
+    context.read<NotificationBloc>().add(
+      LoadNotifications(token: widget.token),
+    );
+
+    _notifTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      context.read<NotificationBloc>().add(
+        LoadNotifications(token: widget.token),
+      );
+    });
+
+    _newOrderSub = SocketService.instance.onNewOrder.listen((_) {
+      if (!mounted) return;
+      context.read<ProviderBloc>().add(LoadPendingOrders(token: widget.token));
+      context.read<ProviderBloc>().add(LoadProviderStats(token: widget.token));
+    });
+
+    _notifCountSub = SocketService.instance.onNotificationCount.listen((count) {
+      if (!mounted) return;
+      context.read<NotificationBloc>().add(
+        LoadNotifications(token: widget.token),
+      );
+    });
+
+    _offerAcceptedSub = SocketService.instance.onOfferAccepted.listen((_) {
+      if (!mounted) return;
+      context.read<ProviderBloc>().add(LoadProviderStats(token: widget.token));
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState st) {
+    if (st == AppLifecycleState.resumed) {
+      LocationService.syncToBackend(widget.token);
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _notifTimer?.cancel();
+    _newOrderSub?.cancel();
+    _notifCountSub?.cancel();
+    _offerAcceptedSub?.cancel();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    final appState = context.watch<AppBloc>().state;
+    final isAr = appState.locale.languageCode == 'ar';
     return Directionality(
-      textDirection: TextDirection.rtl,
+      textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
       child: Scaffold(
         appBar: AppBar(
           backgroundColor: Colors.white,
@@ -35,19 +113,116 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
           title: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Text(
-                'لوحة تحكم السائق',
-                style: TextStyle(color: Colors.black87, fontWeight: FontWeight.bold, fontSize: 18),
+              Flexible(
+                child: Text(
+                  AppLocalization.get(context, 'provider_dashboard'),
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: Colors.black87,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 17,
+                  ),
+                ),
               ),
-              const SizedBox(width: 8),
-              Icon(Icons.motorcycle, color: Colors.orange[700], size: 28),
+              const SizedBox(width: 6),
+              Icon(Icons.motorcycle, color: Colors.orange[700], size: 26),
+              if (ApiConfig.detectedArea != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green, width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.my_location, size: 12, color: Colors.green[700]),
+                      const SizedBox(width: 3),
+                      Text(
+                        ApiConfig.detectedArea!,
+                        style: TextStyle(fontSize: 11, color: Colors.green[800], fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
           centerTitle: true,
           actions: [
+            BlocBuilder<NotificationBloc, NotificationState>(
+              builder: (context, nState) {
+                final unread = nState is NotificationsLoaded
+                    ? nState.unreadCount
+                    : 0;
+                return Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.notifications_outlined,
+                        color: Colors.black87,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider.value(
+                              value: context.read<NotificationBloc>(),
+                              child: NotificationsScreen(token: widget.token),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    if (unread > 0)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '$unread',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
+                );
+              },
+            ),
+            BlocBuilder<AppBloc, AppState>(
+              builder: (context, appState) {
+                final isDark = appState.themeMode == ThemeMode.dark;
+                return IconButton(
+                  icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode, color: Colors.grey[700]),
+                  onPressed: () => context.read<AppBloc>().add(ToggleTheme()),
+                );
+              },
+            ),
+            BlocBuilder<AppBloc, AppState>(
+              builder: (context, appState) {
+                final isAr = appState.locale.languageCode == 'ar';
+                return IconButton(
+                  icon: Text(isAr ? 'EN' : 'ع', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[700], fontSize: 15)),
+                  onPressed: () => context.read<AppBloc>().add(ToggleLocale()),
+                );
+              },
+            ),
             IconButton(
               icon: const Icon(Icons.logout, color: Colors.red),
               onPressed: () {
+                SocketService.instance.disconnect();
+                context.read<AuthBloc>().add(LogoutEvent());
                 Navigator.pushAndRemoveUntil(
                   context,
                   MaterialPageRoute(builder: (_) => const LoginScreen()),
@@ -58,137 +233,294 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> {
           ],
         ),
         body: BlocConsumer<ProviderBloc, ProviderState>(
+          listenWhen: (previous, current) {
+            if (current is ProviderStatsLoaded &&
+                current.pendingOrders != null &&
+                current.pendingOrders!.isNotEmpty) {
+              final prev = previous is ProviderStatsLoaded ? previous.pendingOrders : null;
+              return prev == null || prev.isEmpty;
+            }
+            return false;
+          },
           listener: (context, state) {
-            if (state is ProviderStatsLoaded && state.pendingOrders != null) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => PendingOrdersScreen(orders: state.pendingOrders!),
-                ),
-              );
+            if (state is ProviderStatsLoaded &&
+                state.pendingOrders != null &&
+                state.pendingOrders!.isNotEmpty) {
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                if (!mounted) return;
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => PendingOrdersScreen(
+                      orders: state.pendingOrders!,
+                      token: widget.token,
+                    ),
+                  ),
+                ).then((_) {
+                  if (!mounted) return;
+                  context.read<ProviderBloc>().add(
+                    LoadProviderStats(token: widget.token),
+                  );
+                });
+              });
             }
           },
           builder: (context, state) {
-            if (state is ProviderLoading) {
+            if (state is ProviderLoading)
               return const Center(child: CircularProgressIndicator());
-            }
-            if (state is ProviderError) {
-              return Center(child: Text(state.message, style: const TextStyle(color: Colors.red)));
-            }
+            if (state is ProviderError)
+              return Center(
+                child: Text(
+                  state.message,
+                  style: const TextStyle(color: Colors.red),
+                ),
+              );
             if (state is ProviderStatsLoaded) {
               final s = state.stats;
-              return Padding(
-                padding: const EdgeInsets.all(20),
-                child: Column(
-                  children: [
-                    Row(
+              return Center(
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxWidth: 600),
+                  child: RefreshIndicator(
+                    onRefresh: () async {
+                      final bloc = context.read<ProviderBloc>();
+                      bloc.add(LoadProviderStats(token: widget.token));
+                      bloc.add(LoadPendingOrders(token: widget.token));
+                      await bloc.stream.first;
+                    },
+                    child: SingleChildScrollView(
+                      physics: const AlwaysScrollableScrollPhysics(),
+                      padding: EdgeInsets.symmetric(
+                        horizontal: Responsive.paddingHorizontal(context),
+                        vertical: Responsive.paddingVertical(context),
+                      ),
+                      child: Column(
                       children: [
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.blue[50],
-                              borderRadius: BorderRadius.circular(16),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.blue[50],
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'مجموع أرباحك اليوم',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '${s.dailyEarnings.toStringAsFixed(0)} ILS',
+                                      style: const TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      'مقابل ${s.totalSuccessful} طلب ناجح',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Container(
+                                padding: const EdgeInsets.all(20),
+                                decoration: BoxDecoration(
+                                  color: Colors.green[50],
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'أرباحك هذا الشهر',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.black54,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      '${s.monthlyEarnings.toStringAsFixed(0)} ILS',
+                                      style: const TextStyle(
+                                        fontSize: 28,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.black87,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final state = context.read<ProviderBloc>().state;
+                              if (state is ProviderStatsLoaded &&
+                                  state.pendingOrders != null &&
+                                  state.pendingOrders!.isNotEmpty) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => PendingOrdersScreen(
+                                      orders: state.pendingOrders!,
+                                      token: widget.token,
+                                    ),
+                                  ),
+                                ).then((_) {
+                                  if (!mounted) return;
+                                  context.read<ProviderBloc>().add(
+                                    LoadProviderStats(token: widget.token),
+                                  );
+                                });
+                              } else {
+                                context.read<ProviderBloc>().add(
+                                  LoadPendingOrders(token: widget.token),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              side: const BorderSide(
+                                color: Colors.red,
+                                width: 2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 18),
                             ),
                             child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                const Text('مجموع أرباحك اليوم', style: TextStyle(fontSize: 14, color: Colors.black54)),
-                                const SizedBox(height: 8),
-                                Text('${s.dailyEarnings.toStringAsFixed(0)} ILS',
-                                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)),
+                                const Text(
+                                  'طلبات جديدة تنتظر تقديم عرض سعر',
+                                  style: TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
                                 const SizedBox(height: 4),
-                                Text('مقابل ${s.totalSuccessful}  طلب ناجح',
-                                    style: const TextStyle(fontSize: 13, color: Colors.black54)),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '${s.pendingOrdersCount}',
+                                      style: const TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const Text(
+                                      ' طلب',
+                                      style: TextStyle(
+                                        color: Colors.red,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
                               ],
                             ),
                           ),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Container(
-                            padding: const EdgeInsets.all(20),
-                            decoration: BoxDecoration(
-                              color: Colors.green[50],
-                              borderRadius: BorderRadius.circular(16),
+                        const SizedBox(height: 16),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => BlocProvider.value(
+                                    value: context.read<ProviderBloc>(),
+                                    child: ProviderActiveOrdersScreen(
+                                      token: widget.token,
+                                    ),
+                                  ),
+                                ),
+                              ).then((_) {
+                                if (!mounted) return;
+                                context.read<ProviderBloc>().add(
+                                  LoadProviderStats(token: widget.token),
+                                );
+                              });
+                            },
+                            icon: const Icon(
+                              Icons.delivery_dining,
+                              color: Colors.white,
                             ),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                const Text('أرباحك هذا الشهر كامل', style: TextStyle(fontSize: 14, color: Colors.black54)),
-                                const SizedBox(height: 8),
-                                Text('${s.monthlyEarnings.toStringAsFixed(0)} ILS',
-                                    style: const TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: Colors.black87)),
-                                const SizedBox(height: 4),
-                                Text('مقابل ${s.totalSuccessful}  طلب ناجح',
-                                    style: const TextStyle(fontSize: 13, color: Colors.black54)),
-                              ],
+                            label: const Text(
+                              'طلباتي النشطة - التوصيل والتسليم',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 15,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.teal,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.orange[50],
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'عمولة المنصة (مستحقة الدفع):',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.black54,
+                                ),
+                              ),
+                              const SizedBox(height: 6),
+                              Text(
+                                '${s.monthlyCommission.toStringAsFixed(0)} شيكل بناء على الطلبات الناجحة',
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.orange,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: () {
-                          context.read<ProviderBloc>().add(LoadPendingOrders(token: widget.token));
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          side: const BorderSide(color: Colors.red, width: 2),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                          padding: const EdgeInsets.symmetric(vertical: 18),
-                        ),
-                        child: Column(
-                          children: [
-                            const Text(
-                              'طلبات جديدة تنتظر تقديم عرض سعر',
-                              style: TextStyle(color: Colors.black87, fontSize: 15, fontWeight: FontWeight.w500),
-                            ),
-                            const SizedBox(height: 4),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Text(
-                                  '${s.pendingOrdersCount}',
-                                  style: const TextStyle(color: Colors.red, fontSize: 20, fontWeight: FontWeight.bold),
-                                ),
-                                const Text(
-                                  ' طلب',
-                                  style: TextStyle(color: Colors.red, fontSize: 16, fontWeight: FontWeight.w500),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.all(20),
-                      decoration: BoxDecoration(
-                        color: Colors.orange[50],
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'عمولة المنصة (مستحقة الدفع):',
-                            style: TextStyle(fontSize: 14, color: Colors.black54),
-                          ),
-                          const SizedBox(height: 6),
-                          Text(
-                            '${s.monthlyCommission.toStringAsFixed(0)} شيكل بناء على الطلبات الناجحة',
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Colors.orange),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
+                  ),
+                  ),
                 ),
               );
             }

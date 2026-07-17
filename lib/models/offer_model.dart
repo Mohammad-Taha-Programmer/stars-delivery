@@ -1,0 +1,30 @@
+class OfferModel {
+  final String id;
+  final String orderId;
+  final String providerId;
+  final String providerName;
+  final String providerPhone;
+  final double price;
+  final String status;
+  final String createdAt;
+
+  OfferModel({
+    required this.id, required this.orderId, required this.providerId,
+    required this.providerName, required this.providerPhone,
+    required this.price, required this.status, required this.createdAt,
+  });
+
+  factory OfferModel.fromJson(Map<String, dynamic> json) {
+    final p = json['providerId'];
+    return OfferModel(
+      id: json['_id']?.toString() ?? '',
+      orderId: json['orderId']?.toString() ?? '',
+      providerId: p is Map ? (p['_id']?.toString() ?? '') : '',
+      providerName: p is Map ? (p['fullName'] ?? '') : '',
+      providerPhone: p is Map ? (p['phone'] ?? '') : '',
+      price: (json['price'] ?? 0).toDouble(),
+      status: json['status'] ?? 'pending',
+      createdAt: json['createdAt']?.toString() ?? '',
+    );
+  }
+}

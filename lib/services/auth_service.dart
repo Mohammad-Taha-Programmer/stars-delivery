@@ -1,35 +1,30 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
+import 'api_config.dart';
 
 class AuthService {
   late final Dio _dio;
 
   AuthService() {
-    final baseUrl = _getBaseUrl();
-    _dio = Dio(BaseOptions(
-      baseUrl: baseUrl,
-      headers: {'Content-Type': 'application/json'},
-      connectTimeout: const Duration(seconds: 30),
-      receiveTimeout: const Duration(seconds: 30),
-    ));
+    _dio = Dio(
+      BaseOptions(
+        baseUrl: ApiConfig.apiUrl,
+        headers: {'Content-Type': 'application/json'},
+        connectTimeout: const Duration(seconds: 30),
+        receiveTimeout: const Duration(seconds: 30),
+      ),
+    );
   }
 
-  String _getBaseUrl() {
+  Future<Map<String, dynamic>> login(
+    String email,
+    String password,
+    String role,
+  ) async {
     try {
-      if (Platform.isAndroid) {
-        return 'http://192.168.1.8:3000/api';
-      }
-    } catch (_) {}
-    return 'http://192.168.1.8:3000/api';
-  }
-
-  Future<Map<String, dynamic>> login(String email, String password, String role) async {
-    try {
-      final response = await _dio.post('/auth/login', data: {
-        'email': email,
-        'password': password,
-        'role': role,
-      });
+      final response = await _dio.post(
+        '/auth/login',
+        data: {'email': email, 'password': password, 'role': role},
+      );
       return response.data;
     } on DioException catch (e) {
       final message = e.response?.data?['error'] ?? _dioErrorMessage(e);
@@ -38,16 +33,25 @@ class AuthService {
   }
 
   Future<Map<String, dynamic>> register(
-      String fullName, String email, String phone, String password, String role, String area) async {
+    String fullName,
+    String email,
+    String phone,
+    String password,
+    String role,
+    String area,
+  ) async {
     try {
-      final response = await _dio.post('/auth/register', data: {
-        'fullName': fullName,
-        'email': email,
-        'phone': phone,
-        'password': password,
-        'role': role,
-        'area': area,
-      });
+      final response = await _dio.post(
+        '/auth/register',
+        data: {
+          'fullName': fullName,
+          'email': email,
+          'phone': phone,
+          'password': password,
+          'role': role,
+          'area': area,
+        },
+      );
       return response.data;
     } on DioException catch (e) {
       final message = e.response?.data?['error'] ?? _dioErrorMessage(e);

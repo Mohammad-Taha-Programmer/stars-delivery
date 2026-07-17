@@ -1,35 +1,26 @@
-import 'dart:io';
 import 'package:dio/dio.dart';
+import 'api_config.dart';
 
 class OrderService {
   late final Dio _dio;
 
   OrderService() {
-    final baseUrl = _getBaseUrl();
     _dio = Dio(BaseOptions(
-      baseUrl: baseUrl,
+      baseUrl: ApiConfig.apiUrl,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
     ));
   }
 
-  String _getBaseUrl() {
-    try {
-      if (Platform.isAndroid) {
-        return 'http://10.0.2.2:3000/api';
-      }
-    } catch (_) {}
-    return 'http://192.168.1.8:3000/api';
-  }
-
   Future<Map<String, dynamic>> createOrder(
-      String token, String type, String description, String phone, List<String> imagePaths) async {
+      String token, String type, String description, String phone, List<String> imagePaths, {String? area}) async {
     try {
       final formData = FormData();
       formData.fields.addAll([
         MapEntry('type', type),
         MapEntry('description', description),
         MapEntry('phone', phone),
+        if (area != null) MapEntry('area', area),
       ]);
       for (final path in imagePaths) {
         formData.files.add(MapEntry(
@@ -46,6 +37,17 @@ class OrderService {
     } on DioException catch (e) {
       final message = e.response?.data?['error'] ?? 'Failed to create order';
       throw Exception(message);
+    }
+  }
+
+  Future<List<Map<String, dynamic>>> getMyOrders(String token) async {
+    try {
+      final response = await _dio.get('/orders',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+      return List<Map<String, dynamic>>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['error'] ?? 'Failed to load orders');
     }
   }
 }

@@ -1,23 +1,48 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'provider_event.dart';
 import 'provider_state.dart';
 import '../../services/provider_service.dart';
+import '../../models/provider_stats.dart';
 
 class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
   final ProviderService _service = ProviderService();
 
-  ProviderBloc() : super(ProviderInitial()) {
+  ProviderBloc() : super(ProviderStatsLoaded(
+    stats: ProviderStats(
+      dailyEarnings: 0, monthlyEarnings: 0,
+      totalSuccessful: 0, dailyCommission: 0,
+      monthlyCommission: 0, pendingOrdersCount: 0,
+    ),
+  )) {
     on<LoadProviderStats>(_onLoadStats);
     on<LoadPendingOrders>(_onLoadPendingOrders);
   }
 
   Future<void> _onLoadStats(LoadProviderStats event, Emitter<ProviderState> emit) async {
-    emit(ProviderLoading());
+    final c = state;
     try {
       final stats = await _service.getStats(event.token);
-      emit(ProviderStatsLoaded(stats: stats));
+      emit(ProviderStatsLoaded(
+        stats: stats,
+        pendingOrders: c is ProviderStatsLoaded ? c.pendingOrders : null,
+      ));
     } catch (e) {
-      emit(ProviderError(message: e.toString().replaceFirst('Exception: ', '')));
+      debugPrint('[ProviderBloc] getStats FAILED: $e');
+      final c = state;
+      if (c is ProviderStatsLoaded) {
+        emit(ProviderStatsLoaded(
+          stats: ProviderStats(
+            dailyEarnings: c.stats.dailyEarnings,
+            monthlyEarnings: c.stats.monthlyEarnings,
+            totalSuccessful: c.stats.totalSuccessful,
+            dailyCommission: c.stats.dailyCommission,
+            monthlyCommission: c.stats.monthlyCommission,
+            pendingOrdersCount: c.stats.pendingOrdersCount,
+          ),
+          pendingOrders: List.from(c.pendingOrders ?? []),
+        ));
+      }
     }
   }
 
@@ -29,7 +54,20 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
         emit(ProviderStatsLoaded(stats: current.stats, pendingOrders: orders));
       }
     } catch (e) {
-      emit(ProviderError(message: e.toString().replaceFirst('Exception: ', '')));
+      debugPrint('[ProviderBloc] getPendingOrders FAILED: $e');
+      if (current is ProviderStatsLoaded) {
+        emit(ProviderStatsLoaded(
+          stats: ProviderStats(
+            dailyEarnings: current.stats.dailyEarnings,
+            monthlyEarnings: current.stats.monthlyEarnings,
+            totalSuccessful: current.stats.totalSuccessful,
+            dailyCommission: current.stats.dailyCommission,
+            monthlyCommission: current.stats.monthlyCommission,
+            pendingOrdersCount: current.stats.pendingOrdersCount,
+          ),
+          pendingOrders: List.from(current.pendingOrders ?? []),
+        ));
+      }
     }
   }
 }

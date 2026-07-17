@@ -1,83 +1,303 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
+import '../bloc/app/app_bloc.dart';
+import '../bloc/app/app_event.dart';
+import '../bloc/app/app_state.dart';
+import '../bloc/auth/auth_bloc.dart';
+import '../bloc/auth/auth_event.dart';
 import '../bloc/order/order_bloc.dart';
+import '../bloc/notification/notification_bloc.dart';
+import '../bloc/notification/notification_event.dart';
+import '../bloc/notification/notification_state.dart';
 import '../models/user_model.dart';
+import '../services/responsive.dart';
+import '../services/localization_service.dart';
+import '../services/api_config.dart';
+import '../services/location_service.dart';
 import 'create_order_screen.dart';
+import 'my_orders_screen.dart';
+import 'notifications_screen.dart';
 import 'login_screen.dart';
+import '../services/socket_service.dart';
 
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   final UserModel user;
   final String role;
   final String token;
+  const HomeScreen({
+    super.key,
+    required this.user,
+    required this.role,
+    required this.token,
+  });
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
 
-  const HomeScreen({super.key, required this.user, required this.role, required this.token});
+class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
+  Timer? _notifTimer;
+  StreamSubscription? _newOfferSub;
+  StreamSubscription? _orderStatusSub;
+  StreamSubscription? _offerAcceptedSub;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    LocationService.syncToBackend(widget.token);
+
+    SocketService.instance.connect(token: widget.token);
+
+    context.read<NotificationBloc>().add(
+      LoadNotifications(token: widget.token),
+    );
+
+    _notifTimer = Timer.periodic(const Duration(seconds: 15), (_) {
+      context.read<NotificationBloc>().add(
+        LoadNotifications(token: widget.token),
+      );
+    });
+
+    _newOfferSub = SocketService.instance.onNewOffer.listen((data) {
+      if (!mounted) return;
+      context.read<NotificationBloc>().add(
+        LoadNotifications(token: widget.token),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            '${AppLocalization.get(context, 'new_offer_received')} ${data['price']} ILS',
+          ),
+          backgroundColor: Colors.green,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    });
+
+    _orderStatusSub = SocketService.instance.onOrderStatusChanged.listen((data) {
+      if (!mounted) return;
+      context.read<NotificationBloc>().add(
+        LoadNotifications(token: widget.token),
+      );
+    });
+
+    _offerAcceptedSub = SocketService.instance.onOfferAccepted.listen((data) {
+      if (!mounted) return;
+      context.read<NotificationBloc>().add(
+        LoadNotifications(token: widget.token),
+      );
+    });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState st) {
+    if (st == AppLifecycleState.resumed) {
+      LocationService.syncToBackend(widget.token);
+    }
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    _notifTimer?.cancel();
+    _newOfferSub?.cancel();
+    _orderStatusSub?.cancel();
+    _offerAcceptedSub?.cancel();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        title: Row(
-          children: [
-            Icon(Icons.rocket_launch, color: Colors.blue[700], size: 28),
-            const SizedBox(width: 8),
-            Text(
-              'تطبيق التوصيل السريع',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.blue[700],
-              ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout, color: Colors.red),
-            onPressed: () {
-              Navigator.pushAndRemoveUntil(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-                (route) => false,
-              );
-            },
-          ),
-        ],
-      ),
-      body: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: Column(
-          children: [
-            _ActionButton(
-              icon: Icons.add_circle_outline,
-              label: 'إنشاء طلب جديد',
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => BlocProvider(
-                      create: (_) => OrderBloc(),
-                      child: CreateOrderScreen(user: user, token: token),
-                    ),
+    final appState = context.watch<AppBloc>().state;
+    final isAr = appState.locale.languageCode == 'ar';
+    return Directionality(
+      textDirection: isAr ? TextDirection.rtl : TextDirection.ltr,
+      child: Scaffold(
+        appBar: AppBar(
+          backgroundColor: Colors.white,
+          elevation: 0,
+          title: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.rocket_launch, color: Colors.blue[700], size: 26),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  AppLocalization.get(context, 'app_title'),
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.black87,
                   ),
+                ),
+              ),
+              if (ApiConfig.detectedArea != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: Colors.green[50],
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.green, width: 1),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.my_location, size: 12, color: Colors.green[700]),
+                      const SizedBox(width: 3),
+                      Text(
+                        ApiConfig.detectedArea!,
+                        style: TextStyle(fontSize: 11, color: Colors.green[800], fontWeight: FontWeight.w500),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ],
+          ),
+          centerTitle: true,
+          actions: [
+            BlocBuilder<NotificationBloc, NotificationState>(
+              builder: (context, nState) {
+                final unread = nState is NotificationsLoaded
+                    ? nState.unreadCount
+                    : 0;
+                return Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(
+                        Icons.notifications_outlined,
+                        color: Colors.black87,
+                      ),
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => BlocProvider.value(
+                              value: context.read<NotificationBloc>(),
+                              child: NotificationsScreen(token: widget.token),
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                    if (unread > 0)
+                      Positioned(
+                        right: 6,
+                        top: 6,
+                        child: Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: const BoxDecoration(
+                            color: Colors.red,
+                            shape: BoxShape.circle,
+                          ),
+                          child: Text(
+                            '$unread',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                        ),
+                      ),
+                  ],
                 );
               },
             ),
-            const SizedBox(height: 16),
-            _ActionButton(
-              icon: Icons.local_offer_outlined,
-              label: 'عروض اسعار السائقين',
-              onTap: () {},
+            BlocBuilder<AppBloc, AppState>(
+              builder: (context, appState) {
+                final isDark = appState.themeMode == ThemeMode.dark;
+                return IconButton(
+                  icon: Icon(isDark ? Icons.light_mode : Icons.dark_mode, color: Colors.grey[700]),
+                  onPressed: () => context.read<AppBloc>().add(ToggleTheme()),
+                );
+              },
             ),
-            const SizedBox(height: 16),
-            _ActionButton(
-              icon: Icons.assessment_outlined,
-              label: 'تقرير الطلبات - آخر 30 يوم',
-              onTap: () {},
+            BlocBuilder<AppBloc, AppState>(
+              builder: (context, appState) {
+                final isAr = appState.locale.languageCode == 'ar';
+                return IconButton(
+                  icon: Text(isAr ? 'EN' : 'ع', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[700], fontSize: 15)),
+                  onPressed: () => context.read<AppBloc>().add(ToggleLocale()),
+                );
+              },
+            ),
+            IconButton(
+              icon: const Icon(Icons.logout, color: Colors.red),
+              onPressed: () {
+                SocketService.instance.disconnect();
+                context.read<AuthBloc>().add(LogoutEvent());
+                Navigator.pushAndRemoveUntil(
+                  context,
+                  MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  (route) => false,
+                );
+              },
             ),
           ],
+        ),
+        body: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 600),
+            child: Padding(
+              padding: EdgeInsets.symmetric(
+                horizontal: Responsive.paddingHorizontal(context),
+                vertical: Responsive.paddingVertical(context),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  _ActionButton(
+                    icon: Icons.add_circle_outline,
+                    label: AppLocalization.get(context, 'new_order'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => BlocProvider(
+                            create: (_) => OrderBloc(),
+                            child: CreateOrderScreen(
+                              user: widget.user,
+                              token: widget.token,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _ActionButton(
+                    icon: Icons.local_offer_outlined,
+                    label: AppLocalization.get(context, 'offers_title'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => MyOrdersScreen(token: widget.token),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  _ActionButton(
+                    icon: Icons.assessment_outlined,
+                    label: AppLocalization.get(context, 'report_30'),
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => MyOrdersScreen(token: widget.token),
+                        ),
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ),
         ),
       ),
     );
@@ -88,7 +308,6 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
-
   const _ActionButton({
     required this.icon,
     required this.label,

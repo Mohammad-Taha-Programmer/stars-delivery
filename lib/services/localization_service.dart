@@ -1,0 +1,150 @@
+import 'package:flutter/material.dart';
+
+class AppLocalization {
+  final Locale locale;
+  AppLocalization(this.locale);
+
+  static bool _isAr(Locale l) => l.languageCode == 'ar';
+
+  static String of(BuildContext context) {
+    final loc = Localizations.localeOf(context).languageCode;
+    return loc;
+  }
+
+  static bool isArabic(BuildContext context) => of(context) == 'ar';
+
+  // Centralized string lookup
+  static String get(BuildContext context, String key) {
+    final ar = _isAr(Localizations.localeOf(context));
+    return _strings[key]?[ar ? 'ar' : 'en'] ?? key;
+  }
+
+  static final Map<String, Map<String, String>> _strings = {
+    // App
+    'app_title': {'ar': 'تطبيق التوصيل السريع', 'en': 'Stars Delivery'},
+    'stars_delivery': {'ar': 'ستارز دليفري', 'en': 'Stars Delivery'},
+    'welcome_back': {'ar': 'مرحباً بعودتك', 'en': 'Welcome back!'},
+    'create_account_hint': {'ar': 'إنشاء حساب جديد', 'en': 'Create your account'},
+
+    // Roles
+    'customer': {'ar': 'عميل', 'en': 'Customer'},
+    'provider': {'ar': 'سائق', 'en': 'Provider'},
+    'customer_subtitle': {'ar': 'أحتاج توصيل', 'en': 'Need delivery'},
+    'provider_subtitle': {'ar': 'أقدم خدمة التوصيل', 'en': 'Offer delivery'},
+
+    // Auth
+    'sign_in': {'ar': 'تسجيل الدخول', 'en': 'Sign In'},
+    'sign_up': {'ar': 'إنشاء حساب', 'en': 'Sign Up'},
+    'create_account': {'ar': 'إنشاء حساب', 'en': 'Create Account'},
+    'full_name': {'ar': 'الاسم الكامل', 'en': 'Full Name'},
+    'phone_number': {'ar': 'رقم الهاتف', 'en': 'Phone Number'},
+    'email': {'ar': 'البريد الإلكتروني', 'en': 'Email'},
+    'password': {'ar': 'كلمة المرور', 'en': 'Password'},
+    'area_region': {'ar': 'المنطقة', 'en': 'Area / Region'},
+    'no_account': {'ar': 'ليس لديك حساب؟ ', 'en': "Don't have an account? "},
+    'have_account': {'ar': 'لديك حساب بالفعل؟ ', 'en': 'Already have an account? '},
+    'required': {'ar': 'مطلوب', 'en': 'Required'},
+    'invalid_email': {'ar': 'بريد إلكتروني غير صالح', 'en': 'Invalid email'},
+    'min_password': {'ar': '6 أحرف على الأقل', 'en': 'Min 6 characters'},
+    'invalid_phone': {'ar': 'رقم هاتف غير صالح', 'en': 'Invalid phone number'},
+
+    // Home
+    'new_order': {'ar': 'إنشاء طلب جديد', 'en': 'New Order'},
+    'my_orders': {'ar': 'طلباتي', 'en': 'My Orders'},
+    'offers_title': {'ar': 'عروض اسعار السائقين', 'en': 'Driver Price Offers'},
+    'report_30': {'ar': 'تقرير الطلبات - آخر 30 يوم', 'en': 'Orders Report - Last 30 Days'},
+
+    // Order types
+    'product': {'ar': 'طلب منتج', 'en': 'Product Order'},
+    'people': {'ar': 'طلب توصيل أشخاص', 'en': 'People Transport'},
+    'goods': {'ar': 'طلب نقل بضاعة', 'en': 'Goods Transport'},
+    'product_label': {'ar': 'المنتج المطلوب', 'en': 'Required Product'},
+    'people_label': {'ar': 'خدمة النقل المطلوبة', 'en': 'Transport Service'},
+    'goods_label': {'ar': 'الشحنة المطلوبة', 'en': 'Required Shipment'},
+    'desc_hint': {'ar': 'اشرح ماذا تريد بالضبط، ليتسنى للسائق اعطائك عرض سعر بقيمة التوصيل وليس بقيمة المنتجات المطلوبة', 'en': 'Describe what you need so the driver can give a delivery price quote'},
+    'phone_label': {'ar': 'رقم الهاتف للتواصل', 'en': 'Contact Phone'},
+    'phone_hint': {'ar': 'هذا الرقم لن يظهر للسائق إلا عند قبولك لعرض السعر', 'en': 'Phone hidden until you accept an offer'},
+    'submit_order': {'ar': 'إرسال الطلب', 'en': 'Submit Order'},
+    'order_sent': {'ar': 'تم إرسال الطلب إلى مقدمي الخدمة', 'en': 'Order sent to providers'},
+    'max_3_photos': {'ar': 'يمكنك إضافة 3 صور كحد أقصى', 'en': 'Maximum 3 images allowed'},
+    'add_photos': {'ar': 'إضافة صور (حد أقصى 3)', 'en': 'Add Photos (Max 3)'},
+    'add_more_photos': {'ar': 'إضافة صورة أخرى', 'en': 'Add Another Photo'},
+
+    // Order statuses
+    'status_pending': {'ar': 'قيد الانتظار', 'en': 'Pending'},
+    'status_offered': {'ar': 'عروض متوفرة', 'en': 'Offers Available'},
+    'status_accepted': {'ar': 'تم قبول عرض', 'en': 'Offer Accepted'},
+    'status_fulfilling': {'ar': 'جاري التوصيل', 'en': 'Delivering'},
+    'status_completed': {'ar': 'تم التوصيل', 'en': 'Completed'},
+
+    // Provider dashboard
+    'provider_dashboard': {'ar': 'لوحة تحكم السائق', 'en': 'Provider Dashboard'},
+    'daily_earnings': {'ar': 'مجموع أرباحك اليوم', 'en': 'Daily Earnings'},
+    'monthly_earnings': {'ar': 'أرباحك هذا الشهر', 'en': 'Monthly Earnings'},
+    'pending_orders_btn': {'ar': 'طلبات جديدة تنتظر تقديم عرض سعر', 'en': 'New Orders Awaiting Your Offer'},
+    'active_orders_btn': {'ar': 'طلباتي النشطة - التوصيل والتسليم', 'en': 'My Active Orders - Delivery'},
+    'platform_commission': {'ar': 'عمولة المنصة (مستحقة الدفع):', 'en': 'Platform Commission (Due):'},
+    'ils': {'ar': 'ILS', 'en': 'ILS'},
+    'shekel': {'ar': 'شيكل', 'en': 'SHE'},
+    'successful_orders': {'ar': 'طلب ناجح', 'en': 'Successful Orders'},
+    'commission_detail': {'ar': 'شيكل بناء على الطلبات الناجحة', 'en': 'SHE based on completed orders'},
+
+    // Offers
+    'submit_offer': {'ar': 'تقديم عرض سعر', 'en': 'Submit Offer'},
+    'your_price': {'ar': 'سعر التوصيل', 'en': 'Delivery Price'},
+    'price_hint': {'ar': 'أدخل سعر التوصيل بالشيكل', 'en': 'Enter delivery price in SHE'},
+    'invalid_price': {'ar': 'يجب أن يكون السعر أكبر من 0', 'en': 'Price must be greater than 0'},
+    'offers_list': {'ar': 'عروض الأسعار', 'en': 'Price Offers'},
+    'no_offers': {'ar': 'لا توجد عروض بعد', 'en': 'No offers yet'},
+    'accepted': {'ar': 'مقبول', 'en': 'Accepted'},
+    'rejected': {'ar': 'مرفوض', 'en': 'Rejected'},
+    'accept_offer': {'ar': 'قبول العرض', 'en': 'Accept Offer'},
+
+    // Notifications
+    'notifications': {'ar': 'الإشعارات', 'en': 'Notifications'},
+    'mark_all_read': {'ar': 'تحديد الكل كمقروء', 'en': 'Mark All as Read'},
+    'no_notifications': {'ar': 'لا توجد إشعارات', 'en': 'No notifications'},
+
+    // Pending orders
+    'new_orders_title': {'ar': 'الطلبات الجديدة', 'en': 'New Orders'},
+    'no_new_orders': {'ar': 'لا توجد طلبات جديدة', 'en': 'No new orders'},
+    'hidden_phone': {'ar': 'رقم مخفي', 'en': 'Hidden Phone'},
+    'submit_offer_btn': {'ar': 'تقديم عرض سعر', 'en': 'Submit Offer'},
+
+    // General
+    'loading': {'ar': 'جاري التحميل...', 'en': 'Loading...'},
+    'error': {'ar': 'خطأ', 'en': 'Error'},
+    'back': {'ar': 'رجوع', 'en': 'Back'},
+    'save': {'ar': 'حفظ', 'en': 'Save'},
+    'cancel': {'ar': 'إلغاء', 'en': 'Cancel'},
+    'confirm': {'ar': 'تأكيد', 'en': 'Confirm'},
+    'no_orders': {'ar': 'لا توجد طلبات', 'en': 'No orders'},
+    'order_details': {'ar': 'تفاصيل الطلب', 'en': 'Order Details'},
+    'description': {'ar': 'الوصف', 'en': 'Description'},
+    'images': {'ar': 'الصور', 'en': 'Images'},
+    'phone_hidden': {'ar': 'رقم مخفي', 'en': 'Hidden Phone'},
+    'settings': {'ar': 'الإعدادات', 'en': 'Settings'},
+    'language': {'ar': 'اللغة', 'en': 'Language'},
+    'theme': {'ar': 'المظهر', 'en': 'Theme'},
+    'light': {'ar': 'فاتح', 'en': 'Light'},
+    'dark': {'ar': 'داكن', 'en': 'Dark'},
+
+    // Real-time
+    'new_offer_received': {'ar': 'عرض سعر جديد:', 'en': 'New offer:'},
+
+    // Offers screen
+    'driver_offers_for': {'ar': 'عروض السائقين للطلب', 'en': 'Driver Offers for Order'},
+    'accept': {'ar': 'قبول', 'en': 'Accept'},
+    'offers_not_loaded': {'ar': 'اضغط على الطلب لعرض عروض الأسعار', 'en': 'Tap order to view offers'},
+
+    // My orders screen
+    'tap_to_view_offers': {'ar': 'اضغط لعرض العروض', 'en': 'Tap to view offers'},
+
+    // Active orders
+    'start_delivery': {'ar': 'بدء التوصيل', 'en': 'Start Delivering'},
+    'confirm_delivery': {'ar': 'تأكيد التسليم', 'en': 'Confirm Delivery'},
+    'status_updated': {'ar': 'تم تحديث الحالة', 'en': 'Status Updated'},
+    'order_completed_msg': {'ar': 'تم اكتمال الطلب بنجاح', 'en': 'Order completed successfully'},
+    'price': {'ar': 'السعر', 'en': 'Price'},
+  };
+}

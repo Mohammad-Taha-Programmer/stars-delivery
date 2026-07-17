@@ -16,6 +16,7 @@ class OrderBloc extends Bloc<OrderEvent, OrderState> {
     try {
       final data = await _orderService.createOrder(
         event.token, event.type, event.description, event.phone, event.imagePaths,
+        area: event.area,
       );
       emit(OrderSuccess(order: OrderModel.fromJson(data)));
     } catch (e) {

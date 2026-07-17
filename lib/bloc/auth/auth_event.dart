@@ -7,6 +7,8 @@ abstract class AuthEvent extends Equatable {
   List<Object?> get props => [];
 }
 
+class CheckAuthEvent extends AuthEvent {}
+
 class LoginEvent extends AuthEvent {
   final String email;
   final String password;
@@ -51,3 +53,5 @@ class ToggleAuthModeEvent extends AuthEvent {
   @override
   List<Object?> get props => [isLogin];
 }
+
+class LogoutEvent extends AuthEvent {}
