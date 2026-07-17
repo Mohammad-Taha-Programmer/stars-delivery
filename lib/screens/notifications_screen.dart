@@ -6,6 +6,7 @@ import '../bloc/notification/notification_state.dart';
 import '../services/responsive.dart';
 import '../services/localization_service.dart';
 import '../bloc/app/app_bloc.dart';
+import 'support_chat_screen.dart';
 import '../widgets/image_preview.dart';
 
 class NotificationsScreen extends StatefulWidget {
@@ -84,11 +85,13 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                     itemBuilder: (_, i) {
                       final n = state.notifications[i];
                       final hasImage = n.image.isNotEmpty;
+                      final isPinned = n.pinned;
                       return Card(
                         margin: const EdgeInsets.only(bottom: 8),
-                        color: n.read ? Colors.white : Colors.blue[50],
+                        color: isPinned ? Colors.orange[50] : (n.read ? Colors.white : Colors.blue[50]),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
+                          side: isPinned ? BorderSide(color: Colors.orange[300]!, width: 1.5) : BorderSide.none,
                         ),
                         child: ListTile(
                           leading: hasImage
@@ -110,30 +113,48 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                                 )
                               : Icon(
                                   _iconForType(n.type),
-                                  color: Colors.orange,
+                                  color: isPinned ? Colors.orange : Colors.grey,
                                 ),
-                          title: Text(
-                            n.title,
-                            style: const TextStyle(fontWeight: FontWeight.bold),
+                          title: Row(
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  n.title,
+                                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: isPinned ? 14 : 13),
+                                ),
+                              ),
+                              if (isPinned)
+                                Container(
+                                  margin: const EdgeInsets.only(left: 6),
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+                                  decoration: BoxDecoration(color: Colors.orange, borderRadius: BorderRadius.circular(4)),
+                                  child: const Text('مثبت', style: TextStyle(fontSize: 9, color: Colors.white, fontWeight: FontWeight.bold)),
+                                ),
+                            ],
                           ),
                           subtitle: Text(
                             n.body,
                             maxLines: 2,
                             overflow: TextOverflow.ellipsis,
                           ),
-                          trailing: n.read
+                          trailing: n.read && !isPinned
                               ? null
-                              : Container(
-                                  width: 10,
-                                  height: 10,
-                                  decoration: const BoxDecoration(
-                                    color: Colors.red,
-                                    shape: BoxShape.circle,
-                                  ),
-                                ),
-                          onTap: () => context.read<NotificationBloc>().add(
-                            MarkNotificationRead(token: widget.token, id: n.id),
-                          ),
+                              : isPinned
+                                  ? const Icon(Icons.push_pin, size: 16, color: Colors.orange)
+                                  : Container(
+                                      width: 10,
+                                      height: 10,
+                                      decoration: const BoxDecoration(
+                                        color: Colors.red,
+                                        shape: BoxShape.circle,
+                                      ),
+                                    ),
+                          onTap: () {
+                            if (!n.read) {
+                              context.read<NotificationBloc>().add(MarkNotificationRead(token: widget.token, id: n.id));
+                            }
+                            _showDetail(context, n);
+                          },
                         ),
                       );
                     },
@@ -168,8 +189,47 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
         return Icons.delivery_dining;
       case 'order_completed':
         return Icons.check_circle_outline;
+      case 'broadcast':
+        return Icons.campaign;
       default:
         return Icons.notifications;
     }
+  }
+
+  void _showDetail(BuildContext context, dynamic n) {
+    final hasContactAction = n.type == 'broadcast' &&
+        (n.body.contains('الدعم') || n.body.contains('contact'));
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: Row(
+          children: [
+            Icon(_iconForType(n.type), color: n.pinned ? Colors.orange : Colors.blue, size: 24),
+            const SizedBox(width: 10),
+            Expanded(child: Text(n.title, style: const TextStyle(fontSize: 16))),
+          ],
+        ),
+        content: SingleChildScrollView(
+          child: Text(n.body, style: const TextStyle(fontSize: 14, height: 1.6)),
+        ),
+        actions: [
+          if (hasContactAction)
+            TextButton.icon(
+              onPressed: () {
+                Navigator.pop(context);
+                Navigator.push(context, MaterialPageRoute(
+                  builder: (_) => SupportChatScreen(token: widget.token),
+                ));
+              },
+              icon: const Icon(Icons.headset_mic, size: 18),
+              label: const Text('التواصل مع الدعم'),
+            ),
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('حسناً'),
+          ),
+        ],
+      ),
+    );
   }
 }

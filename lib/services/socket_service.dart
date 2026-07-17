@@ -12,6 +12,8 @@ class SocketService {
   final _orderStatusController = StreamController<Map<String, dynamic>>.broadcast();
   final _notifCountController = StreamController<int>.broadcast();
   final _supportReplyController = StreamController<Map<String, dynamic>>.broadcast();
+  final _broadcastController = StreamController<Map<String, dynamic>>.broadcast();
+  final _accountDeletedController = StreamController<void>.broadcast();
 
   Stream<Map<String, dynamic>> get onNewOrder => _newOrderController.stream;
   Stream<Map<String, dynamic>> get onNewOffer => _newOfferController.stream;
@@ -19,6 +21,8 @@ class SocketService {
   Stream<Map<String, dynamic>> get onOrderStatusChanged => _orderStatusController.stream;
   Stream<int> get onNotificationCount => _notifCountController.stream;
   Stream<Map<String, dynamic>> get onSupportReply => _supportReplyController.stream;
+  Stream<Map<String, dynamic>> get onBroadcast => _broadcastController.stream;
+  Stream<void> get onAccountDeleted => _accountDeletedController.stream;
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -84,6 +88,16 @@ class SocketService {
       }
     });
 
+    _socket!.on('broadcast', (data) {
+      if (data is Map) {
+        _broadcastController.add(Map<String, dynamic>.from(data));
+      }
+    });
+
+    _socket!.on('account_deleted', (_) {
+      _accountDeletedController.add(null);
+    });
+
     _socket!.connect();
   }
 
@@ -101,6 +115,8 @@ class SocketService {
     _orderStatusController.close();
     _notifCountController.close();
     _supportReplyController.close();
+    _broadcastController.close();
+    _accountDeletedController.close();
     _instance = null;
   }
 }

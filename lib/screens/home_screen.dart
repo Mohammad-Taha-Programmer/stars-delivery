@@ -42,6 +42,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   StreamSubscription? _newOfferSub;
   StreamSubscription? _orderStatusSub;
   StreamSubscription? _offerAcceptedSub;
+  StreamSubscription? _broadcastSub;
+  StreamSubscription? _accountDeletedSub;
 
   @override
   void initState() {
@@ -90,6 +92,22 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         LoadNotifications(token: widget.token),
       );
     });
+
+    _broadcastSub = SocketService.instance.onBroadcast.listen((data) {
+      if (!mounted) return;
+      context.read<NotificationBloc>().add(
+        LoadNotifications(token: widget.token),
+      );
+    });
+
+    _accountDeletedSub = SocketService.instance.onAccountDeleted.listen((_) {
+      if (!mounted) return;
+      SocketService.instance.disconnect();
+      context.read<AuthBloc>().add(LogoutEvent());
+      Navigator.pushAndRemoveUntil(context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false);
+    });
   }
 
   @override
@@ -106,6 +124,8 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _newOfferSub?.cancel();
     _orderStatusSub?.cancel();
     _offerAcceptedSub?.cancel();
+    _broadcastSub?.cancel();
+    _accountDeletedSub?.cancel();
     super.dispose();
   }
 

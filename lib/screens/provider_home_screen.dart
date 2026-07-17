@@ -42,6 +42,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
   StreamSubscription? _newOrderSub;
   StreamSubscription? _notifCountSub;
   StreamSubscription? _offerAcceptedSub;
+  StreamSubscription? _broadcastSub;
+  StreamSubscription? _accountDeletedSub;
 
   @override
   void initState() {
@@ -83,6 +85,22 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
       if (!mounted) return;
       context.read<ProviderBloc>().add(LoadProviderStats(token: widget.token));
     });
+
+    _broadcastSub = SocketService.instance.onBroadcast.listen((_) {
+      if (!mounted) return;
+      context.read<NotificationBloc>().add(
+        LoadNotifications(token: widget.token),
+      );
+    });
+
+    _accountDeletedSub = SocketService.instance.onAccountDeleted.listen((_) {
+      if (!mounted) return;
+      SocketService.instance.disconnect();
+      context.read<AuthBloc>().add(LogoutEvent());
+      Navigator.pushAndRemoveUntil(context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+        (route) => false);
+    });
   }
 
   @override
@@ -99,6 +117,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
     _newOrderSub?.cancel();
     _notifCountSub?.cancel();
     _offerAcceptedSub?.cancel();
+    _broadcastSub?.cancel();
+    _accountDeletedSub?.cancel();
     super.dispose();
   }
 
