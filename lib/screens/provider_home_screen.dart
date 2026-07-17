@@ -324,12 +324,24 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                                       ),
                                     ),
                                     const SizedBox(height: 4),
-                                    Text(
-                                      'مقابل ${s.totalSuccessful} طلب ناجح',
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: Colors.black54,
-                                      ),
+                                    Row(
+                                      children: [
+                                        Text(
+                                          '${s.dailyOrderCount}',
+                                          style: const TextStyle(
+                                            fontSize: 16,
+                                            fontWeight: FontWeight.bold,
+                                            color: Colors.blue,
+                                          ),
+                                        ),
+                                        const Text(
+                                          ' طلبات اليوم',
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.black54,
+                                          ),
+                                        ),
+                                      ],
                                     ),
                                   ],
                                 ),

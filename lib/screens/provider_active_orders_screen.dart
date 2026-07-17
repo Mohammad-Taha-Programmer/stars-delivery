@@ -6,6 +6,7 @@ import '../bloc/provider/provider_event.dart';
 import '../bloc/app/app_bloc.dart';
 import '../services/responsive.dart';
 import '../services/localization_service.dart';
+import '../services/api_config.dart';
 
 class ProviderActiveOrdersScreen extends StatefulWidget {
   final String token;
@@ -61,6 +62,44 @@ class _ProviderActiveOrdersScreenState
       default:
         return s ?? '';
     }
+  }
+
+  Widget _buildCustomerRow(BuildContext context, Map<String, dynamic> o) {
+    final c = o['customerId'];
+    final String name;
+    final String pid;
+    if (c is Map) {
+      name = (c['fullName'] ?? '').toString();
+      pid = (c['publicId'] ?? '').toString();
+    } else {
+      name = '';
+      pid = '';
+    }
+    return Row(
+      children: [
+        const Icon(Icons.person_outline, size: 14, color: Colors.orange),
+        const SizedBox(width: 4),
+        Text(
+          name.isNotEmpty ? name : AppLocalization.get(context, 'unknown'),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        ),
+        if (pid.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: Colors.orange[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange[200]!),
+            ),
+            child: Text(
+              '#$pid',
+              style: TextStyle(fontSize: 11, color: Colors.orange[800], fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ],
+    );
   }
 
   Color _statusColor(String? s) {
@@ -170,7 +209,7 @@ class _ProviderActiveOrdersScreenState
                     ),
                   )
                 : RefreshIndicator(
-                    onRefresh: _loadOrders,
+                    onRefresh: () => _loadOrders(),
                     child: ListView.builder(
                       padding: EdgeInsets.symmetric(
                         horizontal: Responsive.paddingHorizontal(context),
@@ -233,11 +272,64 @@ class _ProviderActiveOrdersScreenState
                                     ),
                                   ],
                                 ),
+                                const SizedBox(height: 4),
+                                _buildCustomerRow(context, o),
                                 const SizedBox(height: 6),
                                 Text(
                                   o['description'] ?? '',
                                   style: TextStyle(color: Colors.grey[700]),
                                 ),
+                                if (o['status'] == 'fulfilling' || o['status'] == 'completed') ...[
+                                  if (o['phone'] != null) ...[
+                                    const SizedBox(height: 4),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.phone, size: 14, color: Colors.grey[600]),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          o['phone'].toString(),
+                                          style: TextStyle(
+                                            fontSize: 13,
+                                            color: Colors.grey[700],
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                  if (o['area'] != null) ...[
+                                    const SizedBox(height: 2),
+                                    Row(
+                                      children: [
+                                        Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          o['area'].toString(),
+                                          style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                  if (o['images'] is List && (o['images'] as List).isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    SizedBox(
+                                      height: 60,
+                                      child: ListView.separated(
+                                        scrollDirection: Axis.horizontal,
+                                        itemCount: (o['images'] as List).length,
+                                        separatorBuilder: (_, __) => const SizedBox(width: 6),
+                                        itemBuilder: (_, i) {
+                                          final img = (o['images'] as List)[i].toString();
+                                          final url = img.startsWith('http') ? img : '${ApiConfig.serverUrl}$img';
+                                          return ClipRRect(
+                                            borderRadius: BorderRadius.circular(6),
+                                            child: Image.network(url, height: 60, width: 60, fit: BoxFit.cover),
+                                          );
+                                        },
+                                      ),
+                                    ),
+                                  ],
+                                ],
                                 if (o['price'] != null) ...[
                                   const SizedBox(height: 6),
                                   Text(

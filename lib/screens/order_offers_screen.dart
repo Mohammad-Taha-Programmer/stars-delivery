@@ -122,6 +122,45 @@ class _OrderOffersScreenState extends State<OrderOffersScreen> {
                                 ],
                               ),
                               const SizedBox(height: 12),
+                              if (o.providerPhone.isNotEmpty) ...[
+                                Row(
+                                  children: [
+                                    const Icon(Icons.phone, size: 14, color: Colors.grey),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      o.status == 'accepted'
+                                          ? o.providerPhone
+                                          : _maskPhone(o.providerPhone),
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        color: Colors.grey[700],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              const SizedBox(height: 8),
+                              if (o.orderDescription.isNotEmpty)
+                                Text(
+                                  o.orderDescription,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(fontSize: 13, color: Colors.grey[700]),
+                                ),
+                              if (o.orderArea.isNotEmpty) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    Icon(Icons.location_on, size: 14, color: Colors.grey[600]),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      o.orderArea,
+                                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                              const SizedBox(height: 12),
+                              ],
                               _buildOfferAction(context, o),
                             ],
                           ),
@@ -145,6 +184,11 @@ class _OrderOffersScreenState extends State<OrderOffersScreen> {
         ),
       ),
     );
+  }
+
+  String _maskPhone(String phone) {
+    if (phone.length <= 4) return '***';
+    return '${phone.substring(0, phone.length - 3)}***';
   }
 
   Widget _buildOfferAction(BuildContext context, dynamic o) {

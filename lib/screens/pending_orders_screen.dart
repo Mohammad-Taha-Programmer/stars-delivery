@@ -17,6 +17,44 @@ class PendingOrdersScreen extends StatelessWidget {
     required this.token,
   });
 
+  Widget _buildCustomerRow(BuildContext context, Map<String, dynamic> o) {
+    final c = o['customerId'];
+    final String name;
+    final String pid;
+    if (c is Map) {
+      name = (c['fullName'] ?? '').toString();
+      pid = (c['publicId'] ?? '').toString();
+    } else {
+      name = '';
+      pid = '';
+    }
+    return Row(
+      children: [
+        const Icon(Icons.person_outline, size: 14, color: Colors.orange),
+        const SizedBox(width: 4),
+        Text(
+          name.isNotEmpty ? name : AppLocalization.get(context, 'unknown'),
+          style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+        ),
+        if (pid.isNotEmpty) ...[
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
+            decoration: BoxDecoration(
+              color: Colors.orange[50],
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange[200]!),
+            ),
+            child: Text(
+              '#$pid',
+              style: TextStyle(fontSize: 11, color: Colors.orange[800], fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final isAr = context.watch<AppBloc>().state.locale.languageCode == 'ar';
@@ -80,6 +118,8 @@ class PendingOrdersScreen extends StatelessWidget {
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
+                              const SizedBox(height: 4),
+                              _buildCustomerRow(context, o),
                               const SizedBox(height: 6),
                               Text(
                                 o['description'] ?? '',

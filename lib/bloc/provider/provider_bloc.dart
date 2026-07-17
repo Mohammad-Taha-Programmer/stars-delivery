@@ -11,8 +11,9 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
   ProviderBloc() : super(ProviderStatsLoaded(
     stats: ProviderStats(
       dailyEarnings: 0, monthlyEarnings: 0,
-      totalSuccessful: 0, dailyCommission: 0,
-      monthlyCommission: 0, pendingOrdersCount: 0,
+      totalSuccessful: 0, dailyOrderCount: 0,
+      dailyCommission: 0, monthlyCommission: 0,
+      pendingOrdersCount: 0,
     ),
   )) {
     on<LoadProviderStats>(_onLoadStats);
@@ -36,6 +37,7 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
             dailyEarnings: c.stats.dailyEarnings,
             monthlyEarnings: c.stats.monthlyEarnings,
             totalSuccessful: c.stats.totalSuccessful,
+            dailyOrderCount: c.stats.dailyOrderCount,
             dailyCommission: c.stats.dailyCommission,
             monthlyCommission: c.stats.monthlyCommission,
             pendingOrdersCount: c.stats.pendingOrdersCount,
@@ -61,6 +63,7 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
             dailyEarnings: current.stats.dailyEarnings,
             monthlyEarnings: current.stats.monthlyEarnings,
             totalSuccessful: current.stats.totalSuccessful,
+            dailyOrderCount: current.stats.dailyOrderCount,
             dailyCommission: current.stats.dailyCommission,
             monthlyCommission: current.stats.monthlyCommission,
             pendingOrdersCount: current.stats.pendingOrdersCount,
