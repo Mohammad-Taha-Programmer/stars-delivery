@@ -11,12 +11,14 @@ class SocketService {
   final _offerAcceptedController = StreamController<Map<String, dynamic>>.broadcast();
   final _orderStatusController = StreamController<Map<String, dynamic>>.broadcast();
   final _notifCountController = StreamController<int>.broadcast();
+  final _supportReplyController = StreamController<Map<String, dynamic>>.broadcast();
 
   Stream<Map<String, dynamic>> get onNewOrder => _newOrderController.stream;
   Stream<Map<String, dynamic>> get onNewOffer => _newOfferController.stream;
   Stream<Map<String, dynamic>> get onOfferAccepted => _offerAcceptedController.stream;
   Stream<Map<String, dynamic>> get onOrderStatusChanged => _orderStatusController.stream;
   Stream<int> get onNotificationCount => _notifCountController.stream;
+  Stream<Map<String, dynamic>> get onSupportReply => _supportReplyController.stream;
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -76,6 +78,12 @@ class SocketService {
       }
     });
 
+    _socket!.on('support_reply', (data) {
+      if (data is Map) {
+        _supportReplyController.add(Map<String, dynamic>.from(data));
+      }
+    });
+
     _socket!.connect();
   }
 
@@ -92,6 +100,7 @@ class SocketService {
     _offerAcceptedController.close();
     _orderStatusController.close();
     _notifCountController.close();
+    _supportReplyController.close();
     _instance = null;
   }
 }

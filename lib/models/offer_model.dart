@@ -4,6 +4,7 @@ class OfferModel {
   final String providerId;
   final String providerName;
   final String providerPhone;
+  final String providerPublicId;
   final double price;
   final String status;
   final String createdAt;
@@ -13,6 +14,7 @@ class OfferModel {
   OfferModel({
     required this.id, required this.orderId, required this.providerId,
     required this.providerName, required this.providerPhone,
+    required this.providerPublicId,
     required this.price, required this.status, required this.createdAt,
     required this.orderDescription, required this.orderArea,
   });
@@ -26,6 +28,7 @@ class OfferModel {
       providerId: p is Map ? (p['_id']?.toString() ?? '') : '',
       providerName: p is Map ? (p['fullName'] ?? '') : '',
       providerPhone: p is Map ? (p['phone'] ?? '') : '',
+      providerPublicId: p is Map ? (p['publicId'] ?? '') : '',
       price: (json['price'] ?? 0).toDouble(),
       status: json['status'] ?? 'pending',
       createdAt: json['createdAt']?.toString() ?? '',

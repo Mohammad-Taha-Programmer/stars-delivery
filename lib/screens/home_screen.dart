@@ -19,6 +19,8 @@ import 'create_order_screen.dart';
 import 'my_orders_screen.dart';
 import 'notifications_screen.dart';
 import 'login_screen.dart';
+import 'report_screen.dart';
+import 'support_chat_screen.dart';
 import '../services/socket_service.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -294,6 +296,38 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                       );
                     },
                   ),
+                  const SizedBox(height: 24),
+                  _ActionButton(
+                    icon: Icons.report_outlined,
+                    label: 'الابلاغ عن سائق',
+                    iconColor: Colors.red,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ReportScreen(
+                            token: widget.token,
+                            reportType: 'driver',
+                            title: 'الابلاغ عن سائق',
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 12),
+                  _ActionButton(
+                    icon: Icons.headset_mic_outlined,
+                    label: 'التواصل مع الدعم',
+                    iconColor: Colors.orange,
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => SupportChatScreen(token: widget.token),
+                        ),
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -308,10 +342,12 @@ class _ActionButton extends StatelessWidget {
   final IconData icon;
   final String label;
   final VoidCallback onTap;
+  final Color? iconColor;
   const _ActionButton({
     required this.icon,
     required this.label,
     required this.onTap,
+    this.iconColor,
   });
 
   @override
@@ -323,7 +359,7 @@ class _ActionButton extends StatelessWidget {
         style: ElevatedButton.styleFrom(
           padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 24),
           backgroundColor: Colors.white,
-          foregroundColor: Colors.blue[700],
+          foregroundColor: iconColor ?? Colors.blue[700],
           side: BorderSide(color: Colors.grey[300]!),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12),
@@ -332,7 +368,7 @@ class _ActionButton extends StatelessWidget {
         ),
         child: Row(
           children: [
-            Icon(icon, size: 28),
+            Icon(icon, size: 28, color: iconColor),
             const SizedBox(width: 12),
             Expanded(
               child: Text(

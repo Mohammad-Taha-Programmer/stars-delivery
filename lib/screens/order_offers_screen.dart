@@ -102,12 +102,26 @@ class _OrderOffersScreenState extends State<OrderOffersScreen> {
                                   ),
                                   const SizedBox(width: 8),
                                   Expanded(
-                                    child: Text(
-                                      o.providerName,
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 16,
-                                      ),
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          o.providerName,
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        if (o.providerPublicId.isNotEmpty)
+                                          Text(
+                                            '#${o.providerPublicId}',
+                                            style: TextStyle(
+                                              fontSize: 12,
+                                              color: Colors.orange[700],
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
                                   const SizedBox(width: 8),

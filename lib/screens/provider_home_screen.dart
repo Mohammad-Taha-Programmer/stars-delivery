@@ -22,6 +22,8 @@ import 'login_screen.dart';
 import 'pending_orders_screen.dart';
 import 'provider_active_orders_screen.dart';
 import 'notifications_screen.dart';
+import 'report_screen.dart';
+import 'support_chat_screen.dart';
 
 class ProviderHomeScreen extends StatefulWidget {
   final UserModel user;
@@ -527,6 +529,70 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                                 ),
                               ),
                             ],
+                          ),
+                        ),
+                        const SizedBox(height: 20),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => ReportScreen(
+                                    token: widget.token,
+                                    reportType: 'user',
+                                    title: 'الابلاغ عن زبون',
+                                  ),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.report_outlined, size: 22, color: Colors.red),
+                            label: const Text(
+                              'الابلاغ عن زبون',
+                              style: TextStyle(
+                                color: Colors.black87,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              side: const BorderSide(color: Colors.red, width: 1.5),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              elevation: 0,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => SupportChatScreen(token: widget.token),
+                                ),
+                              );
+                            },
+                            icon: const Icon(Icons.headset_mic_outlined, size: 22, color: Colors.orange),
+                            label: const Text(
+                              'التواصل مع الدعم',
+                              style: TextStyle(
+                                color: Colors.black87,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              side: const BorderSide(color: Colors.orange, width: 1.5),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              padding: const EdgeInsets.symmetric(vertical: 16),
+                              elevation: 0,
+                            ),
                           ),
                         ),
                       ],
