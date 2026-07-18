@@ -16,6 +16,10 @@ class LoadProviderStats extends ProviderEvent {
 class LoadPendingOrders extends ProviderEvent {
   final String token;
   const LoadPendingOrders({required this.token});
-  @override
-  List<Object?> get props => [token];
+  @override List<Object?> get props => [token];
+}
+class LoadOfferedOrders extends ProviderEvent {
+  final String token;
+  const LoadOfferedOrders({required this.token});
+  @override List<Object?> get props => [token];
 }

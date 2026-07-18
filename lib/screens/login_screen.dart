@@ -1,12 +1,17 @@
 import 'dart:convert';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import '../bloc/auth/auth_bloc.dart';
 import '../bloc/auth/auth_event.dart';
 import '../bloc/auth/auth_state.dart';
+import '../bloc/app/app_bloc.dart';
+import '../bloc/app/app_event.dart';
 import '../bloc/provider/provider_bloc.dart';
 import '../services/responsive.dart';
+import '../services/localization_service.dart';
+import '../services/api_config.dart';
 import 'home_screen.dart';
 import 'provider_home_screen.dart';
 
@@ -27,6 +32,24 @@ class _LoginScreenState extends State<LoginScreen> {
   bool _isLogin = true;
   String _selectedRole = 'customer';
   List<String> _areas = [];
+  List<String> _areasAr = []; // Always Arabic for saving
+  static const _areaEnToAr = {
+    'Jerusalem (Quds)': 'القدس', 'Ramallah': 'رام الله والبيرة', 'Hebron': 'الخليل',
+    'Nablus': 'نابلس', 'Bethlehem': 'بيت لحم', 'Jericho': 'أريحا',
+    'Salfit': 'سلفيت', 'Jenin': 'جنين', 'Tulkarm': 'طولكرم',
+    'Qalqilya': 'قلقيلية', 'Tubas': 'طوباس',
+    'Gaza': 'غزة', 'Khan Yunis': 'خان يونس', 'Rafah': 'رفح',
+    'Deir El Balah': 'دير البلح', 'North Gaza': 'شمال غزة',
+    'Haifa': 'حيفا', 'Acre': 'عكا', 'Nazareth': 'الناصرة', 'Jaffa': 'يافا',
+  };
+
+  // Ensure all keys are trimmed for matching
+  static final _areaEnToArTrimmed = {for (var k in _areaEnToAr.keys) k.trim(): _areaEnToAr[k]!};
+
+  String _areaLabel(String enName, bool isAr) {
+    if (isAr) return _areaEnToArTrimmed[enName.trim()] ?? enName.replaceFirst(' (Quds)', '').trim();
+    return enName.replaceFirst(' (Quds)', '').trim();
+  }
   String? _selectedArea;
 
   @override
@@ -43,7 +66,13 @@ class _LoginScreenState extends State<LoginScreen> {
         (c) => c['iso2'] == 'PS',
       );
       final states = palestine['states'] as List;
-      setState(() => _areas = states.cast<Map<String, dynamic>>().map((s) => s['name'].toString()).toList());
+      final names = states.cast<Map<String, dynamic>>().map((s) => s['name'].toString()).toList();
+      // Add interior/cross-area cities not in the JSON
+      final allNames = [...names, 'Haifa', 'Acre', 'Nazareth', 'Jaffa'];
+      setState(() {
+        _areas = allNames;
+        _areasAr = allNames.map((n) => _areaEnToArTrimmed[n.trim()] ?? n.trim()).toList();
+      });
     } catch (_) {}
   }
 
@@ -60,6 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
   Widget build(BuildContext context) {
     final isMobile = Responsive.isMobile(context);
     final hPad = Responsive.paddingHorizontal(context);
+    final isAr = context.watch<AppBloc>().state.locale.languageCode == 'ar';
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -71,7 +101,17 @@ class _LoginScreenState extends State<LoginScreen> {
                 padding: EdgeInsets.symmetric(horizontal: hPad, vertical: Responsive.paddingVertical(context)),
                 child: Column(
                   children: [
-                    SizedBox(height: isMobile ? 60 : 40),
+                    // Language toggle
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => context.read<AppBloc>().add(ToggleLocale()),
+                          child: Text(isAr ? 'EN' : 'ع', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.grey[700], fontSize: 16)),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: isMobile ? 40 : 20),
                 // Logo & Title
                 Container(
                   padding: const EdgeInsets.all(20),
@@ -83,7 +123,7 @@ color: Colors.white.withValues(alpha: 0.9),
                 ),
                 const SizedBox(height: 16),
                 Text(
-                  'Stars Delivery',
+                  AppLocalization.get(context, 'stars_delivery'),
                   style: TextStyle(
                     fontSize: 32,
                     fontWeight: FontWeight.bold,
@@ -93,7 +133,9 @@ color: Colors.white.withValues(alpha: 0.9),
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  _isLogin ? 'Welcome back!' : 'Create your account',
+                  _isLogin
+                      ? AppLocalization.get(context, 'welcome_back')
+                      : AppLocalization.get(context, 'create_account_hint'),
                   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 40),
@@ -103,8 +145,8 @@ color: Colors.white.withValues(alpha: 0.9),
                     Expanded(
                       child: _RoleCard(
                         icon: Icons.person,
-                        title: 'Customer',
-                        subtitle: 'Need delivery',
+                        title: AppLocalization.get(context, 'customer'),
+                        subtitle: AppLocalization.get(context, 'customer_subtitle'),
                         isSelected: _selectedRole == 'customer',
                         onTap: () => setState(() => _selectedRole = 'customer'),
                       ),
@@ -113,8 +155,8 @@ color: Colors.white.withValues(alpha: 0.9),
                     Expanded(
                       child: _RoleCard(
                         icon: Icons.delivery_dining,
-                        title: 'Provider',
-                        subtitle: 'Offer delivery',
+                        title: AppLocalization.get(context, 'provider'),
+                        subtitle: AppLocalization.get(context, 'provider_subtitle'),
                         isSelected: _selectedRole == 'provider',
                         onTap: () => setState(() => _selectedRole = 'provider'),
                       ),
@@ -144,38 +186,41 @@ color: Colors.black.withValues(alpha: 0.1),
                         if (!_isLogin) ...[
                           TextFormField(
                             controller: _nameController,
-                            decoration: _inputDecoration('Full Name', Icons.person_outline),
-                            validator: (v) => v!.isEmpty ? 'Required' : null,
+                            decoration: _inputDecoration(AppLocalization.get(context, 'full_name'), Icons.person_outline),
+                            validator: (v) => v!.isEmpty ? AppLocalization.get(context, 'required') : null,
                           ),
                           const SizedBox(height: 16),
                           TextFormField(
                             controller: _phoneController,
-                            decoration: _inputDecoration('Phone Number', Icons.phone_outlined),
+                            decoration: _inputDecoration(AppLocalization.get(context, 'phone_number'), Icons.phone_outlined),
                             keyboardType: TextInputType.phone,
-                            validator: (v) => v!.isEmpty ? 'Required' : null,
+                            validator: (v) => v!.isEmpty ? AppLocalization.get(context, 'required') : null,
                           ),
                           const SizedBox(height: 16),
                           DropdownButtonFormField<String>(
                             initialValue: _selectedArea,
-                            decoration: _inputDecoration('Area / Region', Icons.location_on_outlined),
-                            items: _areas.map((a) => DropdownMenuItem(value: a, child: Text(a))).toList(),
+                            decoration: _inputDecoration(AppLocalization.get(context, 'area_region'), Icons.location_on_outlined),
+                            items: _areas.asMap().entries.map((e) => DropdownMenuItem(
+                              value: _areasAr[e.key],
+                              child: Text(_areaLabel(e.value, isAr)),
+                            )).toList(),
                             onChanged: (v) => setState(() => _selectedArea = v),
-                            validator: (v) => v == null ? 'Required' : null,
+                            validator: (v) => v == null ? AppLocalization.get(context, 'required') : null,
                           ),
                           const SizedBox(height: 16),
                         ],
                         TextFormField(
                           controller: _emailController,
-                          decoration: _inputDecoration('Email', Icons.email_outlined),
+                          decoration: _inputDecoration(AppLocalization.get(context, 'email'), Icons.email_outlined),
                           keyboardType: TextInputType.emailAddress,
-                          validator: (v) => v!.isEmpty ? 'Required email' : null,
+                          validator: (v) => v!.isEmpty ? AppLocalization.get(context, 'required') : null,
                         ),
                         const SizedBox(height: 12),
                         TextFormField(
                           controller: _passwordController,
-                          decoration: _inputDecoration('Password', Icons.lock_outline),
+                          decoration: _inputDecoration(AppLocalization.get(context, 'password'), Icons.lock_outline),
                           obscureText: true,
-                          validator: (v) => v!.length < 6 ? 'Min 6 characters' : null,
+                          validator: (v) => v!.length < 6 ? AppLocalization.get(context, 'min_password') : null,
                         ),
                         const SizedBox(height: 24),
                         BlocConsumer<AuthBloc, AuthState>(
@@ -224,7 +269,7 @@ color: Colors.black.withValues(alpha: 0.1),
                                     child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
                                   )
                                 : Text(
-                                    _isLogin ? 'Sign In' : 'Create Account',
+                                    _isLogin ? AppLocalization.get(context, 'sign_in') : AppLocalization.get(context, 'create_account'),
                                     style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                                   ),
                             );
@@ -241,10 +286,10 @@ color: Colors.black.withValues(alpha: 0.1),
                               style: TextStyle(color: Colors.grey[600]),
                               children: [
                                 TextSpan(
-                                  text: _isLogin ? "Don't have an account? " : "Already have an account? ",
+                                  text: _isLogin ? AppLocalization.get(context, 'no_account') : AppLocalization.get(context, 'have_account'),
                                 ),
                                 TextSpan(
-                                  text: _isLogin ? 'Sign Up' : 'Sign In',
+                                  text: _isLogin ? AppLocalization.get(context, 'sign_up') : AppLocalization.get(context, 'sign_in'),
                                   style: const TextStyle(
                                     color: Color(0xFF1a237e),
                                     fontWeight: FontWeight.bold,
@@ -254,16 +299,22 @@ color: Colors.black.withValues(alpha: 0.1),
                             ),
                           ),
                         ),
+                        const SizedBox(height: 16),
+                        TextButton.icon(
+                          onPressed: () => _showContactDialog(),
+                          icon: const Icon(Icons.headset_mic_outlined, size: 18, color: Colors.orange),
+                          label: Text(AppLocalization.get(context, 'contact_support'), style: TextStyle(color: Colors.orange, fontSize: 14)),
+                        ),
                       ],
                     ),
                   ),
                 ),
                 const SizedBox(height: 40),
-                  ],
-                ),
-              ),
+              ],
             ),
           ),
+          ),
+        ),
         ),
       ),
     );
@@ -286,6 +337,108 @@ color: Colors.black.withValues(alpha: 0.1),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
         borderSide: const BorderSide(color: Color(0xFF1a237e), width: 2),
+      ),
+    );
+  }
+
+  void _showContactDialog() {
+    final nameCtrl = TextEditingController();
+    final emailCtrl = TextEditingController();
+    final phoneCtrl = TextEditingController();
+    final msgCtrl = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+    showDialog(
+      context: context,
+      builder: (_) => StatefulBuilder(
+        builder: (ctx, setDialogState) {
+          bool sending = false;
+          return AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.headset_mic, color: Colors.orange),
+                SizedBox(width: 8),
+                Text('التواصل مع الدعم', style: TextStyle(fontSize: 16)),
+              ],
+            ),
+            content: Form(
+              key: formKey,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextFormField(
+                    controller: nameCtrl,
+                    decoration: const InputDecoration(labelText: 'الاسم', border: OutlineInputBorder()),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'مطلوب' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: emailCtrl,
+                    decoration: const InputDecoration(labelText: 'البريد الإلكتروني', border: OutlineInputBorder()),
+                    keyboardType: TextInputType.emailAddress,
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'مطلوب' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: phoneCtrl,
+                    decoration: const InputDecoration(labelText: 'رقم الجوال', border: OutlineInputBorder()),
+                    keyboardType: TextInputType.phone,
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'مطلوب' : null,
+                  ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: msgCtrl,
+                    maxLines: 3,
+                    decoration: const InputDecoration(
+                      labelText: 'رسالتك',
+                      hintText: 'اكتب مشكلتك هنا...',
+                      border: OutlineInputBorder(),
+                    ),
+                    validator: (v) => (v == null || v.trim().isEmpty) ? 'مطلوب' : null,
+                  ),
+                ],
+              ),
+            ),
+            actions: [
+              TextButton(
+                onPressed: sending ? null : () => Navigator.pop(ctx),
+                child: const Text('إلغاء'),
+              ),
+              ElevatedButton(
+                onPressed: sending ? null : () async {
+                  if (!formKey.currentState!.validate()) return;
+                  setDialogState(() => sending = true);
+                  try {
+                    final dio = Dio(BaseOptions(
+                      baseUrl: ApiConfig.apiUrl,
+                      connectTimeout: const Duration(seconds: 8),
+                    ));
+                    await dio.post('/chat/contact', data: {
+                      'name': nameCtrl.text.trim(),
+                      'email': emailCtrl.text.trim(),
+                      'phone': phoneCtrl.text.trim(),
+                      'text': msgCtrl.text.trim(),
+                    });
+                    if (!ctx.mounted) return;
+                    Navigator.pop(ctx);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('تم إرسال رسالتك. سنتواصل معك قريباً.'), backgroundColor: Colors.green),
+                    );
+                  } catch (_) {
+                    if (!ctx.mounted) return;
+                    setDialogState(() => sending = false);
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('فشل الإرسال. حاول مرة أخرى.'), backgroundColor: Colors.red),
+                    );
+                  }
+                },
+                style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, foregroundColor: Colors.white),
+                child: sending
+                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                    : const Text('إرسال'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }

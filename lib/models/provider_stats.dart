@@ -6,6 +6,8 @@ class ProviderStats {
   final double dailyCommission;
   final double monthlyCommission;
   final int pendingOrdersCount;
+  final int offeredOrdersCount;
+  final int activeOrdersCount;
 
   ProviderStats({
     required this.dailyEarnings,
@@ -15,6 +17,8 @@ class ProviderStats {
     required this.dailyCommission,
     required this.monthlyCommission,
     required this.pendingOrdersCount,
+    required this.offeredOrdersCount,
+    required this.activeOrdersCount,
   });
 
   factory ProviderStats.fromJson(Map<String, dynamic> json) {
@@ -26,6 +30,8 @@ class ProviderStats {
       dailyCommission: (json['dailyCommission'] ?? 0).toDouble(),
       monthlyCommission: (json['monthlyCommission'] ?? 0).toDouble(),
       pendingOrdersCount: (json['pendingOrdersCount'] ?? 0).toInt(),
+      offeredOrdersCount: (json['offeredOrdersCount'] ?? 0).toInt(),
+      activeOrdersCount: (json['activeOrdersCount'] ?? 0).toInt(),
     );
   }
 }

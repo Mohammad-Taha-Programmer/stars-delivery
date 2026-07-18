@@ -13,11 +13,12 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
       dailyEarnings: 0, monthlyEarnings: 0,
       totalSuccessful: 0, dailyOrderCount: 0,
       dailyCommission: 0, monthlyCommission: 0,
-      pendingOrdersCount: 0,
+      pendingOrdersCount: 0, offeredOrdersCount: 0, activeOrdersCount: 0,
     ),
   )) {
     on<LoadProviderStats>(_onLoadStats);
     on<LoadPendingOrders>(_onLoadPendingOrders);
+    on<LoadOfferedOrders>(_onLoadOfferedOrders);
   }
 
   Future<void> _onLoadStats(LoadProviderStats event, Emitter<ProviderState> emit) async {
@@ -41,6 +42,8 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
             dailyCommission: c.stats.dailyCommission,
             monthlyCommission: c.stats.monthlyCommission,
             pendingOrdersCount: c.stats.pendingOrdersCount,
+            offeredOrdersCount: c.stats.offeredOrdersCount,
+            activeOrdersCount: c.stats.activeOrdersCount,
           ),
           pendingOrders: List.from(c.pendingOrders ?? []),
         ));
@@ -67,10 +70,24 @@ class ProviderBloc extends Bloc<ProviderEvent, ProviderState> {
             dailyCommission: current.stats.dailyCommission,
             monthlyCommission: current.stats.monthlyCommission,
             pendingOrdersCount: current.stats.pendingOrdersCount,
+            offeredOrdersCount: current.stats.offeredOrdersCount,
+            activeOrdersCount: current.stats.activeOrdersCount,
           ),
           pendingOrders: List.from(current.pendingOrders ?? []),
         ));
       }
+    }
+  }
+
+  Future<void> _onLoadOfferedOrders(LoadOfferedOrders event, Emitter<ProviderState> emit) async {
+    final current = state;
+    try {
+      final orders = await _service.getOfferedOrders(event.token);
+      if (current is ProviderStatsLoaded) {
+        emit(ProviderStatsLoaded(stats: current.stats, pendingOrders: current.pendingOrders, offeredOrders: orders));
+      }
+    } catch (e) {
+      debugPrint('[ProviderBloc] getOfferedOrders FAILED: $e');
     }
   }
 }

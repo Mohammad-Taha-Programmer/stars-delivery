@@ -21,6 +21,7 @@ import '../services/socket_service.dart';
 import 'login_screen.dart';
 import 'pending_orders_screen.dart';
 import 'provider_active_orders_screen.dart';
+import 'offered_orders_screen.dart';
 import 'notifications_screen.dart';
 import 'report_screen.dart';
 import 'support_chat_screen.dart';
@@ -58,6 +59,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
 
     context.read<ProviderBloc>().add(LoadProviderStats(token: widget.token));
     context.read<ProviderBloc>().add(LoadPendingOrders(token: widget.token));
+    context.read<ProviderBloc>().add(LoadOfferedOrders(token: widget.token));
     context.read<NotificationBloc>().add(
       LoadNotifications(token: widget.token),
     );
@@ -71,6 +73,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
     _newOrderSub = SocketService.instance.onNewOrder.listen((_) {
       if (!mounted) return;
       context.read<ProviderBloc>().add(LoadPendingOrders(token: widget.token));
+      context.read<ProviderBloc>().add(LoadOfferedOrders(token: widget.token));
       context.read<ProviderBloc>().add(LoadProviderStats(token: widget.token));
     });
 
@@ -307,6 +310,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                       final bloc = context.read<ProviderBloc>();
                       bloc.add(LoadProviderStats(token: widget.token));
                       bloc.add(LoadPendingOrders(token: widget.token));
+                      bloc.add(LoadOfferedOrders(token: widget.token));
                       await bloc.stream.first;
                     },
                     child: SingleChildScrollView(
@@ -330,7 +334,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
                                     const Text(
-                                      'مجموع أرباحك اليوم',
+                                      'أرباحك هذا اليوم',
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: Colors.black54,
@@ -478,10 +482,81 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                             ),
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 12),
                         SizedBox(
                           width: double.infinity,
-                          child: ElevatedButton.icon(
+                          child: ElevatedButton(
+                            onPressed: () {
+                              final state = context.read<ProviderBloc>().state;
+                              if (state is ProviderStatsLoaded &&
+                                  state.offeredOrders != null &&
+                                  state.offeredOrders!.isNotEmpty) {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => OfferedOrdersScreen(
+                                      orders: state.offeredOrders!,
+                                      token: widget.token,
+                                    ),
+                                  ),
+                                );
+                              } else {
+                                context.read<ProviderBloc>().add(
+                                  LoadOfferedOrders(token: widget.token),
+                                );
+                              }
+                            },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.white,
+                              side: const BorderSide(
+                                color: Colors.blue,
+                                width: 2,
+                              ),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text(
+                                  'الطلبات التي تم تقديم عرض سعر لها',
+                                  style: TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '${s.offeredOrdersCount}',
+                                      style: const TextStyle(
+                                        color: Colors.blue,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const Text(
+                                      ' طلب',
+                                      style: TextStyle(
+                                        color: Colors.blue,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 12),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
                             onPressed: () {
                               Navigator.push(
                                 context,
@@ -500,24 +575,50 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                                 );
                               });
                             },
-                            icon: const Icon(
-                              Icons.delivery_dining,
-                              color: Colors.white,
-                            ),
-                            label: const Text(
-                              'طلباتي النشطة - التوصيل والتسليم',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
                             style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.teal,
+                              backgroundColor: Colors.white,
+                              side: const BorderSide(
+                                color: Colors.teal,
+                                width: 2,
+                              ),
                               shape: RoundedRectangleBorder(
                                 borderRadius: BorderRadius.circular(12),
                               ),
                               padding: const EdgeInsets.symmetric(vertical: 18),
+                            ),
+                            child: Column(
+                              children: [
+                                const Text(
+                                  'طلباتي النشطة - التوصيل والتسليم',
+                                  style: TextStyle(
+                                    color: Colors.black87,
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 4),
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Text(
+                                      '${s.activeOrdersCount}',
+                                      style: const TextStyle(
+                                        color: Colors.teal,
+                                        fontSize: 20,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const Text(
+                                      ' طلب',
+                                      style: TextStyle(
+                                        color: Colors.teal,
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.w500,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
                             ),
                           ),
                         ),

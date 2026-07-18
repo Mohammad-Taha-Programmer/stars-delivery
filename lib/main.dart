@@ -6,7 +6,7 @@ import 'bloc/app/app_bloc.dart';
 import 'bloc/app/app_state.dart';
 import 'bloc/notification/notification_bloc.dart';
 import 'services/theme_service.dart';
-import 'services/api_config.dart';
+import 'package:stars_delivery/services/api_config.dart';
 import 'services/location_service.dart';
 import 'screens/login_screen.dart';
 

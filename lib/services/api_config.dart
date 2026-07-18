@@ -2,8 +2,10 @@ import 'dart:io';
 import 'package:dio/dio.dart';
 
 class ApiConfig {
-  static String serverUrl = 'http://192.168.1.10:3000';
-  static String apiUrl = 'http://192.168.1.10:3000/api';
+  static String lanIp = '192.168.1.10';
+  static int port = 3000;
+  static String serverUrl = 'http://$lanIp:$port';
+  static String apiUrl = '$serverUrl/api';
   static String? detectedArea;
   static bool _initialized = false;
 
@@ -35,7 +37,7 @@ class ApiConfig {
         final res = await dio.get('/api/config');
         final ip = res.data['lanIp'] as String?;
         if (ip != null && ip.isNotEmpty) {
-          final candidate = 'http://$ip:3000';
+          final candidate = 'http://$ip:$port';
           // Only switch if the advertised address actually responds
           if (candidate != serverUrl && await _isReachable(candidate)) {
             serverUrl = candidate;

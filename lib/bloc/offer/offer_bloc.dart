@@ -12,7 +12,7 @@ class OfferBloc extends Bloc<OfferEvent, OfferState> {
   }
   Future<void> _onSubmit(SubmitOfferEvent e, Emitter<OfferState> emit) async {
     emit(OfferLoading()); try {
-      await _s.submitOffer(e.token, e.orderId, e.price); emit(OfferSuccess());
+      await _s.submitOffer(e.token, e.orderId, e.price, e.estimatedTime); emit(OfferSuccess());
     } catch (ex) { emit(OfferError(message: ex.toString().replaceFirst('Exception: ', ''))); }
   }
   Future<void> _onLoad(LoadOffersEvent e, Emitter<OfferState> emit) async {

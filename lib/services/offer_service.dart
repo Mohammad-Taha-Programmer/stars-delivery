@@ -8,9 +8,9 @@ class OfferService {
     _dio = Dio(BaseOptions(baseUrl: ApiConfig.apiUrl, connectTimeout: const Duration(seconds: 30), receiveTimeout: const Duration(seconds: 30)));
   }
 
-  Future<void> submitOffer(String token, String orderId, double price) async {
+  Future<void> submitOffer(String token, String orderId, double price, int estimatedTime) async {
     try {
-      await _dio.post('/offers', data: {'orderId': orderId, 'price': price},
+      await _dio.post('/offers', data: {'orderId': orderId, 'price': price, 'estimatedTime': estimatedTime},
         options: Options(headers: {'Authorization': 'Bearer $token'}));
     } on DioException catch (e) { throw Exception(e.response?.data?['error'] ?? 'Failed to submit offer'); }
   }

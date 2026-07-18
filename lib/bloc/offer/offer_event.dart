@@ -5,9 +5,9 @@ abstract class OfferEvent extends Equatable {
   @override List<Object?> get props => [];
 }
 class SubmitOfferEvent extends OfferEvent {
-  final String token, orderId; final double price;
-  const SubmitOfferEvent({required this.token, required this.orderId, required this.price});
-  @override List<Object?> get props => [token, orderId, price];
+  final String token, orderId; final double price; final int estimatedTime;
+  const SubmitOfferEvent({required this.token, required this.orderId, required this.price, this.estimatedTime = 0});
+  @override List<Object?> get props => [token, orderId, price, estimatedTime];
 }
 class LoadOffersEvent extends OfferEvent {
   final String token, orderId;

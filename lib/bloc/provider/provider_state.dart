@@ -13,9 +13,10 @@ class ProviderLoading extends ProviderState {}
 class ProviderStatsLoaded extends ProviderState {
   final ProviderStats stats;
   final List<Map<String, dynamic>>? pendingOrders;
-  ProviderStatsLoaded({required this.stats, this.pendingOrders});
+  final List<Map<String, dynamic>>? offeredOrders;
+  ProviderStatsLoaded({required this.stats, this.pendingOrders, this.offeredOrders});
   @override
-  List<Object?> get props => [stats, pendingOrders];
+  List<Object?> get props => [stats, pendingOrders, offeredOrders];
 }
 
 class ProviderError extends ProviderState {

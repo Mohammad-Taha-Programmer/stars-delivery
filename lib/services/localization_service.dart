@@ -79,7 +79,7 @@ class AppLocalization {
 
     // Provider dashboard
     'provider_dashboard': {'ar': 'لوحة تحكم السائق', 'en': 'Provider Dashboard'},
-    'daily_earnings': {'ar': 'مجموع أرباحك اليوم', 'en': 'Daily Earnings'},
+    'daily_earnings': {'ar': ' اأرباحك هذا اليوم', 'en': 'Daily Earnings'},
     'monthly_earnings': {'ar': 'أرباحك هذا الشهر', 'en': 'Monthly Earnings'},
     'pending_orders_btn': {'ar': 'طلبات جديدة تنتظر تقديم عرض سعر', 'en': 'New Orders Awaiting Your Offer'},
     'active_orders_btn': {'ar': 'طلباتي النشطة - التوصيل والتسليم', 'en': 'My Active Orders - Delivery'},
@@ -90,10 +90,16 @@ class AppLocalization {
     'commission_detail': {'ar': 'شيكل بناء على الطلبات الناجحة', 'en': 'SHE based on completed orders'},
 
     // Offers
+    'delivery_price': {'ar': 'سعر التوصيل (شيكل)', 'en': 'Delivery Price (ILS)'},
+    'delivery_time': {'ar': 'الوقت المطلوب لتوصيل الطرد', 'en': 'Estimated Delivery Time'},
+    'custom_time': {'ar': 'وقت مخصص (دقائق)', 'en': 'Custom Time (minutes)'},
     'submit_offer': {'ar': 'تقديم عرض سعر', 'en': 'Submit Offer'},
+    'send_offer': {'ar': 'إرسال العرض', 'en': 'Send Offer'},
+    'price_required': {'ar': 'السعر مطلوب', 'en': 'Price required'},
+    'invalid_price': {'ar': 'سعر غير صالح', 'en': 'Invalid price'},
+    'offer_sent': {'ar': 'تم إرسال عرض السعر', 'en': 'Offer sent successfully'},
     'your_price': {'ar': 'سعر التوصيل', 'en': 'Delivery Price'},
     'price_hint': {'ar': 'أدخل سعر التوصيل بالشيكل', 'en': 'Enter delivery price in SHE'},
-    'invalid_price': {'ar': 'يجب أن يكون السعر أكبر من 0', 'en': 'Price must be greater than 0'},
     'offers_list': {'ar': 'عروض الأسعار', 'en': 'Price Offers'},
     'no_offers': {'ar': 'لا توجد عروض بعد', 'en': 'No offers yet'},
     'accepted': {'ar': 'مقبول', 'en': 'Accepted'},

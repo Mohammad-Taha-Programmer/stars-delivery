@@ -160,6 +160,19 @@ class _OrderOffersScreenState extends State<OrderOffersScreen> {
                                   overflow: TextOverflow.ellipsis,
                                   style: TextStyle(fontSize: 13, color: Colors.grey[700]),
                                 ),
+                              if (o.estimatedTime > 0) ...[
+                                const SizedBox(height: 4),
+                                Row(
+                                  children: [
+                                    const Icon(Icons.timer_outlined, size: 14, color: Colors.orange),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'الوقت المطلوب: ${o.estimatedTime} دقيقة',
+                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.orange),
+                                    ),
+                                  ],
+                                ),
+                              ],
                               if (o.orderArea.isNotEmpty) ...[
                                 const SizedBox(height: 4),
                                 Row(

@@ -53,6 +53,12 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
       final data = await _authService.register(
         event.fullName, event.email, event.phone, event.password, event.role, event.area,
       );
+      // Provider signups go through admin approval
+      if (data['pending'] == true) {
+        emit(AuthInitial());
+        emit(AuthError(message: data['message'] ?? 'تم تقديم الطلب بنجاح، حسابك قيد المراجعة'));
+        return;
+      }
       final user = UserModel.fromJson(data['user']);
       final token = data['token'].toString();
       await _saveAuth(user, token);

@@ -56,6 +56,17 @@ class ProviderService {
     }
   }
 
+  Future<List<Map<String, dynamic>>> getOfferedOrders(String token) async {
+    try {
+      final response = await _dio.get('/provider/offered-orders',
+        options: Options(headers: { 'Authorization': 'Bearer $token' }),
+      );
+      return List<Map<String, dynamic>>.from(response.data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['error'] ?? 'Failed to load offered orders');
+    }
+  }
+
   Future<void> markFulfilling(String token, String orderId) async {
     try {
       await _dio.put('/orders/$orderId/fulfilling',
