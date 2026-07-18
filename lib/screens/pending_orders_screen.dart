@@ -11,10 +11,12 @@ import 'submit_offer_screen.dart';
 class PendingOrdersScreen extends StatelessWidget {
   final List<Map<String, dynamic>> orders;
   final String token;
+  final VoidCallback? onRefresh;
   const PendingOrdersScreen({
     super.key,
     required this.orders,
     required this.token,
+    this.onRefresh,
   });
 
   Widget _buildCustomerRow(BuildContext context, Map<String, dynamic> o) {
@@ -77,15 +79,18 @@ class PendingOrdersScreen extends StatelessWidget {
             onPressed: () => Navigator.pop(context),
           ),
         ),
-        body: Center(
-          child: ConstrainedBox(
+        body: RefreshIndicator(
+          onRefresh: () async {
+            onRefresh?.call();
+          },
+          child: Center(
+            child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
             child: orders.isEmpty
-                ? Center(
-                    child: Text(
-                      AppLocalization.get(context, 'no_new_orders'),
-                      style: const TextStyle(fontSize: 16, color: Colors.grey),
-                    ),
+                ? ListView(
+                    children: const [
+                      Center(child: Padding(padding: EdgeInsets.all(40), child: Text('لا توجد طلبات', style: TextStyle(fontSize: 16, color: Colors.grey)))),
+                    ],
                   )
                 : ListView.builder(
                     padding: EdgeInsets.symmetric(
@@ -251,6 +256,7 @@ class PendingOrdersScreen extends StatelessWidget {
                   ),
           ),
         ),
+          ),
       ),
     );
   }

@@ -264,12 +264,19 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
-            child: Padding(
-              padding: EdgeInsets.symmetric(
-                horizontal: Responsive.paddingHorizontal(context),
-                vertical: Responsive.paddingVertical(context),
-              ),
-              child: Column(
+            child: RefreshIndicator(
+              onRefresh: () async {
+                final bloc = context.read<NotificationBloc>();
+                bloc.add(LoadNotifications(token: widget.token));
+                await bloc.stream.firstWhere((s) => s is! NotificationLoading);
+              },
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: EdgeInsets.symmetric(
+                  horizontal: Responsive.paddingHorizontal(context),
+                  vertical: Responsive.paddingVertical(context),
+                ),
+                child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   _ActionButton(
@@ -319,7 +326,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   const SizedBox(height: 24),
                   _ActionButton(
                     icon: Icons.report_outlined,
-                    label: 'الابلاغ عن سائق',
+                    label: AppLocalization.get(context, 'report_driver'),
                     iconColor: Colors.red,
                     onTap: () {
                       Navigator.push(
@@ -337,7 +344,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                   const SizedBox(height: 12),
                   _ActionButton(
                     icon: Icons.headset_mic_outlined,
-                    label: 'التواصل مع الدعم',
+                    label: AppLocalization.get(context, 'contact_support'),
                     iconColor: Colors.orange,
                     onTap: () {
                       Navigator.push(
@@ -349,11 +356,12 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
                     },
                   ),
                 ],
+                ),
               ),
             ),
           ),
+          ),
         ),
-      ),
     );
   }
 }

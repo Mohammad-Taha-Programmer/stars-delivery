@@ -79,11 +79,15 @@ class AppLocalization {
 
     // Provider dashboard
     'provider_dashboard': {'ar': 'لوحة تحكم السائق', 'en': 'Provider Dashboard'},
-    'daily_earnings': {'ar': ' اأرباحك هذا اليوم', 'en': 'Daily Earnings'},
+    'daily_earnings': {'ar': 'أرباحك هذا اليوم', 'en': 'Daily Earnings'},
     'monthly_earnings': {'ar': 'أرباحك هذا الشهر', 'en': 'Monthly Earnings'},
+    'today_orders': {'ar': ' طلبات اليوم', 'en': ' orders today'},
+    'order_count': {'ar': ' طلب', 'en': ' orders'},
     'pending_orders_btn': {'ar': 'طلبات جديدة تنتظر تقديم عرض سعر', 'en': 'New Orders Awaiting Your Offer'},
+    'offered_orders_btn': {'ar': 'الطلبات التي تم تقديم عرض سعر لها', 'en': 'Orders With Submitted Offers'},
     'active_orders_btn': {'ar': 'طلباتي النشطة - التوصيل والتسليم', 'en': 'My Active Orders - Delivery'},
     'platform_commission': {'ar': 'عمولة المنصة (مستحقة الدفع):', 'en': 'Platform Commission (Due):'},
+    'commission_body': {'ar': ' شيكل بناء على الطلبات الناجحة', 'en': ' ILS based on successful orders'},
     'ils': {'ar': 'ILS', 'en': 'ILS'},
     'shekel': {'ar': 'شيكل', 'en': 'SHE'},
     'successful_orders': {'ar': 'طلب ناجح', 'en': 'Successful Orders'},
@@ -152,5 +156,47 @@ class AppLocalization {
     'status_updated': {'ar': 'تم تحديث الحالة', 'en': 'Status Updated'},
     'order_completed_msg': {'ar': 'تم اكتمال الطلب بنجاح', 'en': 'Order completed successfully'},
     'price': {'ar': 'السعر', 'en': 'Price'},
+
+    // Provider dashboard
+    'order_count': {'ar': ' طلب', 'en': ' orders'},
+    'offered_orders_btn': {'ar': 'الطلبات التي تم تقديم عرض سعر لها', 'en': 'Orders With Submitted Offers'},
+    'today_orders': {'ar': ' طلبات اليوم', 'en': ' orders today'},
+
+    // Reports
+    'report_driver': {'ar': 'الابلاغ عن سائق', 'en': 'Report a Driver'},
+    'report_customer': {'ar': 'الابلاغ عن زبون', 'en': 'Report a Customer'},
+    'report_sent': {'ar': 'تم إرسال البلاغ بنجاح', 'en': 'Report sent successfully'},
+    'in_review': {'ar': 'قيد المراجعة', 'en': 'In Review'},
+    'in_progress': {'ar': 'قيد المعالجة', 'en': 'In Progress'},
+    'resolved': {'ar': 'تم الحل', 'en': 'Resolved'},
+    'enter_id': {'ar': 'أدخل ID الشخص المراد الإبلاغ عنه', 'en': 'Enter the ID of the person to report'},
+    'problem_desc': {'ar': 'وصف المشكلة', 'en': 'Problem Description'},
+    'explain_problem': {'ar': 'اشرح المشكلة التي تواجهها', 'en': 'Explain the problem you are facing'},
+    'send_report_btn': {'ar': 'إرسال البلاغ', 'en': 'Send Report'},
+    'last_reports': {'ar': 'آخر البلاغات', 'en': 'Previous Reports'},
+    'no_reports': {'ar': 'لا توجد بلاغات سابقة', 'en': 'No previous reports'},
+    'support_team': {'ar': 'الدعم الفني', 'en': 'Support Team'},
+    'you': {'ar': 'أنت', 'en': 'You'},
+
+    // Chat
+    'start_chat': {'ar': 'ابدأ محادثة مع فريق الدعم', 'en': 'Start a conversation with support'},
+    'type_message': {'ar': 'اكتب رسالتك...', 'en': 'Type your message...'},
+
+    // Time
+    'est_time': {'ar': 'الوقت المطلوب: %d دقيقة', 'en': 'Estimated time: %d minutes'},
+    'minutes_suffix': {'ar': 'د', 'en': 'm'},
+
+    // Offered orders
+    'no_offered_orders': {'ar': 'لا توجد طلبات', 'en': 'No orders'},
+    'awaiting_response': {'ar': 'بانتظار الرد', 'en': 'Awaiting Response'},
+
+    // Contact form
+    'name_field': {'ar': 'الاسم', 'en': 'Name'},
+    'email_field': {'ar': 'البريد الإلكتروني', 'en': 'Email'},
+    'phone_field': {'ar': 'رقم الجوال', 'en': 'Phone Number'},
+    'message_field': {'ar': 'رسالتك', 'en': 'Your Message'},
+    'message_hint': {'ar': 'اكتب مشكلتك هنا...', 'en': 'Type your issue here...'},
+    'contact_success': {'ar': 'تم إرسال رسالتك. سنتواصل معك قريباً.', 'en': 'Message sent. We will contact you soon.'},
+    'contact_failed': {'ar': 'فشل الإرسال. حاول مرة أخرى.', 'en': 'Send failed. Try again.'},
   };
 }

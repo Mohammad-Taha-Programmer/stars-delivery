@@ -7,7 +7,8 @@ import '../bloc/app/app_bloc.dart';
 class OfferedOrdersScreen extends StatelessWidget {
   final List<Map<String, dynamic>> orders;
   final String token;
-  const OfferedOrdersScreen({super.key, required this.orders, required this.token});
+  final VoidCallback? onRefresh;
+  const OfferedOrdersScreen({super.key, required this.orders, required this.token, this.onRefresh});
 
   @override
   Widget build(BuildContext context) {
@@ -27,11 +28,13 @@ class OfferedOrdersScreen extends StatelessWidget {
           centerTitle: true,
           leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.black87), onPressed: () => Navigator.pop(context)),
         ),
-        body: Center(
-          child: ConstrainedBox(
+        body: RefreshIndicator(
+          onRefresh: () async { onRefresh?.call(); },
+          child: Center(
+            child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
             child: orders.isEmpty
-                ? const Center(child: Text('لا توجد طلبات', style: TextStyle(fontSize: 16, color: Colors.grey)))
+                ? ListView(children: const [Center(child: Padding(padding: EdgeInsets.all(40), child: Text('لا توجد طلبات', style: TextStyle(fontSize: 16, color: Colors.grey))))])
                 : ListView.builder(
                     padding: EdgeInsets.symmetric(horizontal: Responsive.paddingHorizontal(context), vertical: Responsive.paddingVertical(context)),
                     itemCount: orders.length,
@@ -92,6 +95,7 @@ class OfferedOrdersScreen extends StatelessWidget {
           ),
         ),
       ),
+          ),
     );
   }
 }

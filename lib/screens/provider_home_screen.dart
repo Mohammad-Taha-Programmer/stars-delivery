@@ -279,6 +279,10 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                     builder: (_) => PendingOrdersScreen(
                       orders: state.pendingOrders!,
                       token: widget.token,
+                      onRefresh: () {
+                        context.read<ProviderBloc>().add(LoadPendingOrders(token: widget.token));
+                        context.read<ProviderBloc>().add(LoadProviderStats(token: widget.token));
+                      },
                     ),
                   ),
                 ).then((_) {
@@ -333,8 +337,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'أرباحك هذا اليوم',
+                                    Text(
+                                      AppLocalization.get(context, 'daily_earnings'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: Colors.black54,
@@ -360,8 +364,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                                             color: Colors.blue,
                                           ),
                                         ),
-                                        const Text(
-                                          ' طلبات اليوم',
+                                        Text(AppLocalization.get(context, 'today_orders').trim(),
                                           style: TextStyle(
                                             fontSize: 13,
                                             color: Colors.black54,
@@ -384,8 +387,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                                 child: Column(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    const Text(
-                                      'أرباحك هذا الشهر',
+                                    Text(
+                                      AppLocalization.get(context, 'monthly_earnings'),
                                       style: TextStyle(
                                         fontSize: 14,
                                         color: Colors.black54,
@@ -421,6 +424,10 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                                     builder: (_) => PendingOrdersScreen(
                                       orders: state.pendingOrders!,
                                       token: widget.token,
+                                      onRefresh: () {
+                                        context.read<ProviderBloc>().add(LoadPendingOrders(token: widget.token));
+                                        context.read<ProviderBloc>().add(LoadProviderStats(token: widget.token));
+                                      },
                                     ),
                                   ),
                                 ).then((_) {
@@ -448,8 +455,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                             ),
                             child: Column(
                               children: [
-                                const Text(
-                                  'طلبات جديدة تنتظر تقديم عرض سعر',
+                                Text(
+                                  AppLocalization.get(context, 'pending_orders_btn'),
                                   style: TextStyle(
                                     color: Colors.black87,
                                     fontSize: 15,
@@ -468,8 +475,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    const Text(
-                                      ' طلب',
+                                    Text(AppLocalization.get(context, 'order_count').trim(),
                                       style: TextStyle(
                                         color: Colors.red,
                                         fontSize: 16,
@@ -497,6 +503,10 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                                     builder: (_) => OfferedOrdersScreen(
                                       orders: state.offeredOrders!,
                                       token: widget.token,
+                                      onRefresh: () {
+                                        context.read<ProviderBloc>().add(LoadOfferedOrders(token: widget.token));
+                                        context.read<ProviderBloc>().add(LoadProviderStats(token: widget.token));
+                                      },
                                     ),
                                   ),
                                 );
@@ -519,8 +529,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                             ),
                             child: Column(
                               children: [
-                                const Text(
-                                  'الطلبات التي تم تقديم عرض سعر لها',
+                                Text(
+                                  AppLocalization.get(context, 'offered_orders_btn'),
                                   style: TextStyle(
                                     color: Colors.black87,
                                     fontSize: 15,
@@ -539,8 +549,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    const Text(
-                                      ' طلب',
+                                    Text(AppLocalization.get(context, 'order_count').trim(),
                                       style: TextStyle(
                                         color: Colors.blue,
                                         fontSize: 16,
@@ -588,8 +597,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                             ),
                             child: Column(
                               children: [
-                                const Text(
-                                  'طلباتي النشطة - التوصيل والتسليم',
+                                Text(
+                                  AppLocalization.get(context, 'active_orders_btn'),
                                   style: TextStyle(
                                     color: Colors.black87,
                                     fontSize: 15,
@@ -608,8 +617,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                                         fontWeight: FontWeight.bold,
                                       ),
                                     ),
-                                    const Text(
-                                      ' طلب',
+                                    Text(AppLocalization.get(context, 'order_count').trim(),
                                       style: TextStyle(
                                         color: Colors.teal,
                                         fontSize: 16,
@@ -633,8 +641,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text(
-                                'عمولة المنصة (مستحقة الدفع):',
+                              Text(
+                                AppLocalization.get(context, 'platform_commission'),
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: Colors.black54,
@@ -642,7 +650,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                '${s.monthlyCommission.toStringAsFixed(0)} شيكل بناء على الطلبات الناجحة',
+                                '${s.monthlyCommission.toStringAsFixed(0)}' + AppLocalization.get(context, 'commission_body').trim(),
                                 style: const TextStyle(
                                   fontSize: 18,
                                   fontWeight: FontWeight.bold,
@@ -663,7 +671,7 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                                   builder: (_) => ReportScreen(
                                     token: widget.token,
                                     reportType: 'user',
-                                    title: 'الابلاغ عن زبون',
+                                    title: AppLocalization.get(context, 'report_customer'),
                                   ),
                                 ),
                               );
@@ -699,8 +707,8 @@ class _ProviderHomeScreenState extends State<ProviderHomeScreen> with WidgetsBin
                               );
                             },
                             icon: const Icon(Icons.headset_mic_outlined, size: 22, color: Colors.orange),
-                            label: const Text(
-                              'التواصل مع الدعم',
+                            label: Text(
+                              AppLocalization.get(context, 'contact_support'),
                               style: TextStyle(
                                 color: Colors.black87,
                                 fontSize: 14,
