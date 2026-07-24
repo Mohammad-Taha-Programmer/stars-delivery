@@ -8,11 +8,13 @@ class AppColors {
   static const accentLight = Color(0xFFFFA040);
   static const success = Color(0xFF2E7D32);
   static const error = Color(0xFFC62828);
-  static const surface = Color(0xFFF5F5F5);
+  static const warning = Color(0xFFF57C00);
+  static const info = Color(0xFF1976D2);
+  static const surface = Color(0xFFF8F9FA);
   static const cardLight = Colors.white;
-  static const textPrimary = Color(0xFF212121);
-  static const textSecondary = Color(0xFF757575);
-  static const divider = Color(0xFFE0E0E0);
+  static const textPrimary = Color(0xFF1A1A2E);
+  static const textSecondary = Color(0xFF6B7280);
+  static const divider = Color(0xFFE5E7EB);
 
   // Dark — cozy, adorable, easy on the eyes
   static const darkBg = Color(0xFF1A1A2E);
@@ -104,13 +106,15 @@ class AppTheme {
       hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 14),
     ),
     textTheme: const TextTheme(
-      headlineLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
+      headlineLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.textPrimary, letterSpacing: -0.5),
       headlineMedium: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
       titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
       titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
-      bodyLarge: TextStyle(fontSize: 16, color: AppColors.textPrimary),
-      bodyMedium: TextStyle(fontSize: 14, color: AppColors.textSecondary),
+      bodyLarge: TextStyle(fontSize: 15, color: AppColors.textPrimary, height: 1.5),
+      bodyMedium: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.4),
       labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+      labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
+      labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.textSecondary),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
@@ -199,13 +203,15 @@ class AppTheme {
       hintStyle: TextStyle(color: Colors.grey.shade500, fontSize: 14),
     ),
     textTheme: const TextTheme(
-      headlineLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.darkText),
+      headlineLarge: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.darkText, letterSpacing: -0.5),
       headlineMedium: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: AppColors.darkText),
       titleLarge: TextStyle(fontSize: 18, fontWeight: FontWeight.w600, color: AppColors.darkText),
       titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: AppColors.darkText),
-      bodyLarge: TextStyle(fontSize: 16, color: AppColors.darkText),
-      bodyMedium: TextStyle(fontSize: 14, color: AppColors.darkTextSecondary),
+      bodyLarge: TextStyle(fontSize: 15, color: AppColors.darkText, height: 1.5),
+      bodyMedium: TextStyle(fontSize: 14, color: AppColors.darkTextSecondary, height: 1.4),
       labelLarge: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: AppColors.darkText),
+      labelMedium: TextStyle(fontSize: 12, fontWeight: FontWeight.w500, color: AppColors.darkTextSecondary),
+      labelSmall: TextStyle(fontSize: 11, fontWeight: FontWeight.w500, color: AppColors.darkTextSecondary),
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,

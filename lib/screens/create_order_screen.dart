@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -24,14 +25,31 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
   String? _selectedType;
   final _descController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _locationController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   final List<File> _images = [];
   final ImagePicker _picker = ImagePicker();
+  List<String> _frequentItems = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFrequentItems();
+  }
+
+  Future<void> _loadFrequentItems() async {
+    try {
+      final dio = Dio(BaseOptions(baseUrl: ApiConfig.apiUrl, headers: {'Authorization': 'Bearer ${widget.token}'}));
+      final res = await dio.get('/users/frequent-items');
+      if (mounted) setState(() => _frequentItems = List<String>.from(res.data['items'] ?? []));
+    } catch (_) {}
+  }
 
   @override
   void dispose() {
     _descController.dispose();
     _phoneController.dispose();
+    _locationController.dispose();
     super.dispose();
   }
 
@@ -117,6 +135,21 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.stretch,
                         children: [
+                          if (_frequentItems.isNotEmpty) ...[
+                            const Text('العناصر المتكررة:', style: TextStyle(fontSize: 12, color: Colors.grey)),
+                            const SizedBox(height: 6),
+                            Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: _frequentItems.map((item) => ActionChip(
+                                label: Text(item, style: const TextStyle(fontSize: 12)),
+                                onPressed: () {
+                                  _descController.text = item;
+                                },
+                              )).toList(),
+                            ),
+                            const SizedBox(height: 14),
+                          ],
                           TextFormField(
                             controller: _descController,
                             maxLines: 4,
@@ -140,6 +173,18 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
                             validator: (v) => v!.isEmpty
                                 ? AppLocalization.get(context, 'required')
                                 : null,
+                          ),
+                          const SizedBox(height: 14),
+                          TextFormField(
+                            controller: _locationController,
+                            decoration: InputDecoration(
+                              labelText: AppLocalization.get(context, 'delivery_location'),
+                              hintText: AppLocalization.get(context, 'location_hint'),
+                              prefixIcon: const Icon(Icons.location_on_outlined),
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+                            ),
+                            maxLines: 2,
+                            validator: (v) => v!.isEmpty ? AppLocalization.get(context, 'required') : null,
                           ),
                           const SizedBox(height: 14),
                           _buildPhotoPicker(),
@@ -323,6 +368,7 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
         phone: _phoneController.text.trim(),
         imagePaths: _images.map((f) => f.path).toList(),
         area: ApiConfig.detectedArea,
+        location: _locationController.text.trim(),
       ),
     );
   }

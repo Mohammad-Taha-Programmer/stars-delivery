@@ -21,10 +21,25 @@ class OfferService {
     return (r.data as List).map((j) => OfferModel.fromJson(j)).toList();
   }
 
-  Future<void> acceptOffer(String token, String offerId) async {
+  Future<Map<String, dynamic>> acceptOffer(String token, String offerId) async {
     try {
-      await _dio.post('/offers/$offerId/accept',
+      final res = await _dio.post('/offers/$offerId/accept',
         options: Options(headers: {'Authorization': 'Bearer $token'}));
-    } on DioException catch (e) { throw Exception(e.response?.data?['error'] ?? 'Failed to accept'); }
+      return res.data;
+    } on DioException catch (e) {
+      final data = e.response?.data;
+      if (data != null && data['conflict'] == true) return Map<String, dynamic>.from(data);
+      throw Exception(data?['error'] ?? 'Failed to accept');
+    }
+  }
+
+  Future<void> resendOrder(String token, String orderId) async {
+    await _dio.post('/offers/$orderId/resend',
+      options: Options(headers: {'Authorization': 'Bearer $token'}));
+  }
+
+  Future<void> cancelOrder(String token, String orderId) async {
+    await _dio.post('/offers/$orderId/cancel',
+      options: Options(headers: {'Authorization': 'Bearer $token'}));
   }
 }

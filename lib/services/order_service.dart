@@ -13,7 +13,7 @@ class OrderService {
   }
 
   Future<Map<String, dynamic>> createOrder(
-      String token, String type, String description, String phone, List<String> imagePaths, {String? area}) async {
+      String token, String type, String description, String phone, List<String> imagePaths, {String? area, String? location}) async {
     try {
       final formData = FormData();
       formData.fields.addAll([
@@ -21,6 +21,7 @@ class OrderService {
         MapEntry('description', description),
         MapEntry('phone', phone),
         if (area != null) MapEntry('area', area),
+        if (location != null) MapEntry('location', location),
       ]);
       for (final path in imagePaths) {
         formData.files.add(MapEntry(

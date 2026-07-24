@@ -77,6 +77,25 @@ class OfferedOrdersScreen extends StatelessWidget {
                                 ),
                               ],
                               const SizedBox(height: 6),
+                              if (o['offeredPrice'] != null && o['offeredPrice'] != 0) ...[
+                                Row(
+                                  children: [
+                                    const Icon(Icons.monetization_on, size: 13, color: Colors.green),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'تم عرض السعر: ${(o['offeredPrice'] as num).toStringAsFixed(0)} ILS',
+                                      style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: Colors.green),
+                                    ),
+                                    if (o['offeredTime'] != null && o['offeredTime'] != 0) ...[
+                                      const SizedBox(width: 12),
+                                      const Icon(Icons.timer_outlined, size: 13, color: Colors.orange),
+                                      const SizedBox(width: 4),
+                                      Text('${o['offeredTime']} دقيقة', style: const TextStyle(fontSize: 12, color: Colors.orange)),
+                                    ],
+                                  ],
+                                ),
+                              ],
+                              const SizedBox(height: 6),
                               Text(o['description'] ?? '', style: TextStyle(color: Colors.grey[700], fontSize: 13)),
                               if (o['area'] != null && o['area'].toString().isNotEmpty) ...[
                                 const SizedBox(height: 3),

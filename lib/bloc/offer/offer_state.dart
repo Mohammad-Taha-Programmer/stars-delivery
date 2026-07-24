@@ -17,3 +17,9 @@ class OfferError extends OfferState {
   OfferError({required this.message});
   @override List<Object?> get props => [message];
 }
+class OfferConflict extends OfferState {
+  final String message;
+  final String orderId;
+  OfferConflict({required this.message, required this.orderId});
+  @override List<Object?> get props => [message, orderId];
+}

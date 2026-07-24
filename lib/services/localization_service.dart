@@ -46,6 +46,12 @@ class AppLocalization {
     'required': {'ar': 'مطلوب', 'en': 'Required'},
     'invalid_email': {'ar': 'بريد إلكتروني غير صالح', 'en': 'Invalid email'},
     'min_password': {'ar': '6 أحرف على الأقل', 'en': 'Min 6 characters'},
+    'confirm_password': {'ar': 'تأكيد كلمة المرور', 'en': 'Confirm Password'},
+    'password_mismatch': {'ar': 'كلمتا المرور غير متطابقتين', 'en': 'Passwords do not match'},
+
+    // Create Order
+    'delivery_location': {'ar': 'موقع التوصيل', 'en': 'Delivery Location'},
+    'location_hint': {'ar': 'إلى أين يأتيك السائق؟', 'en': 'Where should the driver come to you?'},
     'invalid_phone': {'ar': 'رقم هاتف غير صالح', 'en': 'Invalid phone number'},
 
     // Home
@@ -158,9 +164,7 @@ class AppLocalization {
     'price': {'ar': 'السعر', 'en': 'Price'},
 
     // Provider dashboard
-    'order_count': {'ar': ' طلب', 'en': ' orders'},
     'offered_orders_btn': {'ar': 'الطلبات التي تم تقديم عرض سعر لها', 'en': 'Orders With Submitted Offers'},
-    'today_orders': {'ar': ' طلبات اليوم', 'en': ' orders today'},
 
     // Reports
     'report_driver': {'ar': 'الابلاغ عن سائق', 'en': 'Report a Driver'},

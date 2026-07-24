@@ -25,11 +25,13 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _confirmPasswordController = TextEditingController();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
 
   bool _isLogin = true;
+  bool _passwordMatch = true;
   String _selectedRole = 'customer';
   List<String> _areas = [];
   List<String> _areasAr = []; // Always Arabic for saving
@@ -80,6 +82,7 @@ class _LoginScreenState extends State<LoginScreen> {
   void dispose() {
     _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     _nameController.dispose();
     _phoneController.dispose();
     super.dispose();
@@ -222,6 +225,20 @@ color: Colors.black.withValues(alpha: 0.1),
                           obscureText: true,
                           validator: (v) => v!.length < 6 ? AppLocalization.get(context, 'min_password') : null,
                         ),
+                        if (!_isLogin) ...[
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: _confirmPasswordController,
+                            decoration: _inputDecoration(AppLocalization.get(context, 'confirm_password'), Icons.lock_outline),
+                            obscureText: true,
+                            onChanged: (_) => setState(() => _passwordMatch = true),
+                            validator: (v) {
+                              if (v == null || v.isEmpty) return AppLocalization.get(context, 'required');
+                              if (v != _passwordController.text) return AppLocalization.get(context, 'password_mismatch');
+                              return null;
+                            },
+                          ),
+                        ],
                         const SizedBox(height: 24),
                         BlocConsumer<AuthBloc, AuthState>(
                           listener: (context, state) {
@@ -452,15 +469,118 @@ color: Colors.black.withValues(alpha: 0.1),
     if (_isLogin) {
       context.read<AuthBloc>().add(LoginEvent(email: email, password: password, role: _selectedRole));
     } else {
-      context.read<AuthBloc>().add(RegisterEvent(
-        fullName: _nameController.text.trim(),
-        email: email,
-        phone: _phoneController.text.trim(),
-        password: password,
-        role: _selectedRole,
-        area: _selectedArea ?? '',
-      ));
+      // Check password match
+      if (_confirmPasswordController.text != password) {
+        setState(() => _passwordMatch = false);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(AppLocalization.get(context, 'password_mismatch')), backgroundColor: Colors.red),
+        );
+        return;
+      }
+      _showTermsOfService();
     }
+  }
+
+
+  void _showTermsOfService() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text('شروط الخدمة', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Text(
+            'الوثيقة الأولى: شروط الخدمة\n\nإصدار: 1.0\nتاريخ السريان: 1 يوليو 2026\n\nالباب الأول: تعريفات وأحكام تمهيدية\n\nالبند 1: تعريف الأطراف والخدمة\n· المنصة/الشركة: الجهة المالكة للتطبيق (يُشار إليها بـ "نحن" أو "المنصة").\n· المستخدم: كل شخص طبيعي يسجل في التطبيق (سائقاً كان أو عميلاً).\n· الخدمة: منصة وسيطة إلكترونية تربط بين طالب التوصيل (عميل) ومقدم التوصيل (سائق).\n· العلاقة: المنصة ليست شركة توصيل، ولا طرفاً في عقد النقل، دورنا تقني حصري.\n\nالبند 2: شروط التسجيل والقبول\n· التسجيل متاح للأفراد الذين أتمّوا 12 سنة فما فوق.\n· يجب تقديم بيانات صحيحة وكاملة.\n· نحتفظ بحق رفض أو إلغاء أي حساب دون إبداء أسباب، خاصة في حال ثبوت احتيال أو مخالفة سابقة.\n\nالبند 2-أ: مسؤولية ولي الأمر عن القاصرين (دون 18 سنة)\nنظراً لأن التطبيق يسمح بالتسجيل للأفراد الذين أتموا 12 سنة فما فوق، يُقر ولي الأمر بموافقته الضمنية على تسجيل القاصر واستخدامه للتطبيق، ويتحمل المسؤولية الكاملة عنه وفق البنود التالية:\n\nأولاً: تعريف القاصر وولي الأمر:\n· القاصر: كل مستخدم لم يبلغ سن الـ 18 سنة ميلادية كاملة وقت التسجيل.\n· ولي الأمر: الأب، الأم، أو الوصي القانوني المعترف به رسمياً.\n\nثانياً: مسؤوليات ولي الأمر:\n1. الإشراف المباشر: مراقبة استخدام القاصر للتطبيق.\n2. الالتزامات المالية: يتحمل ولي الأمر كامل المسؤولية عن أي التزامات مالية تترتب على القاصر.\n3. المخالفات والغرامات: يتحمل ولي الأمر مسؤولية أي مخالفات يرتكبها القاصر.\n4. التعويضات: يلتزم ولي الأمر بتعويض المنصة عن أي أضرار تنشأ عن أفعال القاصر.\n5. حماية بيانات القاصر: يوافق ولي الأمر على جمع ومعالجة بيانات القاصر.\n\nثالثاً: التزامات القاصر: يبقى القاصر ملزماً شخصياً باحترام شروط الخدمة.\n\nالبند 2-ب: المسؤولية الجنائية للقاصرين\nالقاصر وولي الأمر يتحملان المسؤولية عن أي جرائم إلكترونية يرتكبها القاصر.\nنحتفظ بحق إبلاغ الجهات الرسمية فوراً مع تزويدهم بجميع الأدلة المتوفرة.\n\nالبند 3: التزامات السائق\n· تقديم هوية ورخصة قيادة سارية.\n· الحصول على تأمين شامل يغطي حوادث الطريق وتلف المنتجات.\n· الالتزام بالمواعيد وحماية المنتجات من التلف.\n\nالبند 3-أ: مسؤولية السائق عن المنتجات القابلة للتلف\n· استخدام حقيبة عازلة للحرارة أو صندوق تبريد.\n· إيصال الطلب خلال المدة الزمنية المحددة.\n· في حال ثبوت تلف المنتج: يُخصم كامل قيمة المنتج مع غرامة 20%.\n· إثبات التسليم: تصوير الطلب فور تسليمه.\n\nالبند 3-ب: المخالفات المرورية والغرامات\nالسائق هو المسؤول القانوني الوحيد عن أي مخالفات مرورية أو غرامات أو حوادث.\n\nالبند 4: التزامات العميل\n· توفير عنوان دقيق ورقم هاتف صحيح.\n· استلام المنتج في الوقت والمكان المحددين.\n· الدفع نقداً عند الاستلام.\n\nالبند 5: سياسة الإلغاء والاسترجاع\n· يحق للعميل الإلغاء قبل بدء التنفيذ.\n\nالباب الثالث: البنود الحماية الإضافية\n\nالبند 6: بند "الوسيط التقني فقط"\nالمنصة ليست شركة توصيل ولا طرفاً في عقد النقل. دورنا تقني حصري.\n\nالبند 7: بند "الغرامات التأخيرية"\n· غرامة تأخير يومية 0.5% من المبلغ المستحق، بحد أقصى 20%.\n· يحق للمنصة حجب المبالغ المستقبلية وإيقاف الحساب.\n\nالبند 8: بند "القيمة المضافة والضرائب"\n· جميع الرسوم لا تشمل الضرائب ما لم يُنص صراحةً.\n· يتحمل كل طرف مسؤولية الالتزام بقوانين الضرائب في منطقته.\n\nالبند 9: بند "التعويضات والضمانات المتبادلة"\nيوافق المستخدم على تعويض المنصة عن أي خسائر تنشأ عن مخالفته لهذه الاتفاقية.\n\nالبند 10: بند "المخاطر التشغيلية والطوارئ" (Force Majeure)\nلا تتحمل المنصة مسؤولية عن تأخير أو فشل بسبب الكوارث الطبيعية، الحروب، الإضرابات، انقطاع الكهرباء.\n\nالبند 11: بند "الإخطارات وطريقة الإبلاغ الرسمية"\n· الإشعارات عبر البريد الإلكتروني hamodehussen2@gmail.com أو إشعار داخل التطبيق ملزمة بعد 24 ساعة.\n\nالبند 12: بند "أمان الحساب"\n· المستخدم مسؤول عن سرية بيانات دخوله.\n· يمنع مشاركة الحساب مع أي شخص آخر.\n\nالبند 13: بند "التقييمات والشهرة"\n· التقييمات تخضع لمراجعة المنصة وقد تُحذف إذا اعتُبرت مسيئة.\n\nالبند 14: بند "السرعة والوقت" (Time is of the Essence)\n· أي تأخير في أداء الالتزامات يُعتبر إخلالاً جوهرياً.\n· مهلة الاعتراض على أي عملية هي 48 ساعة.\n\nالباب الرابع: الأحكام القانونية والحوكمة\n\nالبند 15: الملكية الفكرية\n· جميع حقوق التطبيق والتصميم والكود ملك حصري للمنصة.\n\nالبند 16: إخلاء المسؤولية\n· التطبيق يُقدّم "كما هو" (As Is) دون أي ضمانات.\n· الحد الأقصى لتعويض المنصة هو المبلغ المدفوع كرسوم خدمة.\n\nالبند 17: إنهاء الحساب وتعليقه\n· للمنصة الحق المطلق في تعليق أو إنهاء أي حساب دون إشعار مسبق في حال المخالفة.\n· حذف الحساب: بعد طلب المستخدم + 30 يوماً تصفية.\n\nالبند 18: بند "التحكيم الإلزامي"\n· أي نزاع يُحال إلى التحكيم الإلزامي وفقاً لقواعد غرفة التجارة والصناعة في فلسطين.\n· مقر التحكيم: مدينة سلفيت. لغة التحكيم: العربية.\n\nالبند 19: القانون الحاكم والنزاعات\n· تخضع هذه الاتفاقية لقوانين فلسطين.\n· المحاكم المختصة: المحاكم النظامية في مدينة سلفيت.\n\nالبند 20: التعديلات على الشروط\n· نحتفظ بحق تعديل هذه الشروط مع إشعار قبل 15 يوماً.\n\nالبند 21: جهات الاتصال الرسمية\n· البريد الإلكتروني الرسمي: hamodehussen2@gmail.com\n\nالبند 22: بند "الإقرار المطلق والنهائي"\nيُقر المستخدم بأنه قرأ وفهم جميع بنود هذه الاتفاقية بكاملها.\n\nالبند 23: بند "التنازل عن المقاصة"\n· ليس للمستخدم حق خصم أي مبالغ من المستحقات المالية للمنصة.\n\nالبند 24: بند "الضمان البنكي أو التأمين الإلزامي للسائقين"\n· كشرط لتفعيل حساب السائق: ضمان بنكي 500 دولار أو تأمين شامل.\n\nالبند 25: بند "سقوط الحقوق بالتقادم"\n· أي دعوى يجب أن تُرفع خلال 90 يوماً من تاريخ وقوع الحدث.\n\nالبند 26: بند "التحديثات التلقائية وتعديل الأسعار"\n· يحق للمنصة تحديث التطبيق تلقائياً وتعديل الرسوم مع إشعار مسبق.\n\n"أوافق على جميع الشروط والأحكام المذكورة أعلاه، وأقر بأني قرأتها وفهمتها بالكامل، وأتحمل كامل المسؤولية عن استخدامي لهذا التطبيق."',
+            style: const TextStyle(fontSize: 12, height: 1.5),
+            textDirection: TextDirection.rtl,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showRejectDialog();
+            },
+            child: const Text('أرفض', style: TextStyle(color: Colors.red)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showPrivacyPolicy();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('أوافق', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showPrivacyPolicy() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text('سياسة الخصوصية', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Text(
+            'الوثيقة الثانية: سياسة الخصوصية\n\nإصدار: 1.0\nتاريخ السريان: 1 يوليو 2026\n\nالبند 1: البيانات التي نجمعها\n· بيانات التسجيل: البريد الإلكتروني، رقم الهاتف، العنوان، صورة الهوية للسائقين.\n· بيانات الموقع: الموقع الجغرافي أثناء استخدام التطبيق.\n· بيانات تلقائية: عنوان IP، نوع الجهاز، نظام التشغيل، إصدار التطبيق.\n· بيانات الطلبات: تفاصيل المنتجات، أوقات الطلب والتسليم، التقييمات.\n\nالبند 2: كيفية استخدام البيانات\n· إنشاء الحساب والتحقق من الهوية (خاصة للسائقين).\n· ربط الطلبات بالسائقين بناءً على الموقع.\n· تحسين أداء التطبيق وتجربة المستخدم.\n· إرسال إشعارات مهمة (تأكيد طلب، تحديث حالة التوصيل).\n· حماية المنصة من الاحتيال وسوء الاستخدام.\n· لا نستخدم بياناتك للتسويق دون موافقة صريحة.\n\nالبند 3: تخزين البيانات ومشاركتها\n· التخزين: خوادم سحابية آمنة مع تشفير أثناء النقل والسكون.\n· المشاركة الحالية: لا نشارك بياناتك مع أي جهة خارجية حالياً.\n· المشاركة المستقبلية: إذا تغير الأمر، سنطلب موافقة صريحة.\n· الالتزام القانوني: قد نكشف عن بياناتك إذا طلبت جهة رسمية بموجب قانون فلسطيني.\n\nالبند 4: حماية البيانات\n· نطبق إجراءات تقنية وتنظيمية لحماية بياناتك من الوصول غير المصرح به.\n· الوصول إلى البيانات مقتصر على الموظفين المخولين فقط.\n\nالبند 5: فترة الاحتفاظ بالبيانات\n· نحتفظ ببياناتك طالما كان حسابك نشطاً.\n· بعد طلب حذف الحساب، نحتفظ بالبيانات لمدة 30 يوماً (فترة تصفية) ثم نحذفها نهائياً، باستثناء:\n  · البيانات المطلوب الاحتفاظ بها قانونياً (مثل سجلات المعاملات المالية لمدة 5 سنوات).\n  · البيانات المجهولة المصدر للأغراض الإحصائية.\n\nالبند 6: حقوق المستخدمين\n· حق الوصول: طلب نسخة من بياناتك المخزّنة.\n· حق التصحيح: تعديل أي بيانات غير صحيحة.\n· حق الحذف: طلب حذف حسابك (لكن الحذف يتم من طرفنا بعد التحقق).\n· حق الاعتراض: الاعتراض على معالجة بياناتك.\n· لممارسة هذه الحقوق، تواصل عبر: hamodehussen2@gmail.com\n\nالبند 7: خصوصية الأطفال والرقابة الأبوية\n· التطبيق مخصص لمن هم فوق 12 سنة.\n· عند تسجيل مستخدم تحت 18 سنة: حساب خاضع للرقابة الأبوية.\n· يتحمل ولي الأمر مسؤولية متابعة نشاط القاصر.\n· إذا تبين جمع بيانات من شخص تحت 12 سنة، سنحذفها فوراً.\n\nالبند 8: ملفات تعريف الارتباط (Cookies)\n· نستخدم ملفات تعريف ارتباط أساسية لتحسين الأداء.\n\nالبند 9: الإخطارات والتحديثات الأمنية\n· سنقوم بإشعارك فوراً في حال حدوث أي خرق أمني.\n\nالبند 10: نقل البيانات عبر الحدود\n· قد تُنقل بياناتك إلى خوادم خارج فلسطين مع ضمان معايير حماية مناسبة.\n\nالبند 11: التعديلات على سياسة الخصوصية\n· سيتم إشعارك قبل 15 يوماً من أي تغيير جوهري.\n\nالبند 12: التواصل\n· للاستفسارات: hamodehussen2@gmail.com\n· نلتزم بالرد خلال 5 أيام عمل كحد أقصى.\n\n"أوافق على سياسة الخصوصية المذكورة أعلاه، وأقر بأني قرأتها وفهمتها، وأوافق على جمع ومعالجة بياناتي وفقاً لها."',
+            style: const TextStyle(fontSize: 12, height: 1.5),
+            textDirection: TextDirection.rtl,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _showRejectDialog();
+            },
+            child: const Text('أرفض', style: TextStyle(color: Colors.red)),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              _doRegister();
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.green),
+            child: const Text('أوافق', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showRejectDialog() {
+    showDialog(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('الشروط مطلوبة', style: TextStyle(fontSize: 16)),
+        content: const Text(
+          'الموافقة على شروط الخدمة وسياسة الخصوصية هي جزء أساسي من استخدام هذا التطبيق. لا يمكنك إنشاء حساب دون الموافقة عليهما.',
+          style: TextStyle(fontSize: 14, height: 1.5),
+          textDirection: TextDirection.rtl,
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('حسناً'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _doRegister() {
+    final email = _emailController.text.trim();
+    final password = _passwordController.text;
+    context.read<AuthBloc>().add(RegisterEvent(
+      fullName: _nameController.text.trim(),
+      email: email,
+      phone: _phoneController.text.trim(),
+      password: password,
+      role: _selectedRole,
+      area: _selectedArea ?? '',
+    )    );
   }
 }
 

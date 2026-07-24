@@ -23,6 +23,7 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
   final _timeController = TextEditingController();
   final _formKey = GlobalKey<FormState>();
   int _estimatedTime = 0;
+  int _quickPrice = 0;
 
   @override
   void dispose() {
@@ -35,6 +36,13 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
     setState(() {
       _estimatedTime = minutes;
       _timeController.text = '$minutes';
+    });
+  }
+
+  void _setPrice(int price) {
+    setState(() {
+      _quickPrice = price;
+      _priceController.text = '$price';
     });
   }
 
@@ -73,6 +81,25 @@ class _SubmitOfferScreenState extends State<SubmitOfferScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
+                    // Quick price buttons
+                    Row(
+                      children: [5, 10, 15, 20].map((p) => Expanded(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 3),
+                          child: OutlinedButton(
+                            onPressed: () => _setPrice(p),
+                            style: OutlinedButton.styleFrom(
+                              backgroundColor: _quickPrice == p ? Colors.green : null,
+                              foregroundColor: _quickPrice == p ? Colors.white : Colors.green,
+                              side: const BorderSide(color: Colors.green),
+                              padding: const EdgeInsets.symmetric(vertical: 10),
+                            ),
+                            child: Text('$p ILS', style: const TextStyle(fontSize: 13)),
+                          ),
+                        ),
+                      )).toList(),
+                    ),
+                    const SizedBox(height: 12),
                     TextFormField(
                       controller: _priceController,
                       keyboardType: TextInputType.number,

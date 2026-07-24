@@ -52,7 +52,12 @@ class _OrderOffersScreenState extends State<OrderOffersScreen> {
         body: Center(
           child: ConstrainedBox(
             constraints: const BoxConstraints(maxWidth: 600),
-            child: BlocBuilder<OfferBloc, OfferState>(
+            child: BlocConsumer<OfferBloc, OfferState>(
+              listener: (context, state) {
+                if (state is OfferConflict) {
+                  _showConflictDialog(context, state.message, state.orderId);
+                }
+              },
               builder: (context, state) {
                 if (state is OfferLoading)
                   return const Center(child: CircularProgressIndicator());
@@ -216,6 +221,34 @@ class _OrderOffersScreenState extends State<OrderOffersScreen> {
   String _maskPhone(String phone) {
     if (phone.length <= 4) return '***';
     return '${phone.substring(0, phone.length - 3)}***';
+  }
+
+  void _showConflictDialog(BuildContext context, String message, String orderId) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => AlertDialog(
+        title: const Text('عذراً', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+        content: Text(message, style: const TextStyle(fontSize: 14), textDirection: TextDirection.rtl),
+        actions: [
+          TextButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<OfferBloc>().add(CancelOrderEvent(token: widget.token, orderId: orderId));
+            },
+            child: const Text('لا، حذف الطلب'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              Navigator.pop(context);
+              context.read<OfferBloc>().add(ResendOrderEvent(token: widget.token, orderId: orderId));
+            },
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+            child: const Text('نعم، إعادة الإرسال', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildOfferAction(BuildContext context, dynamic o) {

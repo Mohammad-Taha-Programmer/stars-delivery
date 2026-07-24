@@ -38,8 +38,9 @@ class AuthService {
     String phone,
     String password,
     String role,
-    String area,
-  ) async {
+    String area, {
+    bool privacyPolicy = true,
+  }) async {
     try {
       final response = await _dio.post(
         '/auth/register',
@@ -50,6 +51,7 @@ class AuthService {
           'password': password,
           'role': role,
           'area': area,
+          'privacyPolicy': privacyPolicy,
         },
       );
       return response.data;

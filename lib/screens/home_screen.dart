@@ -20,6 +20,7 @@ import 'my_orders_screen.dart';
 import 'notifications_screen.dart';
 import 'login_screen.dart';
 import 'report_screen.dart';
+import 'profile_screen.dart';
 import 'support_chat_screen.dart';
 import '../services/socket_service.dart';
 
@@ -139,45 +140,24 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          title: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(Icons.rocket_launch, color: Colors.blue[700], size: 26),
-              const SizedBox(width: 8),
-              Flexible(
-                child: Text(
-                  AppLocalization.get(context, 'app_title'),
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black87,
-                  ),
+          title: GestureDetector(
+            onTap: () {
+              Navigator.push(context, MaterialPageRoute(builder: (_) => ProfileScreen(user: widget.user, token: widget.token)));
+            },
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircleAvatar(
+                  radius: 18,
+                  backgroundColor: Colors.blue,
+                  child: Text(widget.user.fullName.isNotEmpty ? widget.user.fullName[0].toUpperCase() : 'C', style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
                 ),
-              ),
-              if (ApiConfig.detectedArea != null) ...[
                 const SizedBox(width: 8),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: Colors.green[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.green, width: 1),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.my_location, size: 12, color: Colors.green[700]),
-                      const SizedBox(width: 3),
-                      Text(
-                        ApiConfig.detectedArea!,
-                        style: TextStyle(fontSize: 11, color: Colors.green[800], fontWeight: FontWeight.w500),
-                      ),
-                    ],
-                  ),
+                Flexible(
+                  child: Text(widget.user.fullName, overflow: TextOverflow.ellipsis, style: const TextStyle(color: Colors.black87, fontWeight: FontWeight.w600, fontSize: 15)),
                 ),
               ],
-            ],
+            ),
           ),
           centerTitle: true,
           actions: [

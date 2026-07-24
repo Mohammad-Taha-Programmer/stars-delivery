@@ -19,3 +19,13 @@ class AcceptOfferEvent extends OfferEvent {
   const AcceptOfferEvent({required this.token, required this.offerId, required this.orderId});
   @override List<Object?> get props => [token, offerId, orderId];
 }
+class ResendOrderEvent extends OfferEvent {
+  final String token, orderId;
+  const ResendOrderEvent({required this.token, required this.orderId});
+  @override List<Object?> get props => [token, orderId];
+}
+class CancelOrderEvent extends OfferEvent {
+  final String token, orderId;
+  const CancelOrderEvent({required this.token, required this.orderId});
+  @override List<Object?> get props => [token, orderId];
+}

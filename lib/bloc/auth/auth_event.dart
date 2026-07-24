@@ -31,6 +31,7 @@ class RegisterEvent extends AuthEvent {
   final String password;
   final String role;
   final String area;
+  final bool privacyPolicy;
 
   const RegisterEvent({
     required this.fullName,
@@ -39,10 +40,11 @@ class RegisterEvent extends AuthEvent {
     required this.password,
     required this.role,
     required this.area,
+    this.privacyPolicy = true,
   });
 
   @override
-  List<Object?> get props => [fullName, email, phone, password, role, area];
+  List<Object?> get props => [fullName, email, phone, password, role, area, privacyPolicy];
 }
 
 class ToggleAuthModeEvent extends AuthEvent {

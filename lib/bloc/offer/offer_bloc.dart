@@ -9,6 +9,8 @@ class OfferBloc extends Bloc<OfferEvent, OfferState> {
     on<SubmitOfferEvent>(_onSubmit);
     on<LoadOffersEvent>(_onLoad);
     on<AcceptOfferEvent>(_onAccept);
+    on<ResendOrderEvent>(_onResendOrder);
+    on<CancelOrderEvent>(_onCancelOrder);
   }
   Future<void> _onSubmit(SubmitOfferEvent e, Emitter<OfferState> emit) async {
     emit(OfferLoading()); try {
@@ -22,7 +24,27 @@ class OfferBloc extends Bloc<OfferEvent, OfferState> {
   }
   Future<void> _onAccept(AcceptOfferEvent e, Emitter<OfferState> emit) async {
     emit(OfferLoading()); try {
-      await _s.acceptOffer(e.token, e.offerId);
+      final result = await _s.acceptOffer(e.token, e.offerId);
+      if (result['conflict'] == true) {
+        emit(OfferConflict(message: result['message'] ?? '', orderId: e.orderId));
+        return;
+      }
+      final offers = await _s.getOffers(e.token, e.orderId);
+      emit(OffersLoaded(offers: offers));
+    } catch (ex) { emit(OfferError(message: ex.toString().replaceFirst('Exception: ', ''))); }
+  }
+
+  Future<void> _onResendOrder(ResendOrderEvent e, Emitter<OfferState> emit) async {
+    emit(OfferLoading()); try {
+      await _s.resendOrder(e.token, e.orderId);
+      final offers = await _s.getOffers(e.token, e.orderId);
+      emit(OffersLoaded(offers: offers));
+    } catch (ex) { emit(OfferError(message: ex.toString().replaceFirst('Exception: ', ''))); }
+  }
+
+  Future<void> _onCancelOrder(CancelOrderEvent e, Emitter<OfferState> emit) async {
+    emit(OfferLoading()); try {
+      await _s.cancelOrder(e.token, e.orderId);
       final offers = await _s.getOffers(e.token, e.orderId);
       emit(OffersLoaded(offers: offers));
     } catch (ex) { emit(OfferError(message: ex.toString().replaceFirst('Exception: ', ''))); }

@@ -52,6 +52,7 @@ class AuthBloc extends Bloc<AuthEvent, AuthState> {
     try {
       final data = await _authService.register(
         event.fullName, event.email, event.phone, event.password, event.role, event.area,
+        privacyPolicy: event.privacyPolicy,
       );
       // Provider signups go through admin approval
       if (data['pending'] == true) {
