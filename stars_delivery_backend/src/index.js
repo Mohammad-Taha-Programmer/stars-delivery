@@ -6,6 +6,7 @@ const cors = require('cors');
 const cookieParser = require('cookie-parser');
 const os = require('os');
 const path = require('path');
+const { Server } = require('socket.io');
 const { loadAppConfig } = require('./config');
 const { createAdminSessionMiddleware } = require('./middleware/adminSession');
 const requireAdminSession = require('./middleware/requireAdminSession');

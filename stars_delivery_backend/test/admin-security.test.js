@@ -1,7 +1,10 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
 const { EventEmitter } = require('node:events');
+const http = require('node:http');
 const jwt = require('jsonwebtoken');
+const { Server } = require('socket.io');
+const MongoStore = require('connect-mongo').default;
 const requireAdminSession = require('../src/middleware/requireAdminSession');
 const { createAdminSessionOptions } = require('../src/middleware/adminSession');
 const { loadSecurityConfig, validateSecret } = require('../src/config');
@@ -80,6 +83,22 @@ test('admin session middleware uses persistent session store and secure cookie s
     isProduction: true,
   });
   assert.equal(productionOptions.cookie.secure, true);
+});
+
+test('connect-mongo v6 CommonJS default export exposes MongoStore.create', () => {
+  assert.equal(typeof MongoStore.create, 'function');
+});
+
+test('Socket.IO Server dependency can construct and close an isolated server', async () => {
+  assert.equal(typeof Server, 'function');
+  const httpServer = http.createServer();
+  const socketServer = new Server(httpServer);
+  await new Promise((resolve, reject) => {
+    httpServer.once('error', reject);
+    httpServer.listen(0, () => {
+      socketServer.close(() => httpServer.close(resolve));
+    });
+  });
 });
 
 test('admin=true query parameter alone does not authenticate a socket', () => {
