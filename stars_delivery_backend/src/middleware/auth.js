@@ -1,6 +1,7 @@
 const jwt = require('jsonwebtoken');
+const { loadSecurityConfig } = require('../config');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'stars_delivery_secret_key_2026';
+const JWT_SECRET = loadSecurityConfig().jwtSecret;
 
 module.exports = (req, res, next) => {
   const token = req.header('Authorization')?.replace('Bearer ', '');

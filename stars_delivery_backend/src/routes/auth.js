@@ -5,8 +5,9 @@ const User = require('../models/User');
 const PendingProvider = require('../models/PendingProvider');
 const { generatePublicId } = require('../utils/publicId');
 const { isMobileRole } = require('../middleware/mobileRole');
+const { loadSecurityConfig } = require('../config');
 
-const JWT_SECRET = process.env.JWT_SECRET || 'stars_delivery_secret_key_2026';
+const JWT_SECRET = loadSecurityConfig().jwtSecret;
 
 const router = express.Router();
 

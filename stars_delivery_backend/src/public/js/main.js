@@ -846,8 +846,6 @@ document.getElementById('listModal').addEventListener('click', function (e) { if
 // ================================================
 // 17. إعدادات كلمة المرور
 // ================================================
-let currentPassword = 'admin123';
-
 function openResetPassword() {
   document.getElementById('resetPasswordModal').classList.add('show');
   document.getElementById('currentPassword').value = '';
@@ -875,9 +873,9 @@ async function handleResetPassword() {
     msgEl.textContent = 'الرجاء ملء جميع الحقول.';
     return;
   }
-  if (newPass.length < 6) {
+  if (newPass.length < 12) {
     msgEl.className = 'msg error';
-    msgEl.textContent = 'كلمة المرور الجديدة يجب أن تكون 6 أحرف على الأقل.';
+    msgEl.textContent = 'كلمة المرور الجديدة يجب أن تكون 12 حرفاً على الأقل.';
     return;
   }
   if (newPass !== confirmPass) {
@@ -894,7 +892,6 @@ async function handleResetPassword() {
     });
     const data = await res.json();
     if (data.success) {
-      currentPassword = newPass;
       msgEl.className = 'msg success';
       msgEl.textContent = 'تم تغيير كلمة المرور بنجاح!';
       setTimeout(() => { closeResetPassword(); }, 2000);
@@ -921,7 +918,7 @@ function initSupportChat() {
 }
 
 function connectSupportSocket() {
-  supportSocket = io({ query: { admin: 'true' }, transports: ['websocket'] });
+  supportSocket = io({ transports: ['websocket'] });
   supportSocket.on('connect', () => console.log('Admin socket connected to support'));
   supportSocket.on('support_message', (data) => {
     const badge = document.getElementById('chatBadge');

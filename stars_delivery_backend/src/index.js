@@ -4,11 +4,12 @@ const http = require('http');
 const mongoose = require('mongoose');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
-const session = require('express-session');
 const os = require('os');
 const path = require('path');
-const { Server } = require('socket.io');
-const jwt = require('jsonwebtoken');
+const { loadAppConfig } = require('./config');
+const { createAdminSessionMiddleware } = require('./middleware/adminSession');
+const requireAdminSession = require('./middleware/requireAdminSession');
+const authenticateSocket = require('./socket/authenticateSocket');
 const authRoutes = require('./routes/auth');
 const orderRoutes = require('./routes/orders');
 const providerRoutes = require('./routes/provider');
@@ -29,6 +30,8 @@ const adminChatRoutes = require('./routes/adminChat');
 const adminApiRoutes = require('./routes/adminApi');
 
 const app = express();
+const appConfig = loadAppConfig();
+if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
 
 function getLanIp() {
   const ifaces = os.networkInterfaces();
@@ -58,12 +61,11 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views', 'admin'));
 
-app.use(session({
-  secret: process.env.SESSION_SECRET || 'tahakum-secret-key-2025',
-  resave: false,
-  saveUninitialized: false,
-  cookie: { maxAge: 24 * 60 * 60 * 1000 }
-}));
+const sessionMiddleware = createAdminSessionMiddleware({
+  mongoUri: appConfig.mongodbUri,
+  sessionSecret: appConfig.sessionSecret,
+});
+app.use(sessionMiddleware);
 
 app.use((req, res, next) => {
   res.locals.currentUser = req.session.admin || null;
@@ -76,7 +78,7 @@ const Notification = require('./models/Notification');
 const ChatMessage = require('./models/ChatMessage');
 const User = require('./models/User');
 
-mongoose.connect(process.env.MONGODB_URI)
+mongoose.connect(appConfig.mongodbUri)
   .then(async () => {
     console.log('MongoDB connected');
     await Promise.all([
@@ -92,27 +94,18 @@ mongoose.connect(process.env.MONGODB_URI)
 let server;
 let io;
 
-const JWT_SECRET = process.env.JWT_SECRET || 'stars_delivery_secret_key_2026';
-
 const setupIO = () => {
   io = new Server(server, { cors: { origin: '*' } });
+  io.engine.use(sessionMiddleware);
 
 io.use((socket, next) => {
-  // Admin panel socket connections don't need JWT
-  if (socket.handshake.query?.admin === 'true') {
-    socket.userId = 'admin';
-    socket.userRole = 'admin';
-    return next();
-  }
-  const token = socket.handshake.auth?.token;
-  if (!token) return next(new Error('No token provided'));
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
-    socket.userId = decoded.id;
-    socket.userRole = decoded.role;
+    const identity = authenticateSocket(socket, appConfig.jwtSecret);
+    socket.userId = identity.id;
+    socket.userRole = identity.role;
     next();
-  } catch {
-    next(new Error('Invalid token'));
+  } catch (err) {
+    next(new Error(err.message));
   }
 });
 
@@ -174,21 +167,16 @@ app.use('/api/users', userRoutes);
 
 app.use('/admin', adminAuthRoutes);
 
-const isAuthenticated = (req, res, next) => {
-  if (req.session.admin) return next();
-  res.redirect('/admin/login');
-};
+app.use('/admin/drivers', requireAdminSession, adminDriverRoutes);
+app.use('/admin/users', requireAdminSession, adminUserRoutes);
+app.use('/admin/reports', requireAdminSession, adminReportRoutes);
+app.use('/admin/commissions', requireAdminSession, adminCommissionRoutes);
+app.use('/admin/areas', requireAdminSession, adminAreaRoutes);
+app.use('/admin/broadcast', requireAdminSession, adminBroadcastRoutes);
+app.use('/admin/chat', requireAdminSession, adminChatRoutes);
+app.use('/admin/api', requireAdminSession, adminApiRoutes);
 
-app.use('/admin/drivers', isAuthenticated, adminDriverRoutes);
-app.use('/admin/users', isAuthenticated, adminUserRoutes);
-app.use('/admin/reports', isAuthenticated, adminReportRoutes);
-app.use('/admin/commissions', isAuthenticated, adminCommissionRoutes);
-app.use('/admin/areas', isAuthenticated, adminAreaRoutes);
-app.use('/admin/broadcast', isAuthenticated, adminBroadcastRoutes);
-app.use('/admin/chat', isAuthenticated, adminChatRoutes);
-app.use('/admin/api', isAuthenticated, adminApiRoutes);
-
-app.get('/admin', isAuthenticated, (req, res) => {
+app.get('/admin', requireAdminSession, (req, res) => {
   res.render('index', { page: 'dashboard' });
 });
 

@@ -3,6 +3,7 @@ const ChatMessage = require('../models/ChatMessage');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
+const requireAdminSession = require('../middleware/requireAdminSession');
 
 const router = express.Router();
 
@@ -53,8 +54,9 @@ router.post('/send', auth, requireRole('customer', 'provider'), async (req, res)
 });
 
 // Admin endpoints (session-based)
+router.use('/admin', requireAdminSession);
+
 router.get('/admin/conversations', async (req, res) => {
-  if (!req.session.admin) return res.status(401).json({ error: 'Unauthorized' });
   try {
     const conversations = await ChatMessage.aggregate([
       { $sort: { createdAt: -1 } },
@@ -84,7 +86,6 @@ router.get('/admin/conversations', async (req, res) => {
 });
 
 router.get('/admin/messages/:userId', async (req, res) => {
-  if (!req.session.admin) return res.status(401).json({ error: 'Unauthorized' });
   try {
     const messages = await ChatMessage.find({ userId: req.params.userId })
       .sort({ createdAt: 1 })
@@ -101,7 +102,6 @@ router.get('/admin/messages/:userId', async (req, res) => {
 });
 
 router.post('/admin/reply/:userId', async (req, res) => {
-  if (!req.session.admin) return res.status(401).json({ error: 'Unauthorized' });
   try {
     const { text } = req.body;
     if (!text || !text.trim()) return res.status(400).json({ error: 'Message is required' });
@@ -171,7 +171,6 @@ router.post('/contact', async (req, res) => {
 });
 
 router.delete('/admin/resolve/:userId', async (req, res) => {
-  if (!req.session.admin) return res.status(401).json({ error: 'Unauthorized' });
   try {
     await ChatMessage.deleteMany({ userId: req.params.userId });
     res.json({ success: true, message: 'تم حذف المحادثة بنجاح' });
