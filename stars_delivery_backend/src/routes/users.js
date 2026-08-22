@@ -146,7 +146,6 @@ router.put('/phones/primary', auth, async (req, res) => {
     user.markModified('phoneNumbers');
     await user.save();
     res.json({ phones: user.phoneNumbers });
-    res.json({ phones: user.phoneNumbers });
   } catch (err) {
     res.status(500).json({ error: err.message });
   }

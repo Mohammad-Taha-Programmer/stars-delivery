@@ -4,8 +4,8 @@ import 'package:stars_delivery/main.dart';
 void main() {
   testWidgets('App shows login screen', (WidgetTester tester) async {
     await tester.pumpWidget(const StarsDeliveryApp());
-    expect(find.text('Stars Delivery'), findsOneWidget);
-    expect(find.text('Customer'), findsOneWidget);
-    expect(find.text('Provider'), findsOneWidget);
+    expect(find.text('ستارز دليفري'), findsOneWidget);
+    expect(find.text('عميل'), findsOneWidget);
+    expect(find.text('سائق'), findsOneWidget);
   });
 }

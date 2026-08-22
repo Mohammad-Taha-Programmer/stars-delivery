@@ -89,7 +89,7 @@ mongoose.connect(process.env.MONGODB_URI)
   })
   .catch(err => console.error('MongoDB error:', err));
 
-let server = http.createServer(app);
+let server;
 let io;
 
 const JWT_SECRET = process.env.JWT_SECRET || 'stars_delivery_secret_key_2026';
@@ -143,8 +143,6 @@ io.on('connection', async (socket) => {
 
   app.set('io', io);
 };
-
-setupIO();
 
 app.get('/api/config', (req, res) => {
   // Return the address the client actually reached us on — guaranteed reachable.
@@ -202,8 +200,10 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 const startServer = (retries = 3) => {
-  server = http.createServer(app);
-  setupIO();
+  if (!server) {
+    server = http.createServer(app);
+    setupIO();
+  }
 
   server.listen(PORT, '0.0.0.0')
     .on('error', (err) => {

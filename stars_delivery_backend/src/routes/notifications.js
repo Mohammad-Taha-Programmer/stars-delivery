@@ -18,7 +18,10 @@ router.get('/', auth, async (req, res) => {
 
 router.put('/:id/read', auth, async (req, res) => {
   try {
-    const notif = await Notification.findById(req.params.id);
+    const notif = await Notification.findOne({
+      _id: req.params.id,
+      userId: req.userId,
+    });
     if (!notif) return res.status(404).json({ error: 'Not found' });
     // Pinned notifications disappear immediately when read
     if (notif.pinned) {
