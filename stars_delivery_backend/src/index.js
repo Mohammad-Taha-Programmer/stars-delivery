@@ -200,30 +200,41 @@ app.use((err, req, res, next) => {
 const PORT = process.env.PORT || 3000;
 
 const startServer = (retries = 3) => {
-  if (!server) {
-    server = http.createServer(app);
-    setupIO();
-  }
+  server = http.createServer(app);
+  setupIO();
 
-  server.listen(PORT, '0.0.0.0')
-    .on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        if (retries > 0) {
-          console.error(`Port ${PORT} is in use, retrying in 3s... (${retries} left)`);
-          setTimeout(() => startServer(retries - 1), 3000);
-        } else {
-          console.error(`Port ${PORT} still in use after max retries. Exiting.`);
-          process.exit(1);
-        }
-      } else {
-        console.error('Server error:', err);
+  let retriesRemaining = retries;
+  let retryScheduled = false;
+
+  const attemptListen = () => {
+    retryScheduled = false;
+    server.listen(PORT, '0.0.0.0');
+  };
+
+  server.once('listening', () => {
+    console.log(`Server running on port ${PORT} (0.0.0.0)`);
+    console.log(`LAN IP: http://${lanIp}:${PORT}`);
+  });
+
+  server.on('error', (err) => {
+    if (err.code === 'EADDRINUSE') {
+      if (retriesRemaining > 0 && !retryScheduled) {
+        retriesRemaining -= 1;
+        retryScheduled = true;
+        console.error(`Port ${PORT} is in use, retrying in 3s... (${retriesRemaining} left)`);
+        setTimeout(attemptListen, 3000);
+      } else if (retriesRemaining <= 0) {
+        console.error(`Port ${PORT} still in use after max retries. Exiting.`);
         process.exit(1);
       }
-    })
-    .on('listening', () => {
-      console.log(`Server running on port ${PORT} (0.0.0.0)`);
-      console.log(`LAN IP: http://${lanIp}:${PORT}`);
-    });
+      return;
+    }
+
+    console.error('Server error:', err);
+    process.exit(1);
+  });
+
+  attemptListen();
 };
 
 process.on('SIGTERM', () => server.close(() => process.exit(0)));
