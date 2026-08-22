@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>لوحة التحكم - نظام العمولات</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <%- include('partials/sidebar') %>
+
+  <div class="main-content">
+
+    <!-- الرئيسية - Dashboard -->
+    <div id="page-dashboard" class="page-section active-page">
+      <div class="top-header">
+        <h1>لوحة القيادة <small>التحكم بالعمولات والإحصائيات</small></h1>
+        <div class="live-clock"><i class="fas fa-sync-alt fa-fw" style="margin-left:10px;"></i> <span id="clockDisplay">جاري التحميل...</span></div>
+      </div>
+      <div class="stats-row">
+        <div class="stat-card blue" onclick="openListModal('drivers','all','جميع السائقين')"><span class="icon"><i class="fas fa-users"></i></span><div class="number" id="totalDrivers">0</div><div class="label">إجمالي السائقين</div></div>
+        <div class="stat-card green" onclick="openListModal('drivers','active','السائقين النشطين')"><span class="icon"><i class="fas fa-check-circle"></i></span><div class="number" id="activeDrivers">0</div><div class="label">نشطون (سائقين)</div></div>
+        <div class="stat-card red" onclick="openListModal('drivers','inactive','السائقين غير النشطين')"><span class="icon"><i class="fas fa-times-circle"></i></span><div class="number" id="inactiveDrivers">0</div><div class="label">غير نشطين (سائقين)</div></div>
+        <div class="stat-card blue" onclick="openListModal('users','all','جميع المستخدمين')"><span class="icon"><i class="fas fa-user-friends"></i></span><div class="number" id="totalUsers">0</div><div class="label">إجمالي المستخدمين</div></div>
+        <div class="stat-card green" onclick="openListModal('users','active','المستخدمين النشطين')"><span class="icon"><i class="fas fa-check-circle"></i></span><div class="number" id="activeUsers">0</div><div class="label">نشطون (مستخدمين)</div></div>
+        <div class="stat-card red" onclick="openListModal('users','inactive','المستخدمين غير النشطين')"><span class="icon"><i class="fas fa-times-circle"></i></span><div class="number" id="inactiveUsers">0</div><div class="label">غير نشطين (مستخدمين)</div></div>
+      </div>
+      <div class="triple-metrics">
+        <div class="metric-card card-products"><div class="label"><span><i class="fas fa-shopping-bag"></i> طلبات المنتجات</span><span><i class="fas fa-arrow-up" style="color:#2ecc71;"></i> +12%</span></div><div class="value" id="prodCount">0</div><div class="sub-info"><span><i class="fas fa-clock"></i> متوسط الانتظار: <span id="prodWait">4</span> د</span><span><i class="fas fa-check-circle"></i> نشط: <span id="prodActive">6</span></span></div></div>
+        <div class="metric-card card-passengers"><div class="label"><span><i class="fas fa-user-friends"></i> طلبات الركاب</span><span><i class="fas fa-arrow-up" style="color:#2ecc71;"></i> +8%</span></div><div class="value" id="passCount">0</div><div class="sub-info"><span><i class="fas fa-clock"></i> متوسط الانتظار: <span id="passWait">3</span> د</span><span><i class="fas fa-check-circle"></i> نشط: <span id="passActive">11</span></span></div></div>
+        <div class="metric-card card-cargo"><div class="label"><span><i class="fas fa-truck"></i> طلبات البضائع</span><span><i class="fas fa-arrow-down" style="color:#e74c3c;"></i> -2%</span></div><div class="value" id="cargoCount">0</div><div class="sub-info"><span><i class="fas fa-clock"></i> متوسط الانتظار: <span id="cargoWait">9</span> د</span><span><i class="fas fa-check-circle"></i> نشط: <span id="cargoActive">3</span></span></div></div>
+      </div>
+      <div class="bottom-grid">
+        <div class="panel-box">
+          <h3><i class="fas fa-hand-holding-usd"></i> ملخص العمولات والإيرادات</h3>
+          <div class="commission-stats">
+            <div class="commission-item"><div class="info"><span class="title"><i class="fas fa-percent"></i> إجمالي عمولة المنصة (اليوم)</span><span class="number" id="totalCommission">0</span></div><span class="badge-trend up"><i class="fas fa-arrow-up"></i> +8%</span></div>
+            <div class="commission-item" style="border-right-color:#f39c12;"><div class="info"><span class="title"><i class="fas fa-trophy"></i> أعلى سائق تحقيقاً للأرباح</span><span class="number" id="topDriver">---</span></div><span class="badge-trend up" id="topDriverEarn">0 </span></div>
+            <div class="commission-item" style="border-right-color:#2ecc71;"><div class="info"><span class="title"><i class="fas fa-hourglass-half"></i> السائقون المستحقون للصرف</span><span class="number" id="pendingDrivers">0</span></div><span class="badge-trend down">المبلغ: <span id="pendingAmount">0</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- السائقين -->
+    <div id="page-drivers" class="page-section">
+      <div class="top-header"><h1>إدارة السائقين <small>بحث برقم السائق (أرقام فقط)</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay2">جاري التحميل...</span></div></div>
+      <div class="search-container">
+        <div class="search-box">
+          <input type="text" id="driverSearchInput" placeholder="أدخل ID السائق أو الاسم">
+          <button id="driverSearchBtn"><i class="fas fa-search"></i> بحث</button>
+          <button class="back-home" data-page="dashboard"><i class="fas fa-arrow-right"></i> الرئيسية</button>
+        </div>
+        <div id="driverResult" class="result-card"></div>
+      </div>
+    </div>
+
+    <!-- المستخدمين -->
+    <div id="page-users" class="page-section">
+      <div class="top-header"><h1>إدارة المستخدمين <small>بحث برقم المستخدم (أرقام فقط)</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay3">جاري التحميل...</span></div></div>
+      <div class="search-container">
+        <div class="search-box">
+          <input type="text" id="userSearchInput" placeholder="أدخل ID المستخدم أو الاسم">
+          <button id="userSearchBtn"><i class="fas fa-search"></i> بحث</button>
+          <button class="back-home" data-page="dashboard"><i class="fas fa-arrow-right"></i> الرئيسية</button>
+        </div>
+        <div id="userResult" class="result-card"></div>
+      </div>
+    </div>
+
+    <!-- العمولات -->
+    <div id="page-commissions" class="page-section">
+      <div class="top-header"><h1>إدارة العمولات <small>أرباح المنصة من العمولات المستحقة</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay4">جاري التحميل...</span></div></div>
+      <div id="commissionsContent"></div>
+    </div>
+
+    <!-- إضافة سائق جديد -->
+    <div id="page-add-driver" class="page-section">
+      <div class="top-header"><h1>إضافة سائق جديد <small>تسجيل وتفعيل سائق على المنصة</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay10">جاري التحميل...</span></div></div>
+      <div class="add-driver-form">
+        <form id="addDriverForm" enctype="multipart/form-data">
+          <div class="form-grid">
+            <div class="form-group"><label>رقم ID السائق (اختياري)</label><input type="text" name="driverCustomId" placeholder="اتركه فارغاً للتوليد التلقائي"></div>
+            <div class="form-group"><label><span class="required">*</span> الاسم الكامل</label><input type="text" name="driverName" placeholder="أدخل الاسم الكامل" required></div>
+            <div class="form-group"><label><span class="required">*</span> البريد الإلكتروني</label><input type="email" name="driverEmail" placeholder="أدخل البريد الإلكتروني" required></div>
+            <div class="form-group"><label><span class="required">*</span> رقم الجوال</label><input type="text" name="driverPhone" placeholder="أدخل رقم الجوال" required></div>
+            <div class="form-group"><label><span class="required">*</span> نوع الخدمة</label>
+              <select name="driverServiceType" required>
+                <option value="توصيل ركاب">توصيل ركاب</option><option value="نقل بضائع">نقل بضائع</option>
+                <option value="توصيل منتجات">توصيل منتجات</option><option value="توصيل ركاب + منتجات">توصيل ركاب + منتجات</option>
+                <option value="توصيل ركاب + بضائع">توصيل ركاب + بضائع</option><option value="توصيل منتجات + بضائع">توصيل منتجات + بضائع</option>
+                <option value="توصيل ركاب + منتجات + بضائع">الكل (ركاب + منتجات + بضائع)</option>
+              </select>
+            </div>
+            <div class="form-group"><label><span class="required">*</span> نوع السائق</label>
+              <select name="driverLicenseType" required>
+                <option value="سائق عمومي مرخص">سائق عمومي مرخص</option>
+                <option value="سائق نقل ركاب خاص">سائق نقل ركاب خاص</option>
+                <option value="سائق نقل بضائع خاص">سائق نقل بضائع خاص</option>
+                <option value="سائق توصيل منتجات خاص">سائق توصيل منتجات خاص</option>
+                <option value="سائق متعدد (مرخص لجميع الخدمات)">سائق متعدد (مرخص لجميع الخدمات)</option>
+              </select>
+            </div>
+            <div class="form-group"><label><span class="required">*</span> المنطقة</label>
+              <select name="driverArea" id="driverAreaSelect" required>
+                <option value="">اختر المنطقة...</option>
+              </select>
+            </div>
+            <div class="doc-section">
+              <h4>📄 وثائق السائق (رفع صور)</h4>
+              <div class="doc-grid">
+                <div class="doc-item"><label>رخصة القيادة</label><div class="file-input-wrapper"><input type="file" name="docLicense" accept="image/*" onchange="updateFileName(this,'licenseName')"><span class="file-name" id="licenseName">لم يتم الاختيار</span></div></div>
+                <div class="doc-item"><label>الهوية الوطنية</label><div class="file-input-wrapper"><input type="file" name="docId" accept="image/*" onchange="updateFileName(this,'idName')"><span class="file-name" id="idName">لم يتم الاختيار</span></div></div>
+                <div class="doc-item"><label>تأمين المركبة</label><div class="file-input-wrapper"><input type="file" name="docInsurance" accept="image/*" onchange="updateFileName(this,'insuranceName')"><span class="file-name" id="insuranceName">لم يتم الاختيار</span></div></div>
+                <div class="doc-item"><label>صورة السيارة</label><div class="file-input-wrapper"><input type="file" name="docCar" accept="image/*" onchange="updateFileName(this,'carName')"><span class="file-name" id="carName">لم يتم الاختيار</span></div></div>
+              </div>
+            </div>
+            <div id="formSuccessMsg" class="success-msg">✅ تم إضافة السائق بنجاح!</div>
+            <div id="formErrorMsg" class="error-msg-form">❌ الرجاء ملء جميع الحقول المطلوبة.</div>
+            <button type="submit" class="btn-submit-driver"><i class="fas fa-user-plus"></i> إضافة السائق</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- طلبات التسجيل -->
+    <div id="page-pending-providers" class="page-section">
+      <div class="top-header"><h1>طلبات تسجيل السائقين <small>طلبات التسجيل الجديدة للمراجعة والقبول</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay14">جاري التحميل...</span></div></div>
+      <div id="pendingProvidersContent"></div>
+    </div>
+
+    <!-- إبلاغات السائقين -->
+    <div id="page-driver-reports" class="page-section">
+      <div class="top-header"><h1>إبلاغات السائقين <small>الشكاوى والملاحظات المقدمة من السائقين</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay5">جاري التحميل...</span></div></div>
+      <div id="driverReportsContent"></div>
+    </div>
+
+    <!-- إبلاغات المستخدمين -->
+    <div id="page-user-reports" class="page-section">
+      <div class="top-header"><h1>إبلاغات المستخدمين <small>الشكاوى والملاحظات المقدمة من المستخدمين</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay6">جاري التحميل...</span></div></div>
+      <div id="userReportsContent"></div>
+    </div>
+
+    <!-- محادثات الدعم -->
+    <div id="page-support-chat" class="page-section">
+      <div class="top-header"><h1>محادثات الدعم <small>الدردشة المباشرة مع المستخدمين والسائقين</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay13">جاري التحميل...</span></div></div>
+      <div class="chat-layout">
+        <div class="chat-conversations" id="chatConversations">
+          <p style="color:#8892a8;text-align:center;padding:40px;">جاري تحميل المحادثات...</p>
+        </div>
+        <div class="chat-window" id="chatWindow">
+          <div class="chat-empty-state">
+            <i class="fas fa-comments" style="font-size:48px;color:#2a3546;margin-bottom:16px;"></i>
+            <p style="color:#8892a8;">اختر محادثة من القائمة لعرضها</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- إرسال رسالة للسائقين -->
+    <div id="page-broadcast-drivers" class="page-section">
+      <div class="top-header"><h1>إرسال رسالة للسائقين <small>إرسال إشعار جماعي لجميع السائقين</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay11">جاري التحميل...</span></div></div>
+      <div class="broadcast-form">
+        <div class="form-group"><label>عنوان الرسالة</label><input type="text" id="driverBroadcastTitle" placeholder="أدخل عنوان الرسالة"></div>
+        <div class="form-group"><label>نص الرسالة</label><textarea id="driverBroadcastBody" placeholder="أدخل محتوى الرسالة..."></textarea></div>
+        <button class="btn-send" onclick="sendBroadcast('drivers')"><i class="fas fa-paper-plane"></i> إرسال إلى جميع السائقين</button>
+        <div id="driverBroadcastResult" class="broadcast-result"></div>
+      </div>
+    </div>
+
+    <!-- إرسال رسالة للمستخدمين -->
+    <div id="page-broadcast-users" class="page-section">
+      <div class="top-header"><h1>إرسال رسالة للمستخدمين <small>إرسال إشعار جماعي لجميع المستخدمين</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay12">جاري التحميل...</span></div></div>
+      <div class="broadcast-form">
+        <div class="form-group"><label>عنوان الرسالة</label><input type="text" id="userBroadcastTitle" placeholder="أدخل عنوان الرسالة"></div>
+        <div class="form-group"><label>نص الرسالة</label><textarea id="userBroadcastBody" placeholder="أدخل محتوى الرسالة..."></textarea></div>
+        <button class="btn-send" onclick="sendBroadcast('users')"><i class="fas fa-paper-plane"></i> إرسال إلى جميع المستخدمين</button>
+        <div id="userBroadcastResult" class="broadcast-result"></div>
+      </div>
+    </div>
+
+    <!-- المناطق -->
+    <div id="page-areas" class="page-section">
+      <div class="top-header"><h1>المناطق <small>توزيع المستخدمين والسائقين حسب المحافظات والمدن</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay8">جاري التحميل...</span></div></div>
+      <div id="areasContainer" class="areas-container"></div>
+    </div>
+
+    <!-- الإعدادات -->
+    <div id="page-settings" class="page-section">
+      <div class="top-header"><h1>الإعدادات <small>إعدادات النظام العامة</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay9">جاري التحميل...</span></div></div>
+      <div class="settings-grid">
+        <div class="settings-card"><div class="icon"><i class="fas fa-sign-out-alt"></i></div><h3>تسجيل الخروج</h3><p>قم بتسجيل الخروج من لوحة التحكم.</p><button class="btn-action logout" onclick="window.location.href='/admin/logout'"><i class="fas fa-door-open"></i> تسجيل الخروج</button></div>
+        <div class="settings-card"><div class="icon"><i class="fas fa-key"></i></div><h3>إعادة تعيين كلمة المرور</h3><p>تغيير كلمة المرور الخاصة بحساب المدير.</p><button class="btn-action reset" onclick="openResetPassword()"><i class="fas fa-undo-alt"></i> إعادة تعيين كلمة المرور</button></div>
+      </div>
+    </div>
+
+  </div>
+
+  <%- include('partials/modals') %>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/main.js"></script>
+</body>
+</html>
