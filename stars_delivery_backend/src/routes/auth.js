@@ -4,6 +4,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const PendingProvider = require('../models/PendingProvider');
 const { generatePublicId } = require('../utils/publicId');
+const { isMobileRole } = require('../middleware/mobileRole');
 
 const JWT_SECRET = process.env.JWT_SECRET || 'stars_delivery_secret_key_2026';
 
@@ -12,6 +13,9 @@ const router = express.Router();
 router.post('/register', async (req, res) => {
   try {
     const { fullName, email, phone, password, role, area, privacyPolicy } = req.body;
+    if (!isMobileRole(role)) {
+      return res.status(400).json({ error: 'Invalid registration role' });
+    }
 
     const existingUser = await User.findOne({ email });
     if (existingUser) return res.status(400).json({ error: 'Email already registered' });
@@ -48,31 +52,12 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/create-admin', async (req, res) => {
-  try {
-    const existing = await User.findOne({ role: 'admin' });
-    if (existing) return res.status(400).json({ error: 'Admin already exists' });
-
-    const hashed = await bcrypt.hash('admin123', 10);
-    const admin = await User.create({
-      fullName: 'Admin',
-      email: 'admin@stars.com',
-      phone: '0000000000',
-      password: hashed,
-      role: 'admin',
-      status: 'active',
-    });
-
-    const token = jwt.sign({ id: admin._id, role: admin.role }, JWT_SECRET, { expiresIn: '7d' });
-    res.status(201).json({ token, user: { id: admin._id, fullName: admin.fullName, email: admin.email, role: admin.role } });
-  } catch (err) {
-    res.status(500).json({ error: err.message });
-  }
-});
-
 router.post('/login', async (req, res) => {
   try {
     const { email, password, role } = req.body;
+    if (!isMobileRole(role)) {
+      return res.status(400).json({ error: 'Invalid login role' });
+    }
 
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });

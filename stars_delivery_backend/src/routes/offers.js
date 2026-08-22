@@ -4,10 +4,11 @@ const Order = require('../models/Order');
 const Notification = require('../models/Notification');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 
 const router = express.Router();
 
-router.post('/', auth, async (req, res) => {
+router.post('/', auth, requireRole('provider'), async (req, res) => {
   try {
     const { orderId, price, estimatedTime } = req.body;
 
@@ -59,7 +60,7 @@ router.post('/', auth, async (req, res) => {
 });
 
 // Resend rejected order to other providers
-router.post('/:orderId/resend', auth, async (req, res) => {
+router.post('/:orderId/resend', auth, requireRole('customer'), async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ error: 'Order not found' });
@@ -83,7 +84,7 @@ router.post('/:orderId/resend', auth, async (req, res) => {
 });
 
 // Cancel order (hide from reports but keep in DB)
-router.post('/:orderId/cancel', auth, async (req, res) => {
+router.post('/:orderId/cancel', auth, requireRole('customer'), async (req, res) => {
   try {
     const order = await Order.findById(req.params.orderId);
     if (!order) return res.status(404).json({ error: 'Order not found' });
@@ -100,8 +101,11 @@ router.post('/:orderId/cancel', auth, async (req, res) => {
   }
 });
 
-router.get('/order/:orderId', auth, async (req, res) => {
+router.get('/order/:orderId', auth, requireRole('customer'), async (req, res) => {
   try {
+    const order = await Order.findOne({ _id: req.params.orderId, customerId: req.userId }).select('_id');
+    if (!order) return res.status(404).json({ error: 'Order not found' });
+
     const offers = await Offer.find({ orderId: req.params.orderId })
       .populate('providerId', 'fullName phone area publicId')
       .populate('orderId', 'description area type')
@@ -113,7 +117,7 @@ router.get('/order/:orderId', auth, async (req, res) => {
   }
 });
 
-router.post('/:id/accept', auth, async (req, res) => {
+router.post('/:id/accept', auth, requireRole('customer'), async (req, res) => {
   try {
     const offer = await Offer.findById(req.params.id).populate('orderId');
     if (!offer) return res.status(404).json({ error: 'Offer not found' });

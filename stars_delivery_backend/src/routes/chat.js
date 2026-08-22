@@ -2,10 +2,11 @@ const express = require('express');
 const ChatMessage = require('../models/ChatMessage');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 
 const router = express.Router();
 
-router.get('/history', auth, async (req, res) => {
+router.get('/history', auth, requireRole('customer', 'provider'), async (req, res) => {
   try {
     const messages = await ChatMessage.find({ userId: req.userId })
       .sort({ createdAt: 1 })
@@ -17,7 +18,7 @@ router.get('/history', auth, async (req, res) => {
   }
 });
 
-router.post('/send', auth, async (req, res) => {
+router.post('/send', auth, requireRole('customer', 'provider'), async (req, res) => {
   try {
     const { text } = req.body;
     if (!text || !text.trim()) return res.status(400).json({ error: 'Message is required' });

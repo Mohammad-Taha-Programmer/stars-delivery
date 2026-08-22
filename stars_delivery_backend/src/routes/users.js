@@ -2,10 +2,12 @@ const express = require('express');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 
 const router = express.Router();
+router.use(auth, requireRole('customer', 'provider'));
 
-router.put('/location', auth, async (req, res) => {
+router.put('/location', async (req, res) => {
   try {
     const { latitude, longitude, area } = req.body;
     if (latitude == null || longitude == null) {
@@ -29,7 +31,7 @@ router.put('/location', auth, async (req, res) => {
   }
 });
 
-router.get('/location', auth, async (req, res) => {
+router.get('/location', async (req, res) => {
   try {
     const user = await User.findById(req.userId, 'area lastLatitude lastLongitude lastLocationUpdate');
     if (!user) return res.status(404).json({ error: 'User not found' });
@@ -40,7 +42,7 @@ router.get('/location', auth, async (req, res) => {
 });
 
 // Profile update (name, email, password)
-router.put('/profile', auth, async (req, res) => {
+router.put('/profile', async (req, res) => {
   try {
     const { fullName, email, password } = req.body;
     const update = {};
@@ -60,7 +62,7 @@ router.put('/profile', auth, async (req, res) => {
 });
 
 // Frequent items
-router.get('/frequent-items', auth, async (req, res) => {
+router.get('/frequent-items', async (req, res) => {
   try {
     const user = await User.findById(req.userId, 'frequentItems');
     res.json({ items: user?.frequentItems || [] });
@@ -69,7 +71,7 @@ router.get('/frequent-items', auth, async (req, res) => {
   }
 });
 
-router.post('/frequent-items', auth, async (req, res) => {
+router.post('/frequent-items', async (req, res) => {
   try {
     const { item } = req.body;
     if (!item) return res.status(400).json({ error: 'Item required' });
@@ -84,7 +86,7 @@ router.post('/frequent-items', auth, async (req, res) => {
   }
 });
 
-router.delete('/frequent-items', auth, async (req, res) => {
+router.delete('/frequent-items', async (req, res) => {
   try {
     const { item } = req.body;
     const user = await User.findById(req.userId);
@@ -97,7 +99,7 @@ router.delete('/frequent-items', auth, async (req, res) => {
 });
 
 // Phone numbers management
-router.get('/phones', auth, async (req, res) => {
+router.get('/phones', async (req, res) => {
   try {
     const user = await User.findById(req.userId, 'phoneNumbers');
     res.json({ phones: user.phoneNumbers || [] });
@@ -106,7 +108,7 @@ router.get('/phones', auth, async (req, res) => {
   }
 });
 
-router.post('/phones', auth, async (req, res) => {
+router.post('/phones', async (req, res) => {
   try {
     const { number } = req.body;
     if (!number) return res.status(400).json({ error: 'Phone required' });
@@ -121,7 +123,7 @@ router.post('/phones', auth, async (req, res) => {
   }
 });
 
-router.delete('/phones', auth, async (req, res) => {
+router.delete('/phones', async (req, res) => {
   try {
     const { number } = req.body;
     const user = await User.findById(req.userId);
@@ -135,7 +137,7 @@ router.delete('/phones', auth, async (req, res) => {
   }
 });
 
-router.put('/phones/primary', auth, async (req, res) => {
+router.put('/phones/primary', async (req, res) => {
   try {
     const { number } = req.body;
     if (!number) return res.status(400).json({ error: 'Phone required' });

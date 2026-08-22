@@ -1,10 +1,12 @@
 const express = require('express');
 const Report = require('../models/Report');
 const auth = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 
 const router = express.Router();
+router.use(auth, requireRole('customer', 'provider'));
 
-router.post('/', auth, async (req, res) => {
+router.post('/', async (req, res) => {
   try {
     const { reportedPublicId, reportType, content } = req.body;
     if (!reportedPublicId || !content) {
@@ -29,7 +31,7 @@ router.post('/', auth, async (req, res) => {
   }
 });
 
-router.get('/my', auth, async (req, res) => {
+router.get('/my', async (req, res) => {
   try {
     const reports = await Report.find({ reporterId: req.userId })
       .sort({ createdAt: -1 })

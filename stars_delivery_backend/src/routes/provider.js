@@ -3,10 +3,12 @@ const Order = require('../models/Order');
 const Offer = require('../models/Offer');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 
 const router = express.Router();
+router.use(auth, requireRole('provider'));
 
-router.get('/stats', auth, async (req, res) => {
+router.get('/stats', async (req, res) => {
   const t0 = Date.now();
   try {
     const now = new Date();
@@ -64,7 +66,7 @@ router.get('/stats', auth, async (req, res) => {
   }
 });
 
-router.get('/pending-orders', auth, async (req, res) => {
+router.get('/pending-orders', async (req, res) => {
   try {
     const user = await User.findById(req.userId);
     // Registered area is authoritative; GPS-detected area is a fallback only
@@ -88,7 +90,7 @@ router.get('/pending-orders', auth, async (req, res) => {
   }
 });
 
-router.get('/offered-orders', auth, async (req, res) => {
+router.get('/offered-orders', async (req, res) => {
   try {
     // Find orders where this provider has submitted an offer but order is not yet accepted
     const offers = await Offer.find({ providerId: req.userId, status: 'pending' }).lean();
@@ -113,7 +115,7 @@ router.get('/offered-orders', auth, async (req, res) => {
   }
 });
 
-router.get('/orders', auth, async (req, res) => {
+router.get('/orders', async (req, res) => {
   try {
     const orders = await Order.find({ providerId: req.userId }).sort({ createdAt: -1 })
       .populate('customerId', 'fullName publicId')

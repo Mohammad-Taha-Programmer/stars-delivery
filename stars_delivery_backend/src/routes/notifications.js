@@ -1,10 +1,12 @@
 const express = require('express');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 
 const router = express.Router();
+router.use(auth, requireRole('customer', 'provider'));
 
-router.get('/', auth, async (req, res) => {
+router.get('/', async (req, res) => {
   try {
     const notifications = await Notification.find({ userId: req.userId })
       .sort({ pinned: -1, createdAt: -1 })
@@ -16,7 +18,7 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-router.put('/:id/read', auth, async (req, res) => {
+router.put('/:id/read', async (req, res) => {
   try {
     const notif = await Notification.findOne({
       _id: req.params.id,
@@ -36,7 +38,7 @@ router.put('/:id/read', auth, async (req, res) => {
   }
 });
 
-router.put('/read-all', auth, async (req, res) => {
+router.put('/read-all', async (req, res) => {
   try {
     // Pinned notifications get deleted; regular ones marked read
     await Notification.deleteMany({ userId: req.userId, pinned: true });
@@ -47,7 +49,7 @@ router.put('/read-all', auth, async (req, res) => {
   }
 });
 
-router.get('/unread-count', auth, async (req, res) => {
+router.get('/unread-count', async (req, res) => {
   try {
     const count = await Notification.countDocuments({ userId: req.userId, read: false });
     res.json({ count });

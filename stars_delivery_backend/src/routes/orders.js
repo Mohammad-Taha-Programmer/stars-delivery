@@ -5,6 +5,7 @@ const Order = require('../models/Order');
 const User = require('../models/User');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 const { uploadImagesToCloud } = require('../services/upload');
 
 const router = express.Router();
@@ -24,7 +25,7 @@ const upload = multer({ storage, limits: { fileSize: 5 * 1024 * 1024 },
 });
 const uploadMiddleware = upload.array('images', 3);
 
-router.post('/', auth, (req, res, next) => {
+router.post('/', auth, requireRole('customer'), (req, res, next) => {
   uploadMiddleware(req, res, (err) => {
     if (err) return res.status(400).json({ error: err.message });
     next();
@@ -95,7 +96,7 @@ router.post('/', auth, (req, res, next) => {
   }
 });
 
-router.get('/', auth, async (req, res) => {
+router.get('/', auth, requireRole('customer'), async (req, res) => {
   try {
     const orders = await Order.find({ customerId: req.userId, status: { $ne: 'cancelled' } }).sort({ createdAt: -1 }).lean();
     res.json(orders);
@@ -104,7 +105,7 @@ router.get('/', auth, async (req, res) => {
   }
 });
 
-router.put('/:id/fulfilling', auth, async (req, res) => {
+router.put('/:id/fulfilling', auth, requireRole('provider'), async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ error: 'Order not found' });
@@ -127,7 +128,7 @@ router.put('/:id/fulfilling', auth, async (req, res) => {
   }
 });
 
-router.put('/:id/complete', auth, async (req, res) => {
+router.put('/:id/complete', auth, requireRole('provider'), async (req, res) => {
   try {
     const order = await Order.findById(req.params.id);
     if (!order) return res.status(404).json({ error: 'Order not found' });
