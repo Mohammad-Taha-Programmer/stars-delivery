@@ -1,6 +1,19 @@
 require('dotenv').config();
 
 const MIN_SECRET_LENGTH = 32;
+const INSECURE_SECRET_VALUES = new Set([
+  'stars_delivery_secret_key_2026',
+  'tahakum-secret-key-2025',
+  'replace-with-a-random-secret-at-least-32-characters',
+  'replace-with-a-different-random-secret-at-least-32-chars',
+]);
+
+function isPlaceholderSecret(secret) {
+  const normalized = secret.toLowerCase();
+  return INSECURE_SECRET_VALUES.has(normalized)
+    || /^(replace|your|change|example|placeholder|dummy)[-_ ]/.test(normalized)
+    || /^(.)(\1){7,}$/.test(normalized);
+}
 
 function requiredValue(name, env = process.env) {
   const value = env[name]?.trim();
@@ -16,13 +29,21 @@ function validateSecret(name, value) {
   if (secret.length < MIN_SECRET_LENGTH) {
     throw new Error(`${name} must be at least ${MIN_SECRET_LENGTH} characters`);
   }
+  if (isPlaceholderSecret(secret)) {
+    throw new Error(`${name} must not be a placeholder or known default`);
+  }
   return secret;
 }
 
 function loadSecurityConfig(env = process.env) {
+  const jwtSecret = validateSecret('JWT_SECRET', env.JWT_SECRET);
+  const sessionSecret = validateSecret('SESSION_SECRET', env.SESSION_SECRET);
+  if (jwtSecret === sessionSecret) {
+    throw new Error('JWT_SECRET and SESSION_SECRET must be different');
+  }
   return {
-    jwtSecret: validateSecret('JWT_SECRET', env.JWT_SECRET),
-    sessionSecret: validateSecret('SESSION_SECRET', env.SESSION_SECRET),
+    jwtSecret,
+    sessionSecret,
   };
 }
 
