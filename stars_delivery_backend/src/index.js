@@ -1,4 +1,6 @@
 const { sendInternalServerError } = require('./security/errorResponse');
+const { createAdminBrowserHeaders } = require('./security/adminBrowserHeaders');
+const { adminCsrfProtection } = require('./security/adminCsrf');
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
@@ -82,6 +84,14 @@ const sessionMiddleware = createAdminSessionMiddleware({
   sessionSecret: appConfig.sessionSecret,
 });
 app.use(sessionMiddleware);
+
+const adminBrowserHeaders =
+  createAdminBrowserHeaders();
+
+app.use(
+  '/admin',
+  adminBrowserHeaders,
+);
 
 app.use((req, res, next) => {
   res.locals.currentUser = req.session.admin || null;
@@ -258,16 +268,16 @@ app.use('/api/users', userRoutes);
 
 app.use('/admin', adminAuthRoutes);
 
-app.use('/admin/drivers', requireAdminSession, adminDriverRoutes);
-app.use('/admin/users', requireAdminSession, adminUserRoutes);
-app.use('/admin/reports', requireAdminSession, adminReportRoutes);
-app.use('/admin/commissions', requireAdminSession, adminCommissionRoutes);
-app.use('/admin/areas', requireAdminSession, adminAreaRoutes);
-app.use('/admin/broadcast', requireAdminSession, adminBroadcastRoutes);
-app.use('/admin/chat', requireAdminSession, adminChatRoutes);
-app.use('/admin/api', requireAdminSession, adminApiRoutes);
+app.use('/admin/drivers', requireAdminSession, adminCsrfProtection, adminDriverRoutes);
+app.use('/admin/users', requireAdminSession, adminCsrfProtection, adminUserRoutes);
+app.use('/admin/reports', requireAdminSession, adminCsrfProtection, adminReportRoutes);
+app.use('/admin/commissions', requireAdminSession, adminCsrfProtection, adminCommissionRoutes);
+app.use('/admin/areas', requireAdminSession, adminCsrfProtection, adminAreaRoutes);
+app.use('/admin/broadcast', requireAdminSession, adminCsrfProtection, adminBroadcastRoutes);
+app.use('/admin/chat', requireAdminSession, adminCsrfProtection, adminChatRoutes);
+app.use('/admin/api', requireAdminSession, adminCsrfProtection, adminApiRoutes);
 
-app.get('/admin', requireAdminSession, (req, res) => {
+app.get('/admin', requireAdminSession, adminCsrfProtection, (req, res) => {
   res.render('index', { page: 'dashboard' });
 });
 

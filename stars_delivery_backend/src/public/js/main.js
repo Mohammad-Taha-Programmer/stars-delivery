@@ -1,3 +1,86 @@
+const adminCsrfToken =
+  document
+    .querySelector(
+      'meta[name="csrf-token"]',
+    )
+    ?.getAttribute('content')
+  || '';
+
+const nativeFetch =
+  window.fetch.bind(window);
+
+function adminFetch(input, init = {}) {
+  const requestMethod =
+    String(
+      init.method
+      || (
+        input instanceof Request
+          ? input.method
+          : 'GET'
+      ),
+    )
+      .toUpperCase();
+
+  const mutating =
+    ['POST', 'PUT', 'PATCH', 'DELETE']
+      .includes(requestMethod);
+
+  if (!mutating) {
+    return nativeFetch(
+      input,
+      init,
+    );
+  }
+
+  const rawUrl =
+    input instanceof Request
+      ? input.url
+      : input;
+
+  const requestUrl =
+    new URL(
+      rawUrl,
+      window.location.href,
+    );
+
+  if (
+    requestUrl.origin
+    !== window.location.origin
+  ) {
+    return nativeFetch(
+      input,
+      init,
+    );
+  }
+
+  const inheritedHeaders =
+    input instanceof Request
+      ? input.headers
+      : undefined;
+
+  const headers =
+    new Headers(
+      init.headers
+      || inheritedHeaders
+      || undefined,
+    );
+
+  if (adminCsrfToken) {
+    headers.set(
+      'X-CSRF-Token',
+      adminCsrfToken,
+    );
+  }
+
+  return nativeFetch(
+    input,
+    {
+      ...init,
+      headers,
+    },
+  );
+}
+
 // ================================================
 // 1. الساعة الحية
 // ================================================
@@ -149,7 +232,7 @@ async function addNewDriver() {
 
   try {
     const url = pendingId ? `/admin/drivers/pending/${pendingId}` : '/admin/drivers';
-    const res = await fetch(url, { method: 'POST', body: formData });
+    const res = await adminFetch(url, { method: 'POST', body: formData });
     const data = await res.json();
     if (data.success) {
       document.getElementById('formSuccessMsg').textContent = data.message;
@@ -182,7 +265,7 @@ async function searchDriver() {
   if (!raw) return alert('الرجاء إدخال ID السائق أو الاسم');
 
   try {
-    const res = await fetch(`/admin/drivers/search?id=${encodeURIComponent(raw)}`);
+    const res = await adminFetch(`/admin/drivers/search?id=${encodeURIComponent(raw)}`);
     const data = await res.json();
     if (data.error) {
       document.getElementById('driverResult').innerHTML = `<div class="not-found">${data.error}</div>`;
@@ -240,7 +323,7 @@ async function searchUser() {
   if (!raw) return alert('الرجاء إدخال ID المستخدم أو الاسم');
 
   try {
-    const res = await fetch(`/admin/users/search?id=${encodeURIComponent(raw)}`);
+    const res = await adminFetch(`/admin/users/search?id=${encodeURIComponent(raw)}`);
     const data = await res.json();
     if (data.error) {
       document.getElementById('userResult').innerHTML = `<div class="not-found">${data.error}</div>`;
@@ -288,7 +371,7 @@ let currentChatTarget = null;
 async function openChat(type, id) {
   currentChatTarget = { type, id };
   try {
-    const res = await fetch(`/admin/chat/messages/${type}/${id}`);
+    const res = await adminFetch(`/admin/chat/messages/${type}/${id}`);
     const data = await res.json();
     if (data.error) { alert(data.error); return; }
 
@@ -327,7 +410,7 @@ async function sendChatMessage() {
   if (!currentChatTarget) { alert('لا يوجد محادثة مفتوحة!'); return; }
 
   try {
-    const res = await fetch(`/admin/chat/send/${currentChatTarget.type}/${currentChatTarget.id}`, {
+    const res = await adminFetch(`/admin/chat/send/${currentChatTarget.type}/${currentChatTarget.id}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text })
@@ -358,7 +441,7 @@ document.getElementById('chatInput').addEventListener('keypress', function (e) {
 // ================================================
 async function loadDashboardStats() {
   try {
-    const res = await fetch('/admin/api/stats');
+    const res = await adminFetch('/admin/api/stats');
     const data = await res.json();
     document.getElementById('totalDrivers').textContent = data.totalDrivers;
     document.getElementById('activeDrivers').textContent = data.activeDrivers;
@@ -380,14 +463,14 @@ async function loadDashboardStats() {
 
     // Load pending provider count
     try {
-      const pendingRes = await fetch('/admin/drivers/pending');
+      const pendingRes = await adminFetch('/admin/drivers/pending');
       const pendingData = await pendingRes.json();
       const pendingBadge = document.getElementById('pendingBadge');
       pendingBadge.textContent = pendingData.length;
       pendingBadge.style.display = pendingData.length > 0 ? 'inline-block' : 'none';
     } catch (_) {}
 
-    const topRes = await fetch('/admin/api/top-driver');
+    const topRes = await adminFetch('/admin/api/top-driver');
     const topData = await topRes.json();
     document.getElementById('topDriver').textContent = topData.name;
     document.getElementById('topDriverEarn').textContent = topData.earnings + ' ';
@@ -401,7 +484,7 @@ async function loadDashboardStats() {
 // ================================================
 async function loadCommissions() {
   try {
-    const res = await fetch('/admin/commissions');
+    const res = await adminFetch('/admin/commissions');
     const data = await res.json();
     let rows = '';
     data.driverRows.forEach(driver => {
@@ -436,7 +519,7 @@ async function loadCommissions() {
 async function markPaid(driverId) {
   if (!confirm('هل أنت متأكد من تحديد السائق كمدفوع؟')) return;
   try {
-    const res = await fetch(`/admin/commissions/pay/${driverId}`, { method: 'PUT' });
+    const res = await adminFetch(`/admin/commissions/pay/${driverId}`, { method: 'PUT' });
     const data = await res.json();
     if (data.success) {
       alert(data.message);
@@ -457,7 +540,7 @@ let governorateStats = {};
 
 async function loadAreas() {
   try {
-    const res = await fetch('/admin/areas');
+    const res = await adminFetch('/admin/areas');
     const data = await res.json();
     governorateStats = data.stats;
 
@@ -502,7 +585,7 @@ function selectGovernorate(gov) {
 // ================================================
 async function loadDriverReports() {
   try {
-    const res = await fetch('/admin/reports/driver');
+    const res = await adminFetch('/admin/reports/driver');
     const data = await res.json();
     let rows = '';
     data.reports.forEach(report => {
@@ -517,7 +600,7 @@ async function loadDriverReports() {
 
 async function loadUserReports() {
   try {
-    const res = await fetch('/admin/reports/user');
+    const res = await adminFetch('/admin/reports/user');
     const data = await res.json();
     let rows = '';
     data.reports.forEach(report => {
@@ -535,7 +618,7 @@ let currentReportType = null, currentReportId = null;
 async function openReplyModal(type, reportId) {
   currentReportType = type; currentReportId = reportId;
   try {
-    const res = await fetch(`/admin/reports/detail/${reportId}`);
+    const res = await adminFetch(`/admin/reports/detail/${reportId}`);
     const data = await res.json();
     if (data.error) { alert(data.error); return; }
     const report = data.report;
@@ -574,7 +657,7 @@ async function sendReply() {
   if (!text) { alert('الرجاء كتابة رد.'); return; }
 
   try {
-    const res = await fetch(`/admin/reports/reply/${currentReportId}`, {
+    const res = await adminFetch(`/admin/reports/reply/${currentReportId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ text })
@@ -594,7 +677,7 @@ async function sendReply() {
 async function resolveReport(type, reportId) {
   if (!confirm('هل أنت متأكد من تغيير الحالة إلى "تم الحل"؟')) return;
   try {
-    await fetch(`/admin/reports/${reportId}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'resolved' }) });
+    await adminFetch(`/admin/reports/${reportId}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'resolved' }) });
     if (type === 'driver') loadDriverReports(); else loadUserReports();
     loadDashboardStats();
     alert('تم تغيير الحالة بنجاح.');
@@ -604,7 +687,7 @@ async function resolveReport(type, reportId) {
 async function deleteReport(type, reportId) {
   if (!confirm('هل أنت متأكد من حذف هذا الإبلاغ نهائياً؟')) return;
   try {
-    await fetch(`/admin/reports/${reportId}`, { method: 'DELETE' });
+    await adminFetch(`/admin/reports/${reportId}`, { method: 'DELETE' });
     if (type === 'driver') loadDriverReports(); else loadUserReports();
     loadDashboardStats();
     alert('تم حذف الإبلاغ بنجاح.');
@@ -628,7 +711,7 @@ async function sendBroadcast(target) {
   }
 
   try {
-    const res = await fetch(`/admin/broadcast/${target}`, {
+    const res = await adminFetch(`/admin/broadcast/${target}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ title, body })
@@ -652,7 +735,7 @@ async function sendBroadcast(target) {
 // ================================================
 async function freezeDriver(id) {
   try {
-    await fetch(`/admin/drivers/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'inactive' }) });
+    await adminFetch(`/admin/drivers/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'inactive' }) });
     alert('تم تجميد حساب السائق بنجاح.');
     searchDriverById(id);
     loadDashboardStats();
@@ -661,7 +744,7 @@ async function freezeDriver(id) {
 
 async function activateDriver(id) {
   try {
-    await fetch(`/admin/drivers/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'active' }) });
+    await adminFetch(`/admin/drivers/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'active' }) });
     alert('تم تفعيل حساب السائق بنجاح.');
     searchDriverById(id);
     loadDashboardStats();
@@ -671,7 +754,7 @@ async function activateDriver(id) {
 async function deleteDriver(id) {
   if (!confirm('هل أنت متأكد من حذف السائق نهائياً؟')) return;
   try {
-    const res = await fetch(`/admin/drivers/${id}`, { method: 'DELETE' });
+    const res = await adminFetch(`/admin/drivers/${id}`, { method: 'DELETE' });
     const data = await res.json();
     alert(data.message);
     document.getElementById('driverResult').classList.remove('show');
@@ -685,7 +768,7 @@ async function changeDriverPassword(driverId) {
   const confirmPassword = prompt('أعد إدخال كلمة المرور الجديدة للتأكيد:', '');
   if (!confirmPassword || newPassword !== confirmPassword) { alert('كلمة المرور وتأكيدها غير متطابقين.'); return; }
   try {
-    await fetch(`/admin/drivers/${driverId}/password`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: newPassword }) });
+    await adminFetch(`/admin/drivers/${driverId}/password`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: newPassword }) });
     alert('تم تغيير كلمة المرور بنجاح.');
     searchDriverById(driverId);
   } catch (err) { alert('حدث خطأ'); }
@@ -693,7 +776,7 @@ async function changeDriverPassword(driverId) {
 
 async function freezeUser(id) {
   try {
-    await fetch(`/admin/users/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'inactive' }) });
+    await adminFetch(`/admin/users/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'inactive' }) });
     alert('تم تجميد حساب المستخدم بنجاح.');
     searchUserById(id);
     loadDashboardStats();
@@ -702,7 +785,7 @@ async function freezeUser(id) {
 
 async function activateUser(id) {
   try {
-    await fetch(`/admin/users/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'active' }) });
+    await adminFetch(`/admin/users/${id}/status`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ status: 'active' }) });
     alert('تم تفعيل حساب المستخدم بنجاح.');
     searchUserById(id);
     loadDashboardStats();
@@ -713,7 +796,7 @@ async function deleteUser(id) {
   alert('هذه الميزة غير مفعلة حالياً.');
   // if (!confirm('هل أنت متأكد من حذف المستخدم نهائياً؟')) return;
   // try {
-  //   const res = await fetch(`/admin/users/${id}`, { method: 'DELETE' });
+  //   const res = await adminFetch(`/admin/users/${id}`, { method: 'DELETE' });
   //   const data = await res.json();
   //   alert(data.message);
   //   document.getElementById('userResult').classList.remove('show');
@@ -727,7 +810,7 @@ async function changeUserPassword(userId) {
   const confirmPassword = prompt('أعد إدخال كلمة المرور الجديدة للتأكيد:', '');
   if (!confirmPassword || newPassword !== confirmPassword) { alert('كلمة المرور وتأكيدها غير متطابقين.'); return; }
   try {
-    await fetch(`/admin/users/${userId}/password`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: newPassword }) });
+    await adminFetch(`/admin/users/${userId}/password`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: newPassword }) });
     alert('تم تغيير كلمة المرور بنجاح.');
     searchUserById(userId);
   } catch (err) { alert('حدث خطأ'); }
@@ -748,7 +831,7 @@ function searchUserById(id) {
 // ================================================
 async function viewDocuments(driverId) {
   try {
-    const res = await fetch(`/admin/drivers/search?id=${driverId}`);
+    const res = await adminFetch(`/admin/drivers/search?id=${driverId}`);
     const data = await res.json();
     if (data.error) { alert(data.error); return; }
     const driver = data.driver;
@@ -773,7 +856,7 @@ async function viewDocuments(driverId) {
 
 async function viewDriverOrdersViaDB(driverId) {
   try {
-    const res = await fetch(`/admin/drivers/search?id=${driverId}`);
+    const res = await adminFetch(`/admin/drivers/search?id=${driverId}`);
     const data = await res.json();
     if (data.error) { alert(data.error); return; }
     const { driver, netProfit, last30Profit, totalCommission } = data;
@@ -799,7 +882,7 @@ async function viewDriverOrdersViaDB(driverId) {
 
 async function viewUserOrdersViaDB(userId) {
   try {
-    const res = await fetch(`/admin/users/search?id=${userId}`);
+    const res = await adminFetch(`/admin/users/search?id=${userId}`);
     const data = await res.json();
     if (data.error) { alert(data.error); return; }
     const user = data.user;
@@ -885,7 +968,7 @@ async function handleResetPassword() {
   }
 
   try {
-    const res = await fetch('/admin/reset-password', {
+    const res = await adminFetch('/admin/reset-password', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ currentPassword: current, newPassword: newPass, confirmPassword: confirmPass })
@@ -934,7 +1017,7 @@ function connectSupportSocket() {
 
 async function loadConversations() {
   try {
-    const res = await fetch('/api/chat/admin/conversations');
+    const res = await adminFetch('/api/chat/admin/conversations');
     conversations = await res.json();
     renderConversations();
   } catch (err) { console.error('Load conversations:', err); }
@@ -1106,12 +1189,25 @@ async function openSupportChat(
 
 async function loadChatMessages(userId) {
   try {
-    const res = await fetch(`/api/chat/admin/messages/${userId}`);
+    const res = await adminFetch(`/api/chat/admin/messages/${userId}`);
     const messages = await res.json();
     const area = document.getElementById('chatMessagesArea');
     area.innerHTML = '';
     messages.forEach(m => appendChatMessage(m.sender, m.text, m.createdAt));
     area.scrollTop = area.scrollHeight;
+
+    const readRes = await adminFetch(
+      `/api/chat/admin/messages/${userId}/read`,
+      {
+        method: 'POST',
+      },
+    );
+
+    if (!readRes.ok) {
+      console.error(
+        `Mark-read failed with HTTP ${readRes.status}`,
+      );
+    }
   } catch (err) { console.error(err); }
 }
 
@@ -1163,7 +1259,7 @@ async function sendAdminReply() {
   input.value = '';
 
   try {
-    const res = await fetch(
+    const res = await adminFetch(
       `/api/chat/admin/reply/${activeChatUserId}`,
       {
         method: 'POST',
@@ -1193,7 +1289,7 @@ async function sendAdminReply() {
 async function resolveChat(userId) {
   if (!confirm('هل أنت متأكد من حل هذه المشكلة؟ سيتم حذف جميع رسائل هذه المحادثة.')) return;
   try {
-    await fetch(`/api/chat/admin/resolve/${userId}`, { method: 'DELETE' });
+    await adminFetch(`/api/chat/admin/resolve/${userId}`, { method: 'DELETE' });
     activeChatUserId = null;
     document.getElementById('chatWindow').innerHTML = '<div class="chat-empty-state"><i class="fas fa-check-circle" style="font-size:48px;color:#2ecc71;margin-bottom:16px;"></i><p style="color:#8892a8;">تم حل المشكلة بنجاح</p></div>';
     loadConversations();
@@ -1212,7 +1308,7 @@ function escapeHtml(str) {
 // ================================================
 async function loadPendingProviders() {
   try {
-    const res = await fetch('/admin/drivers/pending');
+    const res = await adminFetch('/admin/drivers/pending');
     const pending = await res.json();
     const badge = document.getElementById('pendingBadge');
     badge.textContent = pending.length;
@@ -1254,7 +1350,7 @@ async function approveProvider(id, email) {
   if (!confirm('هل أنت متأكد من قبول طلب هذا السائق؟')) return;
   try {
     const url = email ? `/admin/drivers/pending/${id}/approve?email=${encodeURIComponent(email)}` : `/admin/drivers/pending/${id}/approve`;
-    const res = await fetch(url, { method: 'POST' });
+    const res = await adminFetch(url, { method: 'POST' });
     const data = await res.json();
     if (data.success) {
       alert(data.message);
@@ -1269,7 +1365,7 @@ async function approveProvider(id, email) {
 async function rejectProvider(id) {
   if (!confirm('هل أنت متأكد من رفض طلب هذا السائق؟')) return;
   try {
-    const res = await fetch(`/admin/drivers/pending/${id}/reject`, { method: 'DELETE' });
+    const res = await adminFetch(`/admin/drivers/pending/${id}/reject`, { method: 'DELETE' });
     const data = await res.json();
     if (data.success) {
       alert(data.message);
@@ -1306,7 +1402,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 async function loadAreasForDropdown() {
   try {
-    const res = await fetch('/data/areas.json');
+    const res = await adminFetch('/data/areas.json');
     const data = await res.json();
     const states = data.states || [];
     const select = document.getElementById('driverAreaSelect');

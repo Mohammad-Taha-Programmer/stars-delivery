@@ -4,6 +4,7 @@ const rateLimit = require('express-rate-limit');
 const User = require('../models/User');
 const requireAdminSession = require('../middleware/requireAdminSession');
 const { ADMIN_SESSION_COOKIE } = require('../middleware/adminSession');
+const { adminCsrfProtection } = require('../security/adminCsrf');
 const { isValidAdminPassword, MIN_ADMIN_PASSWORD_LENGTH } = require('../security/passwordPolicy');
 
 const router = express.Router();
@@ -18,12 +19,12 @@ const adminLoginLimiter = rateLimit({
   handler: (req, res) => res.status(429).render('login', { error: invalidCredentialsMessage }),
 });
 
-router.get('/login', (req, res) => {
+router.get('/login', adminCsrfProtection, (req, res) => {
   if (req.session.admin) return res.redirect('/admin');
   res.render('login', { error: null });
 });
 
-router.post('/login', adminLoginLimiter, async (req, res) => {
+router.post('/login', adminCsrfProtection, adminLoginLimiter, async (req, res) => {
   try {
     const identifier = String(req.body.identifier || '').trim().toLowerCase();
     const password = typeof req.body.password === 'string' ? req.body.password : '';
@@ -53,7 +54,7 @@ router.post('/login', adminLoginLimiter, async (req, res) => {
   }
 });
 
-router.post('/reset-password', requireAdminSession, async (req, res) => {
+router.post('/reset-password', requireAdminSession, adminCsrfProtection, async (req, res) => {
   try {
     const { currentPassword, newPassword, confirmPassword } = req.body;
     const admin = await User.findOne({
@@ -80,7 +81,7 @@ router.post('/reset-password', requireAdminSession, async (req, res) => {
   }
 });
 
-router.get('/logout', (req, res) => {
+router.post('/logout', requireAdminSession, adminCsrfProtection, (req, res) => {
   req.session.destroy(() => {
     res.clearCookie(ADMIN_SESSION_COOKIE);
     res.redirect('/admin/login');

@@ -8,6 +8,7 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
 const requireAdminSession = require('../middleware/requireAdminSession');
+const { adminCsrfProtection } = require('../security/adminCsrf');
 const {
   ContactValidationError,
   normalizeContactPayload,
@@ -91,7 +92,11 @@ router.post('/send', auth, requireRole('customer', 'provider'), async (req, res)
 });
 
 // All /admin routes below require the hardened administrator session.
-router.use('/admin', requireAdminSession);
+router.use(
+  '/admin',
+  requireAdminSession,
+  adminCsrfProtection,
+);
 
 router.get('/admin/conversations', async (req, res) => {
   try {
@@ -188,11 +193,6 @@ router.get('/admin/messages/:userId', async (req, res) => {
         return res.status(404).json({ error: 'Contact request not found' });
       }
 
-      await ContactRequest.updateOne(
-        { _id: contactId },
-        { $set: { read: true } },
-      );
-
       return res.json([{
         _id: contact._id,
         sender: 'user',
@@ -216,18 +216,80 @@ router.get('/admin/messages/:userId', async (req, res) => {
       .limit(200)
       .lean();
 
+    res.json(messages);
+  } catch (err) {
+    sendInternalServerError(res);
+  }
+});
+
+router.post('/admin/messages/:userId/read', async (req, res) => {
+  try {
+    const rawConversationId = req.params.userId;
+    const contactId =
+      parseContactConversationId(
+        rawConversationId,
+      );
+
+    if (contactId) {
+      const result =
+        await ContactRequest.updateOne(
+          {
+            _id: contactId,
+            resolved: false,
+          },
+          {
+            $set: {
+              read: true,
+            },
+          },
+        );
+
+      if (result.matchedCount !== 1) {
+        return res
+          .status(404)
+          .json({
+            error:
+              'Contact request not found',
+          });
+      }
+
+      return res.json({
+        success: true,
+      });
+    }
+
+    if (
+      rawConversationId.startsWith(
+        'contact:',
+      )
+      || !mongoose.isValidObjectId(
+        rawConversationId,
+      )
+    ) {
+      return res
+        .status(400)
+        .json({
+          error:
+            'Invalid conversation id',
+        });
+    }
+
     await ChatMessage.updateMany(
       {
         userId: rawConversationId,
         sender: 'user',
         read: false,
       },
-      { read: true },
+      {
+        read: true,
+      },
     );
 
-    res.json(messages);
+    return res.json({
+      success: true,
+    });
   } catch (err) {
-    sendInternalServerError(res);
+    return sendInternalServerError(res);
   }
 });
 
