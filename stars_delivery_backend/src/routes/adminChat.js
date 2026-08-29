@@ -1,3 +1,4 @@
+const { sendInternalServerError, sendInternalServerFailure } = require('../security/errorResponse');
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
@@ -14,7 +15,7 @@ router.get('/messages/:type/:id', async (req, res) => {
     if (!target) return res.json({ error: 'الطرف غير موجود' });
     res.json({ messages: target.messages || [], name: target.fullName || target.name, type });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -45,7 +46,7 @@ router.post('/send/:type/:id', async (req, res) => {
 
     res.json({ success: true, messages: target.messages });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 

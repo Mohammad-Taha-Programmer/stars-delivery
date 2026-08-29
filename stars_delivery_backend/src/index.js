@@ -1,3 +1,4 @@
+const { sendInternalServerError } = require('./security/errorResponse');
 require('dotenv').config();
 const express = require('express');
 const http = require('http');
@@ -183,7 +184,7 @@ io.use(async (socket, next) => {
 
     next();
   } catch (err) {
-    next(new Error(err.message));
+    next(new Error('Invalid authentication'));
   }
 });
 
@@ -272,7 +273,7 @@ app.get('/admin', requireAdminSession, (req, res) => {
 
 app.use((err, req, res, next) => {
   console.error('Unhandled error:', err);
-  res.status(500).json({ error: err.message || 'Server error' });
+  sendInternalServerError(res);
 });
 
 const PORT = process.env.PORT || 3000;

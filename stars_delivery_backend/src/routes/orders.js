@@ -1,3 +1,4 @@
+const { sendInternalServerError } = require('../security/errorResponse');
 const express = require('express');
 const multer = require('multer');
 const path = require('path');
@@ -93,7 +94,7 @@ router.post('/', auth, requireRole('customer'), (req, res, next) => {
     res.status(201).json(result);
   } catch (err) {
     console.error('Create order error:', err.message);
-    res.status(500).json({ error: err.message || 'Failed to create order' });
+    sendInternalServerError(res);
   }
 });
 
@@ -102,7 +103,7 @@ router.get('/', auth, requireRole('customer'), async (req, res) => {
     const orders = await Order.find({ customerId: req.userId, status: { $ne: 'cancelled' } }).sort({ createdAt: -1 }).lean();
     res.json(orders);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -117,7 +118,7 @@ router.put('/:id/fulfilling', auth, requireRole('provider'), async (req, res) =>
   } catch (err) {
     if (err instanceof lifecycle.LifecycleConflict) return res.status(409).json(lifecycle.conflictResponse(err));
     if (lifecycle.isTransactionUnavailable(err)) return res.status(503).json({ error: 'Order service is temporarily unavailable' });
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -132,7 +133,7 @@ router.put('/:id/complete', auth, requireRole('provider'), async (req, res) => {
   } catch (err) {
     if (err instanceof lifecycle.LifecycleConflict) return res.status(409).json(lifecycle.conflictResponse(err));
     if (lifecycle.isTransactionUnavailable(err)) return res.status(503).json({ error: 'Order service is temporarily unavailable' });
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 

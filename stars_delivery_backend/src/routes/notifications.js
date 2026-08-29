@@ -1,3 +1,4 @@
+const { sendInternalServerError } = require('../security/errorResponse');
 const express = require('express');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
@@ -14,7 +15,7 @@ router.get('/', async (req, res) => {
       .lean();
     res.json(notifications);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -34,7 +35,7 @@ router.put('/:id/read', async (req, res) => {
     }
     res.json({ message: 'Marked as read' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -45,7 +46,7 @@ router.put('/read-all', async (req, res) => {
     await Notification.updateMany({ userId: req.userId, read: false }, { read: true });
     res.json({ message: 'All marked as read' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -54,7 +55,7 @@ router.get('/unread-count', async (req, res) => {
     const count = await Notification.countDocuments({ userId: req.userId, read: false });
     res.json({ count });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 

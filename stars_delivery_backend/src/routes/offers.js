@@ -1,3 +1,4 @@
+const { sendInternalServerError } = require('../security/errorResponse');
 const express = require('express');
 const Offer = require('../models/Offer');
 const Order = require('../models/Order');
@@ -34,7 +35,7 @@ router.post('/', auth, requireRole('provider'), async (req, res) => {
     if (err instanceof lifecycle.LifecycleConflict) return res.status(409).json(lifecycle.conflictResponse(err));
     if (lifecycle.isTransactionUnavailable(err)) return res.status(503).json({ error: 'Order service is temporarily unavailable' });
     console.error('Create offer error:', err.message);
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -47,7 +48,7 @@ router.post('/:orderId/resend', auth, requireRole('customer'), async (req, res) 
   } catch (err) {
     if (err instanceof lifecycle.LifecycleConflict) return res.status(409).json(lifecycle.conflictResponse(err));
     if (lifecycle.isTransactionUnavailable(err)) return res.status(503).json({ error: 'Order service is temporarily unavailable' });
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -60,7 +61,7 @@ router.post('/:orderId/cancel', auth, requireRole('customer'), async (req, res) 
   } catch (err) {
     if (err instanceof lifecycle.LifecycleConflict) return res.status(409).json(lifecycle.conflictResponse(err));
     if (lifecycle.isTransactionUnavailable(err)) return res.status(503).json({ error: 'Order service is temporarily unavailable' });
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -76,7 +77,7 @@ router.get('/order/:orderId', auth, requireRole('customer'), async (req, res) =>
       .lean();
     res.json(offers);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -97,7 +98,7 @@ router.post('/:id/accept', auth, requireRole('customer'), async (req, res) => {
     if (err instanceof lifecycle.LifecycleConflict) return res.status(409).json(lifecycle.conflictResponse(err));
     if (lifecycle.isTransactionUnavailable(err)) return res.status(503).json({ error: 'Order service is temporarily unavailable' });
     console.error('Accept offer error:', err.message);
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 

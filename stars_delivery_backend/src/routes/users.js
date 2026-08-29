@@ -1,3 +1,4 @@
+const { sendInternalServerError } = require('../security/errorResponse');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
@@ -27,7 +28,7 @@ router.put('/location', async (req, res) => {
     res.json({ message: 'Location updated', area: user.area });
   } catch (err) {
     console.error('Update location error:', err.message);
-    res.status(500).json({ error: err.message || 'Failed to update location' });
+    sendInternalServerError(res);
   }
 });
 
@@ -37,7 +38,7 @@ router.get('/location', async (req, res) => {
     if (!user) return res.status(404).json({ error: 'User not found' });
     res.json(user);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -57,7 +58,7 @@ router.put('/profile', async (req, res) => {
 
     res.json({ message: 'Profile updated' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -67,7 +68,7 @@ router.get('/frequent-items', async (req, res) => {
     const user = await User.findById(req.userId, 'frequentItems');
     res.json({ items: user?.frequentItems || [] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -82,7 +83,7 @@ router.post('/frequent-items', async (req, res) => {
     }
     res.json({ items: user.frequentItems });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -94,7 +95,7 @@ router.delete('/frequent-items', async (req, res) => {
     await user.save();
     res.json({ items: user.frequentItems });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -104,7 +105,7 @@ router.get('/phones', async (req, res) => {
     const user = await User.findById(req.userId, 'phoneNumbers');
     res.json({ phones: user.phoneNumbers || [] });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -119,7 +120,7 @@ router.post('/phones', async (req, res) => {
     }
     res.json({ phones: user.phoneNumbers });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -133,7 +134,7 @@ router.delete('/phones', async (req, res) => {
     await user.save();
     res.json({ phones: user.phoneNumbers });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -149,7 +150,7 @@ router.put('/phones/primary', async (req, res) => {
     await user.save();
     res.json({ phones: user.phoneNumbers });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 

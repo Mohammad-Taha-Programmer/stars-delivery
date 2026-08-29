@@ -1,3 +1,4 @@
+const { sendInternalServerFailure } = require('../security/errorResponse');
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
@@ -46,7 +47,7 @@ router.post('/:target', async (req, res) => {
       sentAt: new Date().toLocaleString('ar-EG'),
     });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 

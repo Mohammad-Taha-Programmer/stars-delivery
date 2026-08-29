@@ -1,3 +1,4 @@
+const { sendInternalServerError, sendInternalServerFailure } = require('../security/errorResponse');
 const express = require('express');
 const router = express.Router();
 const Report = require('../models/Report');
@@ -9,7 +10,7 @@ router.get('/:type', async (req, res) => {
       .sort({ createdAt: -1 });
     res.json({ reports });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -19,7 +20,7 @@ router.get('/detail/:id', async (req, res) => {
     if (!report) return res.json({ error: 'الإبلاغ غير موجود' });
     res.json({ report });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -35,7 +36,7 @@ router.post('/reply/:id', async (req, res) => {
     await report.save();
     res.json({ success: true, report });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 
@@ -47,7 +48,7 @@ router.put('/:id/status', async (req, res) => {
     await report.save();
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 
@@ -56,7 +57,7 @@ router.delete('/:id', async (req, res) => {
     await Report.findOneAndDelete({ reportId: req.params.id });
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 

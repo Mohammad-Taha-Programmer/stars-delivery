@@ -1,3 +1,4 @@
+const { sendInternalServerError } = require('../security/errorResponse');
 const express = require('express');
 const Order = require('../models/Order');
 const Offer = require('../models/Offer');
@@ -62,7 +63,7 @@ router.get('/stats', async (req, res) => {
     });
   } catch (err) {
     console.error('Stats error:', err.message);
-    res.status(500).json({ error: err.message || 'Failed to load stats' });
+    sendInternalServerError(res);
   }
 });
 
@@ -86,7 +87,7 @@ router.get('/pending-orders', async (req, res) => {
     }));
     res.json(masked);
   } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to load pending orders' });
+    sendInternalServerError(res);
   }
 });
 
@@ -111,7 +112,7 @@ router.get('/offered-orders', async (req, res) => {
     }));
     res.json(masked);
   } catch (err) {
-    res.status(500).json({ error: err.message || 'Failed to load offered orders' });
+    sendInternalServerError(res);
   }
 });
 
@@ -122,7 +123,7 @@ router.get('/orders', async (req, res) => {
       .lean();
     res.json(orders);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 

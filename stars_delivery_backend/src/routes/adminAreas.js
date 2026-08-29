@@ -1,3 +1,4 @@
+const { sendInternalServerError } = require('../security/errorResponse');
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
@@ -32,7 +33,7 @@ router.get('/', async (req, res) => {
 
     res.json({ stats, governorateOrder });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 

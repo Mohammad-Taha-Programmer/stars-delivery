@@ -1,3 +1,4 @@
+const { sendInternalServerError, sendInternalServerFailure } = require('../security/errorResponse');
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
@@ -61,7 +62,7 @@ router.get('/search', async (req, res) => {
 
     res.json({ driver, commission: orderCount, netProfit, last30Profit, totalCommission });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -92,7 +93,7 @@ router.post('/', async (req, res) => {
     await user.save();
     res.json({ success: true, message: `تم إضافة السائق (${driverName}) بنجاح!`, password: 'Pass1234' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 
@@ -141,7 +142,7 @@ router.put('/:id/status', async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 
@@ -153,7 +154,7 @@ router.put('/:id/password', async (req, res) => {
     await driver.save();
     res.json({ success: true, message: 'تم تغيير كلمة المرور بنجاح' });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 
@@ -172,7 +173,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ success: true, message: `تم حذف السائق (${driver.fullName}) بنجاح` });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 
@@ -182,7 +183,7 @@ router.get('/pending', async (req, res) => {
     const pending = await PendingProvider.find().sort({ createdAt: -1 }).lean();
     res.json(pending.map(p => ({ ...p, password: undefined })));
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -212,7 +213,7 @@ router.post('/pending/:id', upload.none(), async (req, res) => {
 
     res.json({ success: true, message: `تم حفظ بيانات السائق (${pending.fullName}). يمكنك الآن قبوله من قائمة طلبات التسجيل.` });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 
@@ -244,7 +245,7 @@ router.post('/pending/:id/approve', async (req, res) => {
     await user.save();
     res.json({ success: true, message: `تم تفعيل حساب السائق (${user.fullName}) بنجاح` });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 
@@ -255,7 +256,7 @@ router.delete('/pending/:id/reject', async (req, res) => {
 
     res.json({ success: true, message: `تم رفض طلب السائق (${pending.fullName})` });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 

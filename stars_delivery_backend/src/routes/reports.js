@@ -1,3 +1,4 @@
+const { sendInternalServerError } = require('../security/errorResponse');
 const express = require('express');
 const Report = require('../models/Report');
 const auth = require('../middleware/auth');
@@ -27,7 +28,7 @@ router.post('/', async (req, res) => {
 
     res.status(201).json({ success: true, report });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -39,7 +40,7 @@ router.get('/my', async (req, res) => {
       .lean();
     res.json(reports);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 

@@ -1,3 +1,4 @@
+const { sendInternalServerError, sendInternalServerFailure } = require('../security/errorResponse');
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
@@ -45,7 +46,7 @@ router.get('/search', async (req, res) => {
 
     res.json({ user: mappedUser });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -94,7 +95,7 @@ router.put('/:id/status', async (req, res) => {
 
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 
@@ -106,7 +107,7 @@ router.put('/:id/password', async (req, res) => {
     await user.save();
     res.json({ success: true });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 
@@ -126,7 +127,7 @@ router.delete('/:id', async (req, res) => {
 
     res.json({ success: true, message: `تم حذف المستخدم (${user.fullName}) بنجاح` });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 

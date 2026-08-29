@@ -1,3 +1,4 @@
+const { sendInternalServerError, sendInternalServerFailure } = require('../security/errorResponse');
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
@@ -36,7 +37,7 @@ router.get('/', async (req, res) => {
     driverRows.sort((a, b) => b.commission - a.commission);
     res.json({ totalUnpaid, totalPaid, unpaidDrivers, paidDrivers, driverRows });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -48,7 +49,7 @@ router.put('/pay/:id', async (req, res) => {
     await driver.save();
     res.json({ success: true, message: `تم تحديث حالة السائق (${driver.fullName}) إلى مدفوع` });
   } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+    sendInternalServerFailure(res);
   }
 });
 

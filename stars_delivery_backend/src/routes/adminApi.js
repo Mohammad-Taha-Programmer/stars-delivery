@@ -1,3 +1,4 @@
+const { sendInternalServerError } = require('../security/errorResponse');
 const express = require('express');
 const router = express.Router();
 const User = require('../models/User');
@@ -39,7 +40,7 @@ router.get('/stats', async (req, res) => {
       driverReportsPending, userReportsPending
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -59,7 +60,7 @@ router.get('/top-driver', async (req, res) => {
       res.json({ name: '---', earnings: 0 });
     }
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 

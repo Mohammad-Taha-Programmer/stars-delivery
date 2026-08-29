@@ -1,3 +1,4 @@
+const { sendInternalServerError } = require('../security/errorResponse');
 const express = require('express');
 const mongoose = require('mongoose');
 const rateLimit = require('express-rate-limit');
@@ -37,7 +38,7 @@ router.get('/history', auth, requireRole('customer', 'provider'), async (req, re
 
     res.json(messages);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -85,7 +86,7 @@ router.post('/send', auth, requireRole('customer', 'provider'), async (req, res)
 
     res.status(201).json(msg.toObject());
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -168,7 +169,7 @@ router.get('/admin/conversations', async (req, res) => {
 
     res.json(result);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -226,7 +227,7 @@ router.get('/admin/messages/:userId', async (req, res) => {
 
     res.json(messages);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -273,7 +274,7 @@ router.post('/admin/reply/:userId', async (req, res) => {
 
     res.status(201).json(msg.toObject());
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -312,7 +313,7 @@ router.post('/contact', publicContactLimiter, async (req, res) => {
       });
     }
 
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
@@ -360,7 +361,7 @@ router.delete('/admin/resolve/:userId', async (req, res) => {
       message: 'تم حذف المحادثة بنجاح',
     });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    sendInternalServerError(res);
   }
 });
 
