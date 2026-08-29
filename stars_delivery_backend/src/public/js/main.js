@@ -190,17 +190,17 @@ function extractNumberFromId(id) { return parseInt(id.replace(/\D/g, ''), 10); }
 
 function getStatusBadge(status) {
   const map = { active: '<span class="status-badge-user active">نشط</span>', inactive: '<span class="status-badge-user inactive">غير نشط</span>', pending: '<span class="status-badge-user pending">قيد المراجعة</span>' };
-  return map[status] || status;
+  return map[status] || escapeHtml(status);
 }
 
 function getOrderStatusBadge(status) {
   const map = { 'completed': '<span class="order-status completed">مكتمل</span>', 'in-progress': '<span class="order-status in-progress">قيد التنفيذ</span>', 'pending': '<span class="order-status pending">قيد الانتظار</span>', 'cancelled': '<span class="order-status cancelled">ملغي</span>' };
-  return map[status] || status;
+  return map[status] || escapeHtml(status);
 }
 
 function getReportStatusBadge(status) {
   const map = { 'resolved': '<span class="report-status-badge resolved">تم الحل</span>', 'rejected': '<span class="report-status-badge rejected">مرفوض</span>', 'in-review': '<span class="report-status-badge in-review">قيد المراجعة</span>', 'in-progress': '<span class="report-status-badge in-progress">قيد المعالجة</span>' };
-  return map[status] || status;
+  return map[status] || escapeHtml(status);
 }
 
 function updateFileName(input, spanId) {
@@ -432,7 +432,7 @@ async function searchDriver() {
     const res = await adminFetch(`/admin/drivers/search?id=${encodeURIComponent(raw)}`);
     const data = await res.json();
     if (data.error) {
-      document.getElementById('driverResult').innerHTML = `<div class="not-found">${data.error}</div>`;
+      document.getElementById('driverResult').innerHTML = `<div class="not-found">${escapeHtml(data.error)}</div>`;
       document.getElementById('driverResult').classList.add('show');
       return;
     }
@@ -449,19 +449,19 @@ function renderDriverResultFromDB(data) {
   const isPaid = driver.financial.paymentStatus === 'paid';
   container.innerHTML = `
     <h4 data-presentation="p017">بيانات السائق</h4>
-     <div class="row"><span class="label">ID السائق</span><span class="value">${driver.driverId}</span></div>
-    <div class="row"><span class="label">الاسم الكامل</span><span class="value">${driver.name}</span></div>
-    <div class="row"><span class="label">البريد الإلكتروني</span><span class="value">${driver.email}</span></div>
-    <div class="row"><span class="label">رقم الجوال</span><span class="value">${driver.phone}</span></div>
-    <div class="row"><span class="label">نوع الخدمة</span><span class="value">${driver.serviceType || 'غير محدد'}</span></div>
-    <div class="row"><span class="label">نوع السائق</span><span class="value">${driver.licenseType || 'غير محدد'}</span></div>
-    <div class="row"><span class="label">المنطقة</span><span class="value">${driver.area}</span></div>
+     <div class="row"><span class="label">ID السائق</span><span class="value">${escapeHtml(driver.driverId)}</span></div>
+    <div class="row"><span class="label">الاسم الكامل</span><span class="value">${escapeHtml(driver.name)}</span></div>
+    <div class="row"><span class="label">البريد الإلكتروني</span><span class="value">${escapeHtml(driver.email)}</span></div>
+    <div class="row"><span class="label">رقم الجوال</span><span class="value">${escapeHtml(driver.phone)}</span></div>
+    <div class="row"><span class="label">نوع الخدمة</span><span class="value">${escapeHtml(driver.serviceType || 'غير محدد')}</span></div>
+    <div class="row"><span class="label">نوع السائق</span><span class="value">${escapeHtml(driver.licenseType || 'غير محدد')}</span></div>
+    <div class="row"><span class="label">المنطقة</span><span class="value">${escapeHtml(driver.area)}</span></div>
     <div class="row"><span class="label">الحالة</span><span class="value">${getStatusBadge(driver.status)}</span></div>
-    <div class="row"><span class="label">حالة الدفع</span><span class="value">${isPaid ? `<span class="paid-badge">مدفوع</span>` : `<span class="unpaid-badge">غير مدفوع (${commission} )</span>`}</span></div>
-    <div class="row"><span class="label">إجمالي الأرباح (صافي)</span><span class="value" data-presentation="p002">${netProfit} </div>
-    <div class="row"><span class="label">أرباح آخر 30 يوم (صافي)</span><span class="value" data-presentation="p018">${last30Profit} </div>
-    <div class="row"><span class="label">كلمة المرور</span><span class="value">${driver.password || 'غير محدد'}</span></div>
-    <div class="row"><span class="label">عمولة المنصة المستحقة</span><span class="value" data-presentation="p019">${commission} </div>
+    <div class="row"><span class="label">حالة الدفع</span><span class="value">${isPaid ? `<span class="paid-badge">مدفوع</span>` : `<span class="unpaid-badge">غير مدفوع (${escapeHtml(commission)} )</span>`}</span></div>
+    <div class="row"><span class="label">إجمالي الأرباح (صافي)</span><span class="value" data-presentation="p002">${escapeHtml(netProfit)} </div>
+    <div class="row"><span class="label">أرباح آخر 30 يوم (صافي)</span><span class="value" data-presentation="p018">${escapeHtml(last30Profit)} </div>
+    <div class="row"><span class="label">كلمة المرور</span><span class="value">${escapeHtml(driver.password || 'غير محدد')}</span></div>
+    <div class="row"><span class="label">عمولة المنصة المستحقة</span><span class="value" data-presentation="p019">${escapeHtml(commission)} </div>
     <div class="action-buttons">
       <button class="action-btn chat" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="openChat" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(driver._id))}">مراسلة</button>
       <button class="action-btn report" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewDriverOrdersViaDB" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}">تقرير الطلبات</button>
@@ -490,7 +490,7 @@ async function searchUser() {
     const res = await adminFetch(`/admin/users/search?id=${encodeURIComponent(raw)}`);
     const data = await res.json();
     if (data.error) {
-      document.getElementById('userResult').innerHTML = `<div class="not-found">${data.error}</div>`;
+      document.getElementById('userResult').innerHTML = `<div class="not-found">${escapeHtml(data.error)}</div>`;
       document.getElementById('userResult').classList.add('show');
       return;
     }
@@ -506,15 +506,15 @@ function renderUserResultFromDB(user) {
   const orderCount = user.orders ? user.orders.length : 0;
   container.innerHTML = `
     <h4 data-presentation="p017">بيانات المستخدم</h4>
-     <div class="row"><span class="label">ID المستخدم</span><span class="value">${user.userId}</span></div>
-    <div class="row"><span class="label">الاسم الكامل</span><span class="value">${user.name}</span></div>
-    <div class="row"><span class="label">البريد الإلكتروني</span><span class="value">${user.email}</span></div>
-    <div class="row"><span class="label">رقم الجوال</span><span class="value">${user.phone}</span></div>
-    <div class="row"><span class="label">تاريخ التسجيل</span><span class="value">${user.joinDate}</span></div>
-    <div class="row"><span class="label">المنطقة</span><span class="value">${user.area}</span></div>
+     <div class="row"><span class="label">ID المستخدم</span><span class="value">${escapeHtml(user.userId)}</span></div>
+    <div class="row"><span class="label">الاسم الكامل</span><span class="value">${escapeHtml(user.name)}</span></div>
+    <div class="row"><span class="label">البريد الإلكتروني</span><span class="value">${escapeHtml(user.email)}</span></div>
+    <div class="row"><span class="label">رقم الجوال</span><span class="value">${escapeHtml(user.phone)}</span></div>
+    <div class="row"><span class="label">تاريخ التسجيل</span><span class="value">${escapeHtml(user.joinDate)}</span></div>
+    <div class="row"><span class="label">المنطقة</span><span class="value">${escapeHtml(user.area)}</span></div>
     <div class="row"><span class="label">الحالة</span><span class="value">${getStatusBadge(user.status)}</span></div>
-    <div class="row"><span class="label">عدد الطلبات</span><span class="value">${orderCount}</span></div>
-    <div class="row"><span class="label">كلمة المرور</span><span class="value">${user.password || 'غير محدد'}</span></div>
+    <div class="row"><span class="label">عدد الطلبات</span><span class="value">${escapeHtml(orderCount)}</span></div>
+    <div class="row"><span class="label">كلمة المرور</span><span class="value">${escapeHtml(user.password || 'غير محدد')}</span></div>
     <div class="action-buttons">
       <button class="action-btn chat" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="openChat" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(user._id))}">مراسلة</button>
       <button class="action-btn orders-report" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewUserOrdersViaDB" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(user._id))}">تقرير الطلبات</button>
@@ -561,7 +561,7 @@ function renderChatMessages(messages, name) {
     const div = document.createElement('div');
     div.className = `chat-msg ${msg.sender === 'admin' ? 'admin' : 'other'}`;
     const senderName = msg.sender === 'admin' ? 'المدير' : (name || 'الطرف الآخر');
-    div.innerHTML = `<div class="sender-name">${senderName}</div>${msg.text}<span class="time">${msg.time}</span>`;
+    div.innerHTML = `<div class="sender-name">${escapeHtml(senderName)}</div>${escapeHtml(msg.text)}<span class="time">${escapeHtml(msg.time)}</span>`;
     container.appendChild(div);
   });
   container.scrollTop = container.scrollHeight;
@@ -653,19 +653,19 @@ async function loadCommissions() {
     let rows = '';
     data.driverRows.forEach(driver => {
       const isPaid = driver.paymentStatus === 'paid';
-      const statusText = isPaid ? '<span class="status-paid">مدفوع</span>' : `<span class="status-unpaid">غير مدفوع (${driver.commission} )</span>`;
+      const statusText = isPaid ? '<span class="status-paid">مدفوع</span>' : `<span class="status-unpaid">غير مدفوع (${escapeHtml(driver.commission)} )</span>`;
       const actionHtml = !isPaid ?
         `<button class="action-btn pay-now" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="markPaid" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}" data-presentation="p020">تحديد كمدفوع</button>` :
         '<span data-presentation="p021">مدفوع</span>';
-      rows += `<tr><td><strong>${driver.name}</strong><br><small data-presentation="p008">${driver.driverId}</small></td><td>${driver.phone || 'غير متوفر'}</td><td>${driver.serviceType}</td><td>${driver.commission}</td><td>${statusText}</td><td>${actionHtml}</td></tr>`;
+      rows += `<tr><td><strong>${escapeHtml(driver.name)}</strong><br><small data-presentation="p008">${escapeHtml(driver.driverId)}</small></td><td>${escapeHtml(driver.phone || 'غير متوفر')}</td><td>${escapeHtml(driver.serviceType)}</td><td>${escapeHtml(driver.commission)}</td><td>${statusText}</td><td>${actionHtml}</td></tr>`;
     });
 
     document.getElementById('commissionsContent').innerHTML = `
       <div class="commissions-summary">
-        <div class="summary-card"><div class="label">إجمالي العمولات المستحقة</div><div class="number red">${data.totalUnpaid} </div></div>
-        <div class="summary-card"><div class="label">عدد السائقين المستحقين</div><div class="number orange">${data.unpaidDrivers}</div></div>
-        <div class="summary-card"><div class="label">إجمالي العمولات المدفوعة</div><div class="number green">${data.totalPaid} </div></div>
-        <div class="summary-card"><div class="label">عدد السائقين المدفوعين</div><div class="number">${data.paidDrivers}</div></div>
+        <div class="summary-card"><div class="label">إجمالي العمولات المستحقة</div><div class="number red">${escapeHtml(data.totalUnpaid)} </div></div>
+        <div class="summary-card"><div class="label">عدد السائقين المستحقين</div><div class="number orange">${escapeHtml(data.unpaidDrivers)}</div></div>
+        <div class="summary-card"><div class="label">إجمالي العمولات المدفوعة</div><div class="number green">${escapeHtml(data.totalPaid)} </div></div>
+        <div class="summary-card"><div class="label">عدد السائقين المدفوعين</div><div class="number">${escapeHtml(data.paidDrivers)}</div></div>
       </div>
       <div class="commissions-table-container">
         <h3>تفاصيل عمولات السائقين</h3>
@@ -712,7 +712,7 @@ async function loadAreas() {
     for (const gov of data.governorateOrder) {
       if (governorateStats[gov]) {
         const s = governorateStats[gov];
-        listHtml += `<div class="area-item" data-gov="${gov}" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="selectGovernorate" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(gov))}"><span class="name">${gov}</span><span class="counts"><span class="drivers">${s.totalDrivers}</span><span class="users">${s.totalUsers}</span></span></div>`;
+        listHtml += `<div class="area-item" data-gov="${escapeHtml(String(gov))}" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="selectGovernorate" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(gov))}"><span class="name">${escapeHtml(gov)}</span><span class="counts"><span class="drivers">${escapeHtml(s.totalDrivers)}</span><span class="users">${escapeHtml(s.totalUsers)}</span></span></div>`;
         if (!firstGov) firstGov = gov;
       }
     }
@@ -730,9 +730,9 @@ function buildGovernorateDetail(gov, stats) {
   let citiesHtml = '', totalDrivers = 0, totalUsers = 0;
   stats.cities.forEach(city => {
     totalDrivers += city.drivers; totalUsers += city.users;
-    citiesHtml += `<div class="city-item"><span class="city-name">${city.name}</span><span class="city-counts"><span class="drivers">${city.drivers}</span><span class="users">${city.users}</span></span></div>`;
+    citiesHtml += `<div class="city-item"><span class="city-name">${escapeHtml(city.name)}</span><span class="city-counts"><span class="drivers">${escapeHtml(city.drivers)}</span><span class="users">${escapeHtml(city.users)}</span></span></div>`;
   });
-  return `<h3>${gov}</h3>${citiesHtml}<div class="total-badge"><span class="label">إجمالي المحافظة</span><span><span class="value drivers">${totalDrivers}</span><span class="value users" data-presentation="p022">${totalUsers}</span></span></div>`;
+  return `<h3>${escapeHtml(gov)}</h3>${citiesHtml}<div class="total-badge"><span class="label">إجمالي المحافظة</span><span><span class="value drivers">${escapeHtml(totalDrivers)}</span><span class="value users" data-presentation="p022">${escapeHtml(totalUsers)}</span></span></div>`;
 }
 
 function selectGovernorate(gov) {
@@ -756,7 +756,7 @@ async function loadDriverReports() {
       const replyCount = report.replies ? report.replies.length : 0;
       const reporterName = report.reporterId?.fullName || report.reporter || 'غير معروف';
       const targetId = report.reportedPublicId || '';
-      rows += `<tr><td><strong>${report.reportId}</strong></td><td>${reporterName}</td><td>#${targetId}</td><td>${report.category}</td><td>${report.date}</td><td>${getReportStatusBadge(report.status)}</td><td>${report.content.substring(0, 40)}${report.content.length > 40 ? '...' : ''}</td><td><button class="action-btn info" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewReportDetail" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">عرض</button><button class="action-btn reply" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="openReplyModal" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">رد (${replyCount})</button>${report.status !== 'resolved' ? `<button class="action-btn success" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="resolveReport" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">حل</button>` : ''}<button class="action-btn danger" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="deleteReport" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">حذف</button></td></tr>`;
+      rows += `<tr><td><strong>${escapeHtml(report.reportId)}</strong></td><td>${escapeHtml(reporterName)}</td><td>#${escapeHtml(targetId)}</td><td>${escapeHtml(report.category)}</td><td>${escapeHtml(report.date)}</td><td>${getReportStatusBadge(report.status)}</td><td>${escapeHtml(report.content.substring(0, 40))}${report.content.length > 40 ? '...' : ''}</td><td><button class="action-btn info" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewReportDetail" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">عرض</button><button class="action-btn reply" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="openReplyModal" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">رد (${replyCount})</button>${report.status !== 'resolved' ? `<button class="action-btn success" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="resolveReport" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">حل</button>` : ''}<button class="action-btn danger" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="deleteReport" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">حذف</button></td></tr>`;
     });
     document.getElementById('driverReportsContent').innerHTML = `<div class="commissions-table-container"><h3>قائمة إبلاغات السائقين</h3><table class="commissions-table"><thead><tr><th>رقم الإبلاغ</th><th>المبلغ</th><th>ID السائق</th><th>النوع</th><th>التاريخ</th><th>الحالة</th><th>المحتوى</th><th>الإجراءات</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   } catch (err) { console.error('Error loading driver reports:', err); }
@@ -771,7 +771,7 @@ async function loadUserReports() {
       const replyCount = report.replies ? report.replies.length : 0;
       const reporterName = report.reporterId?.fullName || report.reporter || 'غير معروف';
       const targetId = report.reportedPublicId || '';
-      rows += `<tr><td><strong>${report.reportId}</strong></td><td>${reporterName}</td><td>#${targetId}</td><td>${report.category}</td><td>${report.date}</td><td>${getReportStatusBadge(report.status)}</td><td>${report.content.substring(0, 40)}${report.content.length > 40 ? '...' : ''}</td><td><button class="action-btn info" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewReportDetail" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">عرض</button><button class="action-btn reply" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="openReplyModal" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">رد (${replyCount})</button>${report.status !== 'resolved' ? `<button class="action-btn success" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="resolveReport" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">حل</button>` : ''}<button class="action-btn danger" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="deleteReport" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">حذف</button></td></tr>`;
+      rows += `<tr><td><strong>${escapeHtml(report.reportId)}</strong></td><td>${escapeHtml(reporterName)}</td><td>#${escapeHtml(targetId)}</td><td>${escapeHtml(report.category)}</td><td>${escapeHtml(report.date)}</td><td>${getReportStatusBadge(report.status)}</td><td>${escapeHtml(report.content.substring(0, 40))}${report.content.length > 40 ? '...' : ''}</td><td><button class="action-btn info" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewReportDetail" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">عرض</button><button class="action-btn reply" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="openReplyModal" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">رد (${replyCount})</button>${report.status !== 'resolved' ? `<button class="action-btn success" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="resolveReport" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">حل</button>` : ''}<button class="action-btn danger" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="deleteReport" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">حذف</button></td></tr>`;
     });
     document.getElementById('userReportsContent').innerHTML = `<div class="commissions-table-container"><h3>قائمة إبلاغات المستخدمين</h3><table class="commissions-table"><thead><tr><th>رقم الإبلاغ</th><th>المبلغ</th><th>ID المستخدم</th><th>النوع</th><th>التاريخ</th><th>الحالة</th><th>المحتوى</th><th>الإجراءات</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   } catch (err) { console.error('Error loading user reports:', err); }
@@ -788,7 +788,7 @@ async function openReplyModal(type, reportId) {
     const report = data.report;
 
     document.getElementById('reportDetailTitle').textContent = `إبلاغ رقم ${report.reportId} - ${report.category}`;
-    document.getElementById('reportDetailContent').innerHTML = `<div data-presentation="p023"><div class="row"><span class="label">المرسل:</span><span class="value">${report.reporter}</span></div><div class="row"><span class="label">النوع:</span><span class="value">${report.category}</span></div><div class="row"><span class="label">التاريخ:</span><span class="value">${report.date}</span></div><div class="row"><span class="label">الحالة:</span><span class="value">${getReportStatusBadge(report.status)}</span></div><div data-presentation="p024"><span data-presentation="p025">المحتوى الكامل:</span><p data-presentation="p026">${report.content}</p></div></div>`;
+    document.getElementById('reportDetailContent').innerHTML = `<div data-presentation="p023"><div class="row"><span class="label">المرسل:</span><span class="value">${escapeHtml(report.reporter)}</span></div><div class="row"><span class="label">النوع:</span><span class="value">${escapeHtml(report.category)}</span></div><div class="row"><span class="label">التاريخ:</span><span class="value">${escapeHtml(report.date)}</span></div><div class="row"><span class="label">الحالة:</span><span class="value">${getReportStatusBadge(report.status)}</span></div><div data-presentation="p024"><span data-presentation="p025">المحتوى الكامل:</span><p data-presentation="p026">${escapeHtml(report.content)}</p></div></div>`;
     renderChatThread(report);
     document.getElementById('reportDetailModal').classList.add('show');
     document.getElementById('replyInput').value = '';
@@ -808,7 +808,7 @@ function renderChatThread(report) {
     const div = document.createElement('div');
     div.className = `chat-msg ${msg.sender === 'admin' ? 'admin' : 'other'}`;
     const senderName = msg.sender === 'admin' ? 'المدير' : (report.reporter || 'المرسل');
-    div.innerHTML = `<div class="sender-name">${senderName}</div>${msg.text}<span class="time">${msg.time}</span>`;
+    div.innerHTML = `<div class="sender-name">${escapeHtml(senderName)}</div>${escapeHtml(msg.text)}<span class="time">${escapeHtml(msg.time)}</span>`;
     threadDiv.appendChild(div);
   });
   threadDiv.scrollTop = threadDiv.scrollHeight;
@@ -883,7 +883,7 @@ async function sendBroadcast(target) {
     const data = await res.json();
     if (data.success) {
       resultDiv.className = 'broadcast-result success';
-      resultDiv.innerHTML = `تم إرسال الرسالة بنجاح إلى <strong>${data.count}</strong> ${target === 'drivers' ? 'سائق' : 'مستخدم'}.<br><span data-presentation="p028">العنوان: ${title}</span><br><span data-presentation="p028">تم الإرسال في: ${data.sentAt}</span>`;
+      resultDiv.innerHTML = `تم إرسال الرسالة بنجاح إلى <strong>${escapeHtml(data.count)}</strong> ${target === 'drivers' ? 'سائق' : 'مستخدم'}.<br><span data-presentation="p028">العنوان: ${escapeHtml(title)}</span><br><span data-presentation="p028">تم الإرسال في: ${escapeHtml(data.sentAt)}</span>`;
     } else {
       resultDiv.className = 'broadcast-result error';
       resultDiv.textContent = data.message;
@@ -1007,10 +1007,10 @@ async function viewDocuments(driverId) {
       listContainer.innerHTML = '<p data-presentation="p027">لا توجد وثائق مسجلة.</p>';
     } else {
       driver.documents.forEach(doc => {
-        const fileDisplay = doc.file && doc.file !== 'لم يتم الرفع' ? `<span data-presentation="p018">${doc.file}</span>` : '<span data-presentation="p003">لم يتم الرفع</span>';
+        const fileDisplay = doc.file && doc.file !== 'لم يتم الرفع' ? `<span data-presentation="p018">${escapeHtml(doc.file)}</span>` : '<span data-presentation="p003">لم يتم الرفع</span>';
         const div = document.createElement('div');
         div.className = 'doc-item';
-        div.innerHTML = `<span class="doc-name">${doc.name}</span><span class="doc-status">${fileDisplay}</span>`;
+        div.innerHTML = `<span class="doc-name">${escapeHtml(doc.name)}</span><span class="doc-status">${fileDisplay}</span>`;
         listContainer.appendChild(div);
       });
     }
@@ -1029,13 +1029,13 @@ async function viewDriverOrdersViaDB(driverId) {
     if (driver.financial && driver.financial.transactions && driver.financial.transactions.length > 0) {
       let rows = '';
       driver.financial.transactions.forEach(t => {
-        rows += `<tr><td>${t.id.slice(-8)}</td><td>${t.desc}</td><td>${t.date}</td><td class="amount">${t.amount} </td></tr>`;
+        rows += `<tr><td>${escapeHtml(t.id.slice(-8))}</td><td>${escapeHtml(t.desc)}</td><td>${escapeHtml(t.date)}</td><td class="amount">${escapeHtml(t.amount)} </td></tr>`;
       });
       content.innerHTML = `
         <div class="invoice-box">
           <table class="invoice-table"><thead><tr><th>رقم المعاملة</th><th>الوصف</th><th>التاريخ</th><th>المبلغ</th></tr></thead><tbody>${rows}</tbody></table>
-          <div class="invoice-total"><span class="total-label">صافي الأرباح</span><span class="total-value">${netProfit} </span></div>
-          <div data-presentation="p029"><span>آخر 30 يوم: ${last30Profit} </span><span>عمولة المنصة: ${totalCommission || 0} </span></div>
+          <div class="invoice-total"><span class="total-label">صافي الأرباح</span><span class="total-value">${escapeHtml(netProfit)} </span></div>
+          <div data-presentation="p029"><span>آخر 30 يوم: ${escapeHtml(last30Profit)} </span><span>عمولة المنصة: ${escapeHtml(totalCommission || 0)} </span></div>
         </div>`;
     } else {
       content.innerHTML = '<p data-presentation="p030">لا توجد معاملات مسجلة.</p>';
@@ -1055,7 +1055,7 @@ async function viewUserOrdersViaDB(userId) {
     if (user.orders && user.orders.length > 0) {
       let rows = '';
       user.orders.forEach(o => {
-        rows += `<tr><td>${o.orderId}</td><td>${o.type}</td><td>${o.date}</td><td>${o.status}</td><td class="amount">${o.amount} </td></tr>`;
+        rows += `<tr><td>${escapeHtml(o.orderId)}</td><td>${escapeHtml(o.type)}</td><td>${escapeHtml(o.date)}</td><td>${escapeHtml(o.status)}</td><td class="amount">${escapeHtml(o.amount)} </td></tr>`;
       });
       content.innerHTML = `<div class="invoice-box"><table class="invoice-table"><thead><tr><th>رقم الطلب</th><th>النوع</th><th>التاريخ</th><th>الحالة</th><th>المبلغ</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     } else {
@@ -1462,9 +1462,15 @@ async function resolveChat(userId) {
   } catch (err) { console.error(err); }
 }
 
-function escapeHtml(str) {
-  if (!str) return '';
-  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#039;');
+function escapeHtml(value) {
+  return String(
+    value ?? '',
+  )
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
 }
 
 // ================================================
@@ -1486,11 +1492,11 @@ async function loadPendingProviders() {
     let rows = '';
     pending.forEach(p => {
       rows += `<tr>
-        <td><strong>${p.fullName}</strong></td>
-        <td>${p.email}</td>
-        <td>${p.phone}</td>
-        <td>${p.area || 'غير محدد'}</td>
-        <td>${new Date(p.createdAt).toLocaleDateString('ar-EG')}</td>
+        <td><strong>${escapeHtml(p.fullName)}</strong></td>
+        <td>${escapeHtml(p.email)}</td>
+        <td>${escapeHtml(p.phone)}</td>
+        <td>${escapeHtml(p.area || 'غير محدد')}</td>
+        <td>${escapeHtml(new Date(p.createdAt).toLocaleDateString('ar-EG'))}</td>
         <td>
           <button class="action-btn info" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="enterDocs" data-admin-arg-count="5" data-admin-arg-1="${escapeHtml(String(p._id))}" data-admin-arg-2="${escapeHtml(p.fullName)}" data-admin-arg-3="${escapeHtml(String(p.email))}" data-admin-arg-4="${escapeHtml(String(p.phone))}" data-admin-arg-5="${escapeHtml(String(p.area || ''))}" data-presentation="p034"><i class="fas fa-file-alt"></i> إدخال وثائق</button>
           <button class="action-btn success" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="approveProvider" data-admin-arg-count="2" data-admin-arg-1="${escapeHtml(String(p._id))}" data-admin-arg-2="${escapeHtml(String(p.email))}" data-presentation="p034"><i class="fas fa-check"></i> قبول</button>
