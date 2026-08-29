@@ -11,6 +11,7 @@ const { loadAppConfig } = require('./config');
 const { createAdminSessionMiddleware } = require('./middleware/adminSession');
 const requireAdminSession = require('./middleware/requireAdminSession');
 const authenticateSocket = require('./socket/authenticateSocket');
+const { createOriginGuard, corsOptionsForRequest, socketOriginAllowed } = require('./security/originPolicy');
 const authRoutes = require('./routes/auth');
 const orderRoutes = require('./routes/orders');
 const providerRoutes = require('./routes/provider');
@@ -51,7 +52,19 @@ function getLanIp() {
 }
 const lanIp = getLanIp();
 
-app.use(cors());
+app.use(createOriginGuard({
+  allowedOrigins: appConfig.allowedOrigins,
+}));
+
+app.use(cors((req, callback) => {
+  callback(
+    null,
+    corsOptionsForRequest(
+      req,
+      appConfig.allowedOrigins,
+    ),
+  );
+}));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
@@ -98,7 +111,21 @@ let server;
 let io;
 
 const setupIO = () => {
-  io = new Server(server, { cors: { origin: '*' } });
+  io = new Server(server, {
+    cors: {
+      origin: appConfig.allowedOrigins,
+      credentials: true,
+    },
+    allowRequest: (req, callback) => {
+      callback(
+        null,
+        socketOriginAllowed(
+          req,
+          appConfig.allowedOrigins,
+        ),
+      );
+    },
+  });
   io.engine.use(sessionMiddleware);
 
 io.use((socket, next) => {
@@ -147,16 +174,17 @@ app.get('/api/config', (req, res) => {
   res.json({ lanIp: ip, port: parseInt(process.env.PORT || '3000') });
 });
 
-app.get('/api/health', async (req, res) => {
-  try {
-    const dbState = mongoose.connection.readyState;
-    const dbStatus = ['disconnected', 'connected', 'connecting', 'disconnecting'];
-    const orderCount = await Order.estimatedDocumentCount();
-    const userCount = await User.countDocuments();
-    res.json({ status: 'ok', db: dbStatus[dbState] || 'unknown', orders: orderCount, users: userCount });
-  } catch (err) {
-    res.status(500).json({ status: 'error', error: err.message });
-  }
+app.get('/api/health', (req, res) => {
+  const connected =
+    mongoose.connection.readyState === 1;
+
+  res
+    .status(connected ? 200 : 503)
+    .json({
+      status: connected
+        ? 'ok'
+        : 'unavailable',
+    });
 });
 
 app.use('/api/auth', authRoutes);

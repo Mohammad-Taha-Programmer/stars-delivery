@@ -1,4 +1,5 @@
 require('dotenv').config();
+const { parseAllowedOrigins } = require('./security/originPolicy');
 
 const MIN_SECRET_LENGTH = 32;
 const INSECURE_SECRET_VALUES = new Set([
@@ -52,6 +53,7 @@ function loadAppConfig(env = process.env) {
   return {
     ...security,
     mongodbUri: requiredValue('MONGODB_URI', env),
+    allowedOrigins: parseAllowedOrigins(env.CORS_ALLOWED_ORIGINS || ''),
   };
 }
 
