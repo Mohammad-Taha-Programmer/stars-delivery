@@ -9,7 +9,8 @@
     "test": "node --test",
     "check": "node --check src/index.js",
     "admin:bootstrap": "node src/scripts/adminBootstrap.js",
-    "offers:audit-duplicates": "node src/scripts/auditOfferDuplicates.js"
+    "offers:audit-duplicates": "node src/scripts/auditOfferDuplicates.js",
+    "contacts:audit-legacy-users": "node src/scripts/auditLegacyContactUsers.js"
   },
   "keywords": [],
   "author": "",

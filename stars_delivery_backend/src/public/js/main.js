@@ -942,30 +942,165 @@ async function loadConversations() {
 
 function renderConversations() {
   const container = document.getElementById('chatConversations');
+
   if (!conversations || conversations.length === 0) {
     container.innerHTML = '<p style="color:#8892a8;text-align:center;padding:40px;">لا توجد محادثات حالياً</p>';
     return;
   }
-  container.innerHTML = conversations.map(c => {
-    const initial = (c.userName || 'U')[0].toUpperCase();
-    const role = c.userRole === 'provider' ? 'سائق' : 'مستخدم';
-    return `<div class="conv-item ${activeChatUserId === c.userId ? 'active' : ''}" onclick="openSupportChat('${c.userId}', '${escapeHtml(c.userName)}', '${c.userPublicId}', '${role}')">
-      <div class="conv-avatar">${initial}</div>
-      <div class="conv-info"><div class="conv-name">${c.userName || 'Unknown'}</div><div class="conv-preview">${c.lastMessage || ''}</div></div>
-      ${c.unread > 0 ? `<div class="conv-badge">${c.unread}</div>` : ''}
-    </div>`;
-  }).join('');
+
+  container.innerHTML = '';
+
+  conversations.forEach((conversation) => {
+    const userId = String(conversation.userId || '');
+    const userName = conversation.userName || 'Unknown';
+    const initial = (userName || 'U')[0].toUpperCase();
+
+    let role = 'مستخدم';
+    if (conversation.userRole === 'provider') role = 'سائق';
+    if (conversation.userRole === 'guest') role = 'زائر';
+
+    const item = document.createElement('div');
+    item.className =
+      `conv-item ${activeChatUserId === userId ? 'active' : ''}`;
+
+    const avatar = document.createElement('div');
+    avatar.className = 'conv-avatar';
+    avatar.textContent = initial;
+
+    const info = document.createElement('div');
+    info.className = 'conv-info';
+
+    const name = document.createElement('div');
+    name.className = 'conv-name';
+    name.textContent = userName;
+
+    const preview = document.createElement('div');
+    preview.className = 'conv-preview';
+    preview.textContent = conversation.lastMessage || '';
+
+    info.appendChild(name);
+    info.appendChild(preview);
+
+    item.appendChild(avatar);
+    item.appendChild(info);
+
+    if ((conversation.unread || 0) > 0) {
+      const badge = document.createElement('div');
+      badge.className = 'conv-badge';
+      badge.textContent = String(conversation.unread);
+      item.appendChild(badge);
+    }
+
+    item.addEventListener('click', () => {
+      openSupportChat(
+        userId,
+        userName,
+        conversation.userPublicId || '',
+        role,
+      );
+    });
+
+    container.appendChild(item);
+  });
 }
 
-async function openSupportChat(userId, userName, userPublicId, role) {
+async function openSupportChat(
+  userId,
+  userName,
+  userPublicId,
+  role,
+) {
   activeChatUserId = userId;
   renderConversations();
-  const window = document.getElementById('chatWindow');
-  window.innerHTML = `
-    <div class="chat-header"><i class="fas fa-user-circle"></i> ${userName} <span style="color:#8892a8;font-size:12px;">#${userPublicId} (${role})</span><button onclick="resolveChat('${userId}')" style="margin-right:auto;padding:6px 14px;border:none;border-radius:20px;background:#2ecc71;color:#fff;font-weight:700;cursor:pointer;font-size:12px;"><i class="fas fa-check"></i> حل المشكلة</button></div>
-    <div class="chat-messages" id="chatMessagesArea"><p style="color:#8892a8;text-align:center;padding:40px;">جاري التحميل...</p></div>
-    <div class="chat-input-area"><input type="text" id="adminChatInput" placeholder="اكتب ردك..." onkeypress="if(event.key==='Enter')sendAdminReply()"><button onclick="sendAdminReply()"><i class="fas fa-paper-plane"></i> إرسال</button></div>
-  `;
+
+  const windowEl = document.getElementById('chatWindow');
+  const isPublicContact = userId.startsWith('contact:');
+
+  windowEl.innerHTML = isPublicContact
+    ? `
+      <div class="chat-header">
+        <i class="fas fa-user-circle"></i>
+        <span id="chatHeaderIdentity"></span>
+        <button id="resolveChatButton" style="margin-right:auto;padding:6px 14px;border:none;border-radius:20px;background:#2ecc71;color:#fff;font-weight:700;cursor:pointer;font-size:12px;">
+          <i class="fas fa-check"></i> حل المشكلة
+        </button>
+      </div>
+      <div class="chat-messages" id="chatMessagesArea">
+        <p style="color:#8892a8;text-align:center;padding:40px;">جاري التحميل...</p>
+      </div>
+      <div class="chat-input-area">
+        <span style="color:#8892a8;font-size:13px;">
+          طلب تواصل من زائر — استخدم البريد الإلكتروني أو رقم الهاتف الظاهر في الرسالة للرد.
+        </span>
+      </div>
+    `
+    : `
+      <div class="chat-header">
+        <i class="fas fa-user-circle"></i>
+        <span id="chatHeaderIdentity"></span>
+        <button id="resolveChatButton" style="margin-right:auto;padding:6px 14px;border:none;border-radius:20px;background:#2ecc71;color:#fff;font-weight:700;cursor:pointer;font-size:12px;">
+          <i class="fas fa-check"></i> حل المشكلة
+        </button>
+      </div>
+      <div class="chat-messages" id="chatMessagesArea">
+        <p style="color:#8892a8;text-align:center;padding:40px;">جاري التحميل...</p>
+      </div>
+      <div class="chat-input-area">
+        <input
+          type="text"
+          id="adminChatInput"
+          placeholder="اكتب ردك..."
+        >
+        <button id="adminChatSendButton">
+          <i class="fas fa-paper-plane"></i> إرسال
+        </button>
+      </div>
+    `;
+
+  const identity =
+    document.getElementById('chatHeaderIdentity');
+
+  if (identity) {
+    const publicIdText =
+      userPublicId ? ` #${userPublicId}` : '';
+
+    identity.textContent =
+      `${userName}${publicIdText} (${role})`;
+  }
+
+  const resolveButton =
+    document.getElementById('resolveChatButton');
+
+  if (resolveButton) {
+    resolveButton.addEventListener(
+      'click',
+      () => resolveChat(userId),
+    );
+  }
+
+  if (!isPublicContact) {
+    const input =
+      document.getElementById('adminChatInput');
+
+    const sendButton =
+      document.getElementById('adminChatSendButton');
+
+    if (input) {
+      input.addEventListener('keypress', (event) => {
+        if (event.key === 'Enter') {
+          sendAdminReply();
+        }
+      });
+    }
+
+    if (sendButton) {
+      sendButton.addEventListener(
+        'click',
+        () => sendAdminReply(),
+      );
+    }
+  }
+
   loadChatMessages(userId);
 }
 
@@ -983,28 +1118,76 @@ async function loadChatMessages(userId) {
 function appendChatMessage(sender, text, time) {
   const area = document.getElementById('chatMessagesArea');
   if (!area) return;
+
   const div = document.createElement('div');
   div.className = `chat-msg ${sender}`;
-  const timeStr = time ? new Date(time).toLocaleTimeString('ar-EG', {hour:'2-digit',minute:'2-digit'}) : '';
-  div.innerHTML = `${text}<div class="chat-time">${timeStr}</div>`;
+
+  const body = document.createElement('div');
+  body.className = 'chat-text';
+  body.textContent = text || '';
+
+  const timeEl = document.createElement('div');
+  timeEl.className = 'chat-time';
+  timeEl.textContent = time
+    ? new Date(time).toLocaleTimeString(
+        'ar-EG',
+        {
+          hour: '2-digit',
+          minute: '2-digit',
+        },
+      )
+    : '';
+
+  div.appendChild(body);
+  div.appendChild(timeEl);
+
   area.appendChild(div);
   area.scrollTop = area.scrollHeight;
 }
 
 async function sendAdminReply() {
-  const input = document.getElementById('adminChatInput');
-  if (!input || !activeChatUserId) return;
+  const input =
+    document.getElementById('adminChatInput');
+
+  if (
+    !input
+    || !activeChatUserId
+    || activeChatUserId.startsWith('contact:')
+  ) {
+    return;
+  }
+
   const text = input.value.trim();
   if (!text) return;
+
   input.value = '';
-  appendChatMessage('admin', text, new Date().toISOString());
+
   try {
-    await fetch(`/api/chat/admin/reply/${activeChatUserId}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text })
-    });
-  } catch (err) { console.error(err); }
+    const res = await fetch(
+      `/api/chat/admin/reply/${activeChatUserId}`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ text }),
+      },
+    );
+
+    if (!res.ok) {
+      throw new Error(
+        `Reply failed with HTTP ${res.status}`,
+      );
+    }
+
+    appendChatMessage(
+      'admin',
+      text,
+      new Date().toISOString(),
+    );
+  } catch (err) {
+    console.error(err);
+  }
 }
 
 async function resolveChat(userId) {

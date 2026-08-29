@@ -77,6 +77,7 @@ const Order = require('./models/Order');
 const Offer = require('./models/Offer');
 const Notification = require('./models/Notification');
 const ChatMessage = require('./models/ChatMessage');
+const ContactRequest = require('./models/ContactRequest');
 const User = require('./models/User');
 
 mongoose.connect(appConfig.mongodbUri)
@@ -87,6 +88,7 @@ mongoose.connect(appConfig.mongodbUri)
       Offer.createIndexes(),
       Notification.createIndexes(),
       ChatMessage.createIndexes(),
+      ContactRequest.createIndexes(),
     ]);
     console.log('Indexes ready');
   })

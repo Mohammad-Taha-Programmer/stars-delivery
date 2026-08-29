@@ -6,6 +6,7 @@ const PendingProvider = require('../models/PendingProvider');
 const { generatePublicId } = require('../utils/publicId');
 const { isMobileRole } = require('../middleware/mobileRole');
 const { loadSecurityConfig } = require('../config');
+const { isReservedGuestEmail } = require('../services/contactRequest');
 
 const JWT_SECRET = loadSecurityConfig().jwtSecret;
 
@@ -16,6 +17,10 @@ router.post('/register', async (req, res) => {
     const { fullName, email, phone, password, role, area, privacyPolicy } = req.body;
     if (!isMobileRole(role)) {
       return res.status(400).json({ error: 'Invalid registration role' });
+    }
+
+    if (isReservedGuestEmail(email)) {
+      return res.status(400).json({ error: 'Invalid email address' });
     }
 
     const existingUser = await User.findOne({ email });
@@ -58,6 +63,10 @@ router.post('/login', async (req, res) => {
     const { email, password, role } = req.body;
     if (!isMobileRole(role)) {
       return res.status(400).json({ error: 'Invalid login role' });
+    }
+
+    if (isReservedGuestEmail(email)) {
+      return res.status(400).json({ error: 'Invalid credentials' });
     }
 
     const user = await User.findOne({ email });
