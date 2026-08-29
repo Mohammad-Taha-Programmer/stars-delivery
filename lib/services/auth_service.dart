@@ -1,20 +1,56 @@
 import 'package:dio/dio.dart';
 import 'api_config.dart';
 
-class AuthService {
+class SessionRejectedException implements Exception {
+  final int? statusCode;
+  final String message;
+
+  const SessionRejectedException({
+    required this.statusCode,
+    required this.message,
+  });
+
+  @override
+  String toString() => message;
+}
+
+abstract interface class AuthGateway {
+  Future<Map<String, dynamic>> login(
+    String email,
+    String password,
+    String role,
+  );
+
+  Future<Map<String, dynamic>> register(
+    String fullName,
+    String email,
+    String phone,
+    String password,
+    String role,
+    String area, {
+    bool privacyPolicy = true,
+  });
+
+  Future<Map<String, dynamic>> validateSession(String token);
+}
+
+class AuthService implements AuthGateway {
   late final Dio _dio;
 
-  AuthService() {
-    _dio = Dio(
-      BaseOptions(
-        baseUrl: ApiConfig.apiUrl,
-        headers: {'Content-Type': 'application/json'},
-        connectTimeout: const Duration(seconds: 30),
-        receiveTimeout: const Duration(seconds: 30),
-      ),
-    );
+  AuthService({Dio? dio}) {
+    _dio =
+        dio ??
+        Dio(
+          BaseOptions(
+            baseUrl: ApiConfig.apiUrl,
+            headers: {'Content-Type': 'application/json'},
+            connectTimeout: const Duration(seconds: 30),
+            receiveTimeout: const Duration(seconds: 30),
+          ),
+        );
   }
 
+  @override
   Future<Map<String, dynamic>> login(
     String email,
     String password,
@@ -25,13 +61,15 @@ class AuthService {
         '/auth/login',
         data: {'email': email, 'password': password, 'role': role},
       );
-      return response.data;
+
+      return _asMap(response.data);
     } on DioException catch (e) {
-      final message = e.response?.data?['error'] ?? _dioErrorMessage(e);
+      final message = _serverMessage(e) ?? _dioErrorMessage(e);
       throw Exception(message);
     }
   }
 
+  @override
   Future<Map<String, dynamic>> register(
     String fullName,
     String email,
@@ -54,11 +92,56 @@ class AuthService {
           'privacyPolicy': privacyPolicy,
         },
       );
-      return response.data;
+
+      return _asMap(response.data);
     } on DioException catch (e) {
-      final message = e.response?.data?['error'] ?? _dioErrorMessage(e);
+      final message = _serverMessage(e) ?? _dioErrorMessage(e);
       throw Exception(message);
     }
+  }
+
+  @override
+  Future<Map<String, dynamic>> validateSession(String token) async {
+    try {
+      final response = await _dio.get(
+        '/auth/me',
+        options: Options(headers: {'Authorization': 'Bearer $token'}),
+      );
+
+      return _asMap(response.data);
+    } on DioException catch (e) {
+      final status = e.response?.statusCode;
+
+      if (status == 401 || status == 403) {
+        throw SessionRejectedException(
+          statusCode: status,
+          message: _serverMessage(e) ?? 'Session is no longer valid.',
+        );
+      }
+
+      throw Exception(_serverMessage(e) ?? _dioErrorMessage(e));
+    }
+  }
+
+  Map<String, dynamic> _asMap(dynamic value) {
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+
+    throw const FormatException('Unexpected server response');
+  }
+
+  String? _serverMessage(DioException e) {
+    final data = e.response?.data;
+
+    if (data is Map) {
+      final value = data['error'] ?? data['message'];
+      if (value is String && value.trim().isNotEmpty) {
+        return value;
+      }
+    }
+
+    return null;
   }
 
   String _dioErrorMessage(DioException e) {

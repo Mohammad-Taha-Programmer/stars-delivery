@@ -13,7 +13,18 @@ function authenticateSocket(socket, jwtSecret) {
   try {
     const decoded = jwt.verify(token, jwtSecret);
     if (!isMobileRole(decoded.role)) throw new Error('Invalid mobile role');
-    return { id: decoded.id, role: decoded.role };
+
+    const identity = {
+      id: decoded.id,
+      role: decoded.role,
+    };
+
+    if (Number.isFinite(decoded.exp)) {
+      identity.expiresAt =
+        decoded.exp * 1000;
+    }
+
+    return identity;
   } catch {
     throw new Error('Invalid authentication');
   }

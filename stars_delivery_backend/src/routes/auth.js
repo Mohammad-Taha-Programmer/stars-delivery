@@ -3,10 +3,16 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const PendingProvider = require('../models/PendingProvider');
+const auth = require('../middleware/auth');
+const requireRole = require('../middleware/requireRole');
 const { generatePublicId } = require('../utils/publicId');
 const { isMobileRole } = require('../middleware/mobileRole');
 const { loadSecurityConfig } = require('../config');
 const { isReservedGuestEmail } = require('../services/contactRequest');
+const {
+  isActiveMobileAccount,
+  publicMobileUser,
+} = require('../services/mobileSession');
 
 const JWT_SECRET = loadSecurityConfig().jwtSecret;
 
@@ -71,12 +77,21 @@ router.post('/login', async (req, res) => {
 
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
-    if (user.deleted) return res.status(403).json({ error: 'تم حذف هذا الحساب. يرجى إنشاء حساب جديد.' });
 
     if (user.role !== role) return res.status(400).json({ error: `No account found for this role` });
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ error: 'Invalid credentials' });
+
+
+    if (!isActiveMobileAccount(user, role)) {
+      return res.status(403).json({
+        error: user.deleted
+          ? 'تم حذف هذا الحساب. يرجى إنشاء حساب جديد.'
+          : 'هذا الحساب غير نشط حالياً.',
+        code: 'ACCOUNT_INACTIVE',
+      });
+    }
 
     const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
 
@@ -90,5 +105,18 @@ router.post('/login', async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 });
+
+router.get(
+  '/me',
+  auth,
+  requireRole('customer', 'provider'),
+  (req, res) => {
+    return res.json({
+      user: publicMobileUser(
+        req.authUser,
+      ),
+    });
+  },
+);
 
 module.exports = router;

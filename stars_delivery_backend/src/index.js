@@ -11,6 +11,7 @@ const { loadAppConfig } = require('./config');
 const { createAdminSessionMiddleware } = require('./middleware/adminSession');
 const requireAdminSession = require('./middleware/requireAdminSession');
 const authenticateSocket = require('./socket/authenticateSocket');
+const { isActiveMobileAccount } = require('./services/mobileSession');
 const { createOriginGuard, corsOptionsForRequest, socketOriginAllowed } = require('./security/originPolicy');
 const authRoutes = require('./routes/auth');
 const orderRoutes = require('./routes/orders');
@@ -128,11 +129,58 @@ const setupIO = () => {
   });
   io.engine.use(sessionMiddleware);
 
-io.use((socket, next) => {
+io.use(async (socket, next) => {
   try {
-    const identity = authenticateSocket(socket, appConfig.jwtSecret);
+    const identity =
+      authenticateSocket(
+        socket,
+        appConfig.jwtSecret,
+      );
+
+    if (identity.role !== 'admin') {
+      const user =
+        await User.findById(
+          identity.id,
+          'role status deleted',
+        );
+
+      if (
+        !isActiveMobileAccount(
+          user,
+          identity.role,
+        )
+      ) {
+        throw new Error(
+          'Invalid authentication',
+        );
+      }
+    }
+
     socket.userId = identity.id;
     socket.userRole = identity.role;
+
+    if (identity.expiresAt) {
+      const remaining =
+        identity.expiresAt
+        - Date.now();
+
+      if (remaining <= 0) {
+        throw new Error(
+          'Invalid authentication',
+        );
+      }
+
+      socket.sessionExpiryTimer =
+        setTimeout(
+          () => {
+            if (socket.connected) {
+              socket.disconnect(true);
+            }
+          },
+          remaining,
+        );
+    }
+
     next();
   } catch (err) {
     next(new Error(err.message));
@@ -140,6 +188,17 @@ io.use((socket, next) => {
 });
 
 io.on('connection', async (socket) => {
+  socket.on('disconnect', () => {
+    if (socket.sessionExpiryTimer) {
+      clearTimeout(
+        socket.sessionExpiryTimer,
+      );
+
+      socket.sessionExpiryTimer =
+        null;
+    }
+  });
+
   if (socket.userRole === 'admin') {
     socket.join('support');
     console.log('Admin socket connected (support room)');

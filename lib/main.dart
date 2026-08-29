@@ -18,13 +18,20 @@ void main() async {
 }
 
 class StarsDeliveryApp extends StatelessWidget {
-  const StarsDeliveryApp({super.key});
+  final AuthBloc Function()? authBlocFactory;
+
+  const StarsDeliveryApp({
+    super.key,
+    this.authBlocFactory,
+  });
 
   @override
   Widget build(BuildContext context) {
     return MultiBlocProvider(
       providers: [
-        BlocProvider(create: (_) => AuthBloc()),
+        BlocProvider<AuthBloc>(
+          create: (_) => authBlocFactory?.call() ?? AuthBloc(),
+        ),
         BlocProvider(create: (_) => AppBloc()),
         BlocProvider(create: (_) => NotificationBloc()),
       ],

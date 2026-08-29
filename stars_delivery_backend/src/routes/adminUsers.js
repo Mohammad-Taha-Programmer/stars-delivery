@@ -73,6 +73,9 @@ router.put('/:id/status', async (req, res) => {
           body: 'تم تجميد حسابك بسبب كثرة البلاغات. يرجى التواصل مع فريق الدعم.',
           action: 'contact_support',
         });
+
+        io.in(`user:${user._id}`)
+          .disconnectSockets(true);
       } else {
         await Notification.create({
           userId: user._id, type: 'broadcast', pinned: true,

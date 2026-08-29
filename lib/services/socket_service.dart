@@ -6,23 +6,34 @@ class SocketService {
   static SocketService? _instance;
   io.Socket? _socket;
 
-  final _newOrderController = StreamController<Map<String, dynamic>>.broadcast();
-  final _newOfferController = StreamController<Map<String, dynamic>>.broadcast();
-  final _offerAcceptedController = StreamController<Map<String, dynamic>>.broadcast();
-  final _orderStatusController = StreamController<Map<String, dynamic>>.broadcast();
+  final _newOrderController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _newOfferController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _offerAcceptedController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _orderStatusController =
+      StreamController<Map<String, dynamic>>.broadcast();
   final _notifCountController = StreamController<int>.broadcast();
-  final _supportReplyController = StreamController<Map<String, dynamic>>.broadcast();
-  final _broadcastController = StreamController<Map<String, dynamic>>.broadcast();
+  final _supportReplyController =
+      StreamController<Map<String, dynamic>>.broadcast();
+  final _broadcastController =
+      StreamController<Map<String, dynamic>>.broadcast();
   final _accountDeletedController = StreamController<void>.broadcast();
+  final _sessionRevokedController = StreamController<void>.broadcast();
 
   Stream<Map<String, dynamic>> get onNewOrder => _newOrderController.stream;
   Stream<Map<String, dynamic>> get onNewOffer => _newOfferController.stream;
-  Stream<Map<String, dynamic>> get onOfferAccepted => _offerAcceptedController.stream;
-  Stream<Map<String, dynamic>> get onOrderStatusChanged => _orderStatusController.stream;
+  Stream<Map<String, dynamic>> get onOfferAccepted =>
+      _offerAcceptedController.stream;
+  Stream<Map<String, dynamic>> get onOrderStatusChanged =>
+      _orderStatusController.stream;
   Stream<int> get onNotificationCount => _notifCountController.stream;
-  Stream<Map<String, dynamic>> get onSupportReply => _supportReplyController.stream;
+  Stream<Map<String, dynamic>> get onSupportReply =>
+      _supportReplyController.stream;
   Stream<Map<String, dynamic>> get onBroadcast => _broadcastController.stream;
   Stream<void> get onAccountDeleted => _accountDeletedController.stream;
+  Stream<void> get onSessionRevoked => _sessionRevokedController.stream;
 
   bool get isConnected => _socket?.connected ?? false;
 
@@ -37,19 +48,35 @@ class SocketService {
     disconnect();
 
     final uri = ApiConfig.apiUrl.replaceFirst('/api', '');
-    _socket = io.io(uri, io.OptionBuilder()
-      .setAuth({'token': token})
-      .setQuery({'area': area ?? ''})
-      .setTransports(['websocket'])
-      .enableAutoConnect()
-      .build());
+    _socket = io.io(
+      uri,
+      io.OptionBuilder()
+          .setAuth({'token': token})
+          .setQuery({'area': area ?? ''})
+          .setTransports(['websocket'])
+          .enableAutoConnect()
+          .build(),
+    );
 
     _socket!.onConnect((_) {
       print('Socket connected');
     });
 
-    _socket!.onDisconnect((_) {
+    _socket!.onDisconnect((reason) {
       print('Socket disconnected');
+
+      if (reason == 'io server disconnect') {
+        _sessionRevokedController.add(null);
+      }
+    });
+
+    _socket!.onConnectError((error) {
+      final message = error.toString().toLowerCase();
+
+      if (message.contains('invalid authentication') ||
+          message.contains('authentication required')) {
+        _sessionRevokedController.add(null);
+      }
     });
 
     _socket!.on('new_order', (data) {
@@ -117,6 +144,7 @@ class SocketService {
     _supportReplyController.close();
     _broadcastController.close();
     _accountDeletedController.close();
+    _sessionRevokedController.close();
     _instance = null;
   }
 }
