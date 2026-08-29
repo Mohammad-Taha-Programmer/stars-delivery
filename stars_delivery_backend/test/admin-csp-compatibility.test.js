@@ -31,10 +31,6 @@ const cssSource = read(
   'src/public/css/style.css',
 );
 
-const headersSource = read(
-  'src/security/adminBrowserHeaders.js',
-);
-
 const compatibilitySurface =
   `${adminViews}\n${browserSource}`;
 
@@ -240,12 +236,7 @@ test('strict script-src compatibility blockers stay absent', () => {
   );
 });
 
-test('STARS-010B1 intentionally leaves CSP enforcement deferred', () => {
-  assert.match(
-    headersSource,
-    /contentSecurityPolicy:\s*false/,
-  );
-
+test('STARS-010B1 preserves the audited external admin resource dependencies', () => {
   assert.match(
     adminViews,
     /https:\/\/fonts\.googleapis\.com/,
@@ -264,5 +255,10 @@ test('STARS-010B1 intentionally leaves CSP enforcement deferred', () => {
   assert.match(
     adminViews,
     /\/js\/main\.js/,
+  );
+
+  assert.doesNotMatch(
+    adminViews,
+    /<script\b[^>]*\bsrc="https:\/\//i,
   );
 });

@@ -290,7 +290,38 @@ test('CSRF comparison safely rejects equal-length Unicode input with different b
 });
 
 
-test('admin Helmet boundary emits safe headers while CSP remains intentionally deferred', async () => {
+function parseCspHeader(value) {
+  const directives =
+    new Map();
+
+  for (
+    const part
+    of String(value).split(';')
+  ) {
+    const trimmed =
+      part.trim();
+
+    if (!trimmed) {
+      continue;
+    }
+
+    const [
+      name,
+      ...sources
+    ] = trimmed.split(/\s+/);
+
+    directives.set(
+      name,
+      sources,
+    );
+  }
+
+  return directives;
+}
+
+async function getAdminHeaderResponse(
+  hostHeader,
+) {
   const app = express();
 
   app.use(
@@ -327,56 +358,30 @@ test('admin Helmet boundary emits safe headers while CSP remains intentionally d
     const address =
       server.address();
 
-    const response =
-      await new Promise(
-        (resolve, reject) => {
-          http.get(
-            {
-              host: '127.0.0.1',
-              port: address.port,
-              path: '/admin',
+    return await new Promise(
+      (resolve, reject) => {
+        http.get(
+          {
+            host: '127.0.0.1',
+            port: address.port,
+            path: '/admin',
+            headers: {
+              Host: hostHeader,
             },
-            (res) => {
-              res.resume();
+          },
+          (res) => {
+            res.resume();
 
-              res.once(
-                'end',
-                () => resolve(res),
-              );
-            },
-          ).once(
-            'error',
-            reject,
-          );
-        },
-      );
-
-    assert.equal(
-      response.headers[
-        'x-content-type-options'
-      ],
-      'nosniff',
-    );
-
-    assert.equal(
-      response.headers[
-        'x-frame-options'
-      ],
-      'DENY',
-    );
-
-    assert.equal(
-      response.headers[
-        'referrer-policy'
-      ],
-      'no-referrer',
-    );
-
-    assert.equal(
-      response.headers[
-        'content-security-policy'
-      ],
-      undefined,
+            res.once(
+              'end',
+              () => resolve(res),
+            );
+          },
+        ).once(
+          'error',
+          reject,
+        );
+      },
     );
   } finally {
     await new Promise(
@@ -385,6 +390,269 @@ test('admin Helmet boundary emits safe headers while CSP remains intentionally d
       },
     );
   }
+}
+
+test('admin Helmet boundary emits strict CSP and existing safe headers', async () => {
+  const response =
+    await getAdminHeaderResponse(
+      'admin.example.test:8443',
+    );
+
+  assert.equal(
+    response.headers[
+      'x-content-type-options'
+    ],
+    'nosniff',
+  );
+
+  assert.equal(
+    response.headers[
+      'x-frame-options'
+    ],
+    'DENY',
+  );
+
+  assert.equal(
+    response.headers[
+      'referrer-policy'
+    ],
+    'no-referrer',
+  );
+
+  const rawCsp =
+    response.headers[
+      'content-security-policy'
+    ];
+
+  assert.equal(
+    typeof rawCsp,
+    'string',
+  );
+
+  const csp =
+    parseCspHeader(rawCsp);
+
+  const expected = new Map([
+    [
+      'default-src',
+      ["'self'"],
+    ],
+    [
+      'base-uri',
+      ["'none'"],
+    ],
+    [
+      'connect-src',
+      [
+        "'self'",
+        'ws://admin.example.test:8443',
+        'wss://admin.example.test:8443',
+      ],
+    ],
+    [
+      'font-src',
+      [
+        "'self'",
+        'https://fonts.gstatic.com',
+        'https://cdnjs.cloudflare.com',
+      ],
+    ],
+    [
+      'form-action',
+      ["'self'"],
+    ],
+    [
+      'frame-ancestors',
+      ["'none'"],
+    ],
+    [
+      'frame-src',
+      ["'none'"],
+    ],
+    [
+      'img-src',
+      [
+        "'self'",
+        'data:',
+      ],
+    ],
+    [
+      'object-src',
+      ["'none'"],
+    ],
+    [
+      'script-src',
+      ["'self'"],
+    ],
+    [
+      'script-src-attr',
+      ["'none'"],
+    ],
+    [
+      'style-src',
+      [
+        "'self'",
+        'https://fonts.googleapis.com',
+        'https://cdnjs.cloudflare.com',
+      ],
+    ],
+    [
+      'style-src-attr',
+      ["'none'"],
+    ],
+    [
+      'worker-src',
+      ["'none'"],
+    ],
+  ]);
+
+  assert.deepEqual(
+    csp,
+    expected,
+  );
+
+  assert.doesNotMatch(
+    rawCsp,
+    /'unsafe-inline'/,
+  );
+
+  assert.doesNotMatch(
+    rawCsp,
+    /'unsafe-eval'/,
+  );
+
+  assert.doesNotMatch(
+    rawCsp,
+    /upgrade-insecure-requests/,
+  );
+});
+
+test('admin CSP never reflects an invalid Host value into connect-src', async () => {
+  const response =
+    await getAdminHeaderResponse(
+      'admin.example.test;script-src *',
+    );
+
+  const rawCsp =
+    response.headers[
+      'content-security-policy'
+    ];
+
+  assert.equal(
+    typeof rawCsp,
+    'string',
+  );
+
+  assert.doesNotMatch(
+    rawCsp,
+    /admin\.example\.test;script-src/,
+  );
+
+  const csp =
+    parseCspHeader(rawCsp);
+
+  assert.deepEqual(
+    csp.get(
+      'connect-src',
+    ),
+    [
+      "'self'",
+      'ws://invalid.invalid',
+      'wss://invalid.invalid',
+    ],
+  );
+});
+
+test('strict admin CSP contains only the audited external browser origins', () => {
+  const headers = read(
+    'src/security/adminBrowserHeaders.js',
+  );
+
+  const adminViews = [
+    read(
+      'src/views/admin/index.ejs',
+    ),
+    read(
+      'src/views/admin/login.ejs',
+    ),
+    read(
+      'src/views/admin/partials/modals.ejs',
+    ),
+    read(
+      'src/views/admin/partials/sidebar.ejs',
+    ),
+  ].join('\n');
+
+  assert.match(
+    headers,
+    /useDefaults:\s*false/,
+  );
+
+  for (const source of [
+    'https://fonts.googleapis.com',
+    'https://fonts.gstatic.com',
+    'https://cdnjs.cloudflare.com',
+  ]) {
+    assert.ok(
+      headers.includes(source),
+      source,
+    );
+  }
+
+  assert.doesNotMatch(
+    headers,
+    /['"]unsafe-inline['"]/,
+  );
+
+  assert.doesNotMatch(
+    headers,
+    /['"]unsafe-eval['"]/,
+  );
+
+  assert.doesNotMatch(
+    headers,
+    /['"]https:['"]/,
+  );
+
+  assert.doesNotMatch(
+    headers,
+    /['"]ws:['"]/,
+  );
+
+  assert.doesNotMatch(
+    headers,
+    /['"]wss:['"]/,
+  );
+
+  assert.doesNotMatch(
+    headers,
+    /upgradeInsecureRequests/,
+  );
+
+  assert.match(
+    adminViews,
+    /https:\/\/fonts\.googleapis\.com/,
+  );
+
+  assert.match(
+    adminViews,
+    /https:\/\/cdnjs\.cloudflare\.com/,
+  );
+
+  assert.match(
+    adminViews,
+    /\/socket\.io\/socket\.io\.js/,
+  );
+
+  assert.match(
+    adminViews,
+    /\/js\/main\.js/,
+  );
+
+  assert.doesNotMatch(
+    adminViews,
+    /<script\b[^>]*\bsrc="https:\/\//i,
+  );
 });
 
 test('all admin mutation boundaries are wired through CSRF protection', () => {
