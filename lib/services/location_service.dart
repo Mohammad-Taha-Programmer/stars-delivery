@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:dio/dio.dart';
 import 'api_config.dart';
+import 'mobile_api_client.dart';
 
 class LocationService {
   static bool _initialized = false;
@@ -120,8 +121,14 @@ class LocationService {
     }
 
     try {
-      await Dio().put(
-        '${ApiConfig.apiUrl}/users/location',
+      final dio = MobileApiClient.create(
+        baseUrl: ApiConfig.apiUrl,
+        connectTimeout: null,
+        receiveTimeout: null,
+      );
+
+      await dio.put(
+        '/users/location',
         data: {
           'latitude': pos.latitude,
           'longitude': pos.longitude,

@@ -1,5 +1,4 @@
 import 'dart:io';
-import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:image_picker/image_picker.dart';
@@ -10,6 +9,7 @@ import '../models/user_model.dart';
 import '../services/responsive.dart';
 import '../services/localization_service.dart';
 import '../services/api_config.dart';
+import '../services/mobile_api_client.dart';
 
 class CreateOrderScreen extends StatefulWidget {
   final UserModel user;
@@ -39,7 +39,14 @@ class _CreateOrderScreenState extends State<CreateOrderScreen> {
 
   Future<void> _loadFrequentItems() async {
     try {
-      final dio = Dio(BaseOptions(baseUrl: ApiConfig.apiUrl, headers: {'Authorization': 'Bearer ${widget.token}'}));
+      final dio = MobileApiClient.create(
+        baseUrl: ApiConfig.apiUrl,
+        headers: {
+          'Authorization': 'Bearer ${widget.token}',
+        },
+        connectTimeout: null,
+        receiveTimeout: null,
+      );
       final res = await dio.get('/users/frequent-items');
       if (mounted) setState(() => _frequentItems = List<String>.from(res.data['items'] ?? []));
     } catch (_) {}

@@ -2,13 +2,14 @@ import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../services/api_config.dart';
+import '../services/mobile_api_client.dart';
 import '../services/socket_service.dart';
 
 class ChatService {
   late final Dio _dio;
 
   ChatService(String token) {
-    _dio = Dio(BaseOptions(
+    _dio = MobileApiClient.create(
       baseUrl: ApiConfig.apiUrl,
       headers: {
         'Content-Type': 'application/json',
@@ -16,7 +17,7 @@ class ChatService {
       },
       connectTimeout: const Duration(seconds: 8),
       receiveTimeout: const Duration(seconds: 8),
-    ));
+    );
   }
 
   Future<List<Map<String, dynamic>>> getHistory() async {

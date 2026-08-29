@@ -1,15 +1,16 @@
 import 'package:dio/dio.dart';
 import 'api_config.dart';
+import 'mobile_api_client.dart';
 
 class OrderService {
   late final Dio _dio;
 
   OrderService() {
-    _dio = Dio(BaseOptions(
+    _dio = MobileApiClient.create(
       baseUrl: ApiConfig.apiUrl,
       connectTimeout: const Duration(seconds: 30),
       receiveTimeout: const Duration(seconds: 30),
-    ));
+    );
   }
 
   Future<Map<String, dynamic>> createOrder(

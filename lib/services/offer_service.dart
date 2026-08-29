@@ -1,11 +1,16 @@
 import 'package:dio/dio.dart';
 import '../models/offer_model.dart';
 import 'api_config.dart';
+import 'mobile_api_client.dart';
 
 class OfferService {
   late final Dio _dio;
   OfferService() {
-    _dio = Dio(BaseOptions(baseUrl: ApiConfig.apiUrl, connectTimeout: const Duration(seconds: 30), receiveTimeout: const Duration(seconds: 30)));
+    _dio = MobileApiClient.create(
+      baseUrl: ApiConfig.apiUrl,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+    );
   }
 
   Future<void> submitOffer(String token, String orderId, double price, int estimatedTime) async {

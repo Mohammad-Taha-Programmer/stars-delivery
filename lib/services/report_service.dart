@@ -1,16 +1,17 @@
 import 'package:dio/dio.dart';
 import 'api_config.dart';
+import 'mobile_api_client.dart';
 
 class ReportService {
   late final Dio _dio;
 
   ReportService() {
-    _dio = Dio(BaseOptions(
+    _dio = MobileApiClient.create(
       baseUrl: ApiConfig.apiUrl,
       headers: {'Content-Type': 'application/json'},
       connectTimeout: const Duration(seconds: 8),
       receiveTimeout: const Duration(seconds: 8),
-    ));
+    );
   }
 
   Future<Map<String, dynamic>> submitReport({

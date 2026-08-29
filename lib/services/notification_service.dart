@@ -1,11 +1,16 @@
 import 'package:dio/dio.dart';
 import '../models/notification_model.dart';
 import 'api_config.dart';
+import 'mobile_api_client.dart';
 
 class NotificationService {
   late final Dio _dio;
   NotificationService() {
-    _dio = Dio(BaseOptions(baseUrl: ApiConfig.apiUrl, connectTimeout: const Duration(seconds: 30), receiveTimeout: const Duration(seconds: 30)));
+    _dio = MobileApiClient.create(
+      baseUrl: ApiConfig.apiUrl,
+      connectTimeout: const Duration(seconds: 30),
+      receiveTimeout: const Duration(seconds: 30),
+    );
   }
 
   Future<List<NotificationModel>> getNotifications(String token) async {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:dio/dio.dart';
 import '../models/user_model.dart';
 import '../services/api_config.dart';
+import '../services/mobile_api_client.dart';
 import '../services/responsive.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -171,11 +172,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Dio _client() => Dio(BaseOptions(
+  Dio _client() => MobileApiClient.create(
     baseUrl: ApiConfig.apiUrl,
-    headers: {'Authorization': 'Bearer ${widget.token}', 'Content-Type': 'application/json'},
+    headers: {
+      'Authorization': 'Bearer ${widget.token}',
+      'Content-Type': 'application/json',
+    },
     connectTimeout: const Duration(seconds: 8),
-  ));
+    receiveTimeout: null,
+  );
 
   @override
   Widget build(BuildContext context) {

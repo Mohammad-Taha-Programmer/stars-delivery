@@ -1,17 +1,18 @@
 import 'package:dio/dio.dart';
 import '../models/provider_stats.dart';
 import 'api_config.dart';
+import 'mobile_api_client.dart';
 
 class ProviderService {
   late final Dio _dio;
 
   ProviderService() {
-    _dio = Dio(BaseOptions(
+    _dio = MobileApiClient.create(
       baseUrl: ApiConfig.apiUrl,
       headers: {'Content-Type': 'application/json'},
       connectTimeout: const Duration(seconds: 8),
       receiveTimeout: const Duration(seconds: 8),
-    ));
+    );
   }
 
   Future<ProviderStats> getStats(String token) async {

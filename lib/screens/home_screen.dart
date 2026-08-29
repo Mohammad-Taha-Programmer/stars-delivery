@@ -23,6 +23,7 @@ import 'report_screen.dart';
 import 'profile_screen.dart';
 import 'support_chat_screen.dart';
 import '../services/socket_service.dart';
+import '../services/mobile_session_failure.dart';
 
 class HomeScreen extends StatefulWidget {
   final UserModel user;
@@ -46,11 +47,23 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
   StreamSubscription? _broadcastSub;
   StreamSubscription? _accountDeletedSub;
   StreamSubscription? _sessionRevokedSub;
+  StreamSubscription? _httpSessionRejectedSub;
+  bool _sessionExitStarted = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+
+    _httpSessionRejectedSub =
+        MobileSessionFailure.instance.onRejected.listen((event) {
+      if (!event.belongsTo(widget.token)) {
+        return;
+      }
+
+      _endSession();
+    });
+
     LocationService.syncToBackend(widget.token);
 
     SocketService.instance.connect(token: widget.token);
@@ -102,23 +115,34 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
       );
     });
 
-    _accountDeletedSub = SocketService.instance.onAccountDeleted.listen((_) {
-      if (!mounted) return;
-      SocketService.instance.disconnect();
-      context.read<AuthBloc>().add(LogoutEvent());
-      Navigator.pushAndRemoveUntil(context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false);
+    _accountDeletedSub =
+        SocketService.instance.onAccountDeleted.listen((_) {
+      _endSession();
     });
 
-    _sessionRevokedSub = SocketService.instance.onSessionRevoked.listen((_) {
-      if (!mounted) return;
-      SocketService.instance.disconnect();
-      context.read<AuthBloc>().add(LogoutEvent());
-      Navigator.pushAndRemoveUntil(context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-        (route) => false);
+    _sessionRevokedSub =
+        SocketService.instance.onSessionRevoked.listen((_) {
+      _endSession();
     });
+  }
+
+  void _endSession() {
+    if (!mounted || _sessionExitStarted) {
+      return;
+    }
+
+    _sessionExitStarted = true;
+
+    SocketService.instance.disconnect();
+    context.read<AuthBloc>().add(LogoutEvent());
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(
+        builder: (_) => const LoginScreen(),
+      ),
+      (route) => false,
+    );
   }
 
   @override
@@ -138,6 +162,7 @@ class _HomeScreenState extends State<HomeScreen> with WidgetsBindingObserver {
     _broadcastSub?.cancel();
     _accountDeletedSub?.cancel();
     _sessionRevokedSub?.cancel();
+    _httpSessionRejectedSub?.cancel();
     super.dispose();
   }
 
