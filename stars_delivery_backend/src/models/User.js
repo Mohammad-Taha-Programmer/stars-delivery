@@ -20,6 +20,7 @@ const userSchema = new mongoose.Schema({
   status: { type: String, enum: ['active', 'blocked', 'pending', 'inactive'], default: 'active' },
   commissionPaid: { type: Boolean, default: false },
   blockedUntil: { type: Date, default: null },
+  offerSequence: { type: Number, default: 0 },
   deleted: { type: Boolean, default: false },
   privacyPolicy: { type: Boolean, default: false },
   verified: { type: Boolean, default: false },

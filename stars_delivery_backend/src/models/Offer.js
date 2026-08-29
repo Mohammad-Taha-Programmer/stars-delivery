@@ -10,6 +10,9 @@ const offerSchema = new mongoose.Schema({
 });
 
 offerSchema.index({ orderId: 1, createdAt: -1 });
+// Keep this index non-unique until existing production data has been
+// explicitly audited/migrated. Concurrent duplicate prevention is
+// enforced transactionally by serializing submissions on the provider.
 offerSchema.index({ providerId: 1, orderId: 1 });
 
 module.exports = mongoose.model('Offer', offerSchema);

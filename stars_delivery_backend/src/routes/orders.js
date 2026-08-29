@@ -6,6 +6,7 @@ const User = require('../models/User');
 const Notification = require('../models/Notification');
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
+const lifecycle = require('../services/orderLifecycle');
 const { uploadImagesToCloud } = require('../services/upload');
 
 const router = express.Router();
@@ -107,46 +108,30 @@ router.get('/', auth, requireRole('customer'), async (req, res) => {
 
 router.put('/:id/fulfilling', auth, requireRole('provider'), async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ error: 'Order not found' });
-    if (order.providerId?.toString() !== req.userId) return res.status(403).json({ error: 'Not your order' });
-
-    order.status = 'fulfilling';
-    await order.save();
-
-    await Notification.create({
-      userId: order.customerId, orderId: order._id, type: 'order_pending',
-      title: 'جاري تنفيذ الطلب', body: 'السائق يقوم بتنفيذ طلبك الآن',
-    });
+    const order = await lifecycle.transitionOrder({ orderId: req.params.id, providerId: req.userId, from: 'accepted', to: 'fulfilling' });
 
     const io = req.app.get('io');
     if (io) io.to(`user:${order.customerId}`).emit('order_status_changed', { orderId: order._id, status: 'fulfilling' });
 
-    res.json(order.toObject());
+    res.json(order);
   } catch (err) {
+    if (err instanceof lifecycle.LifecycleConflict) return res.status(409).json(lifecycle.conflictResponse(err));
+    if (lifecycle.isTransactionUnavailable(err)) return res.status(503).json({ error: 'Order service is temporarily unavailable' });
     res.status(500).json({ error: err.message });
   }
 });
 
 router.put('/:id/complete', auth, requireRole('provider'), async (req, res) => {
   try {
-    const order = await Order.findById(req.params.id);
-    if (!order) return res.status(404).json({ error: 'Order not found' });
-    if (order.providerId?.toString() !== req.userId) return res.status(403).json({ error: 'Not your order' });
-
-    order.status = 'completed';
-    await order.save();
-
-    await Notification.create({
-      userId: order.customerId, orderId: order._id, type: 'order_completed',
-      title: 'تم اكتمال الطلب', body: 'تم تسليم طلبك بنجاح',
-    });
+    const order = await lifecycle.transitionOrder({ orderId: req.params.id, providerId: req.userId, from: 'fulfilling', to: 'completed' });
 
     const io = req.app.get('io');
     if (io) io.to(`user:${order.customerId}`).emit('order_status_changed', { orderId: order._id, status: 'completed' });
 
-    res.json(order.toObject());
+    res.json(order);
   } catch (err) {
+    if (err instanceof lifecycle.LifecycleConflict) return res.status(409).json(lifecycle.conflictResponse(err));
+    if (lifecycle.isTransactionUnavailable(err)) return res.status(503).json({ error: 'Order service is temporarily unavailable' });
     res.status(500).json({ error: err.message });
   }
 });
