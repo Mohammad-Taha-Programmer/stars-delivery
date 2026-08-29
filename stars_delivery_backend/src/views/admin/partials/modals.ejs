@@ -4,7 +4,7 @@
     <h2><i class="fas fa-file-alt"></i> وثائق السائق</h2>
     <div class="sub" id="docDriverName">اسم السائق: ---</div>
     <div id="documentsList"></div>
-    <button class="modal-close-btn" onclick="closeDocuments()"><i class="fas fa-times"></i> إغلاق</button>
+    <button class="modal-close-btn" data-admin-action="closeDocuments" data-admin-arg-count="0"><i class="fas fa-times"></i> إغلاق</button>
   </div>
 </div>
 
@@ -14,7 +14,7 @@
     <h2><i class="fas fa-chart-line"></i> تقرير طلبات السائق</h2>
     <div class="sub" id="reportDriverName">اسم السائق: ---</div>
     <div id="reportContent"></div>
-    <button class="modal-close-btn" onclick="closeReport()"><i class="fas fa-times"></i> إغلاق</button>
+    <button class="modal-close-btn" data-admin-action="closeReport" data-admin-arg-count="0"><i class="fas fa-times"></i> إغلاق</button>
   </div>
 </div>
 
@@ -24,7 +24,7 @@
     <h2><i class="fas fa-list-ul"></i> تقرير طلبات المستخدم</h2>
     <div class="sub" id="userOrdersName">اسم المستخدم: ---</div>
     <div id="userOrdersContent"></div>
-    <button class="modal-close-btn" onclick="closeUserOrders()"><i class="fas fa-times"></i> إغلاق</button>
+    <button class="modal-close-btn" data-admin-action="closeUserOrders" data-admin-arg-count="0"><i class="fas fa-times"></i> إغلاق</button>
   </div>
 </div>
 
@@ -34,15 +34,15 @@
     <h2><i class="fas fa-file-alt"></i> تفاصيل الإبلاغ</h2>
     <div class="sub" id="reportDetailTitle">عنوان الإبلاغ</div>
     <div id="reportDetailContent"></div>
-    <div id="replySection" style="margin-top:20px; border-top:1px solid #2a3546; padding-top:15px;">
-      <h4 style="color:#b0c0d4; margin-bottom:10px;"><i class="fas fa-comments"></i> المحادثة</h4>
+    <div id="replySection" data-presentation="p012">
+      <h4 data-presentation="p013"><i class="fas fa-comments"></i> المحادثة</h4>
       <div id="chatThread" class="chat-thread"></div>
       <div class="reply-input-area">
         <textarea id="replyInput" placeholder="اكتب ردك هنا..."></textarea>
-        <button onclick="sendReply()"><i class="fas fa-paper-plane"></i> إرسال</button>
+        <button data-admin-action="sendReply" data-admin-arg-count="0"><i class="fas fa-paper-plane"></i> إرسال</button>
       </div>
     </div>
-    <button class="modal-close-btn" onclick="closeReportDetail()"><i class="fas fa-times"></i> إغلاق</button>
+    <button class="modal-close-btn" data-admin-action="closeReportDetail" data-admin-arg-count="0"><i class="fas fa-times"></i> إغلاق</button>
   </div>
 </div>
 
@@ -52,7 +52,7 @@
     <h2><i class="fas fa-list-ul"></i> <span id="listModalTitle">القائمة</span></h2>
     <div class="sub" id="listModalSub">تفاصيل الأعضاء</div>
     <div id="listModalContent"></div>
-    <button class="modal-close-btn" onclick="closeListModal()"><i class="fas fa-times"></i> إغلاق</button>
+    <button class="modal-close-btn" data-admin-action="closeListModal" data-admin-arg-count="0"><i class="fas fa-times"></i> إغلاق</button>
   </div>
 </div>
 
@@ -64,9 +64,9 @@
     <input type="password" id="currentPassword" placeholder="كلمة المرور الحالية">
     <input type="password" id="newPassword" placeholder="كلمة المرور الجديدة">
     <input type="password" id="confirmPassword" placeholder="تأكيد كلمة المرور الجديدة">
-    <button class="btn-submit" onclick="handleResetPassword()"><i class="fas fa-save"></i> حفظ التغييرات</button>
+    <button class="btn-submit" data-admin-action="handleResetPassword" data-admin-arg-count="0"><i class="fas fa-save"></i> حفظ التغييرات</button>
     <div id="resetMsg" class="msg"></div>
-    <button class="modal-close-btn" onclick="closeResetPassword()" style="margin-top:15px;"><i class="fas fa-times"></i> إلغاء</button>
+    <button class="modal-close-btn" data-admin-action="closeResetPassword" data-admin-arg-count="0" data-presentation="p014"><i class="fas fa-times"></i> إلغاء</button>
   </div>
 </div>
 
@@ -78,8 +78,8 @@
     <div id="chatMessages" class="chat-messages"></div>
     <div class="chat-input-area">
       <input type="text" id="chatInput" placeholder="اكتب رسالتك...">
-      <button onclick="sendChatMessage()"><i class="fas fa-paper-plane"></i> إرسال</button>
+      <button data-admin-action="sendChatMessage" data-admin-arg-count="0"><i class="fas fa-paper-plane"></i> إرسال</button>
     </div>
-    <button class="modal-close-btn" onclick="closeChat()"><i class="fas fa-times"></i> إغلاق</button>
+    <button class="modal-close-btn" data-admin-action="closeChat" data-admin-arg-count="0"><i class="fas fa-times"></i> إغلاق</button>
   </div>
 </div>

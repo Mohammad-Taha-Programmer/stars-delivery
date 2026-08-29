@@ -9,17 +9,17 @@
   <link rel="stylesheet" href="/css/style.css">
 </head>
 <body>
-  <div class="login-overlay show" style="display:flex;">
+  <div class="login-overlay show" data-presentation="p009">
     <div class="login-box">
       <div class="logo-big"><span>🚀</span> تحكم<span>+</span></div>
-      <h3 style="color:#8892a8; margin-bottom:20px; font-weight:400;">تسجيل الدخول إلى لوحة التحكم</h3>
+      <h3 data-presentation="p010">تسجيل الدخول إلى لوحة التحكم</h3>
       <form method="POST" action="/admin/login">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>">
         <input type="email" name="identifier" placeholder="البريد الإلكتروني" autocomplete="username" required>
         <input type="password" name="password" placeholder="كلمة المرور" autocomplete="current-password" required>
         <button type="submit"><i class="fas fa-sign-in-alt"></i> تسجيل الدخول</button>
         <% if (error) { %>
-          <div class="error-msg show" style="display:block;">❌ <%= error %></div>
+          <div class="error-msg show" data-presentation="p011">❌ <%= error %></div>
         <% } else { %>
           <div class="error-msg">❌ اسم المستخدم أو كلمة المرور غير صحيحة</div>
         <% } %>

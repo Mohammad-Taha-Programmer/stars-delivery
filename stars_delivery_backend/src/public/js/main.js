@@ -6,6 +6,9 @@ const adminCsrfToken =
     ?.getAttribute('content')
   || '';
 
+const adminActionCapability =
+  adminCsrfToken || null;
+
 const nativeFetch =
   window.fetch.bind(window);
 
@@ -207,6 +210,167 @@ function updateFileName(input, spanId) {
 }
 
 // ================================================
+// STARS-010B1 CSP compatibility
+// ================================================
+function setInlineDisplay(element, visible) {
+  if (!element) return;
+
+  element.classList.toggle(
+    'csp-hidden',
+    !visible,
+  );
+
+  element.classList.toggle(
+    'csp-inline-block',
+    visible,
+  );
+}
+
+const adminActionHandlers = Object.freeze({
+  activateDriver,
+  activateUser,
+  approveProvider,
+  changeDriverPassword,
+  changeUserPassword,
+  closeChat,
+  closeDocuments,
+  closeListModal,
+  closeReport,
+  closeReportDetail,
+  closeResetPassword,
+  closeUserOrders,
+  deleteDriver,
+  deleteReport,
+  deleteUser,
+  enterDocs,
+  freezeDriver,
+  freezeUser,
+  handleResetPassword,
+  markPaid,
+  openChat,
+  openListModal,
+  openReplyModal,
+  openResetPassword,
+  rejectProvider,
+  resolveReport,
+  selectGovernorate,
+  sendBroadcast,
+  sendChatMessage,
+  sendReply,
+  viewDocuments,
+  viewDriverOrdersViaDB,
+  viewReportDetail,
+  viewUserOrdersViaDB,
+});
+
+function stampStaticAdminActionCapabilities() {
+  if (!adminActionCapability) {
+    return;
+  }
+
+  document
+    .querySelectorAll(
+      '[data-admin-action]',
+    )
+    .forEach(
+      (element) => {
+        element.setAttribute(
+          'data-admin-capability',
+          adminActionCapability,
+        );
+      },
+    );
+}
+
+stampStaticAdminActionCapabilities();
+
+
+document.addEventListener(
+  'click',
+  (event) => {
+    if (!(event.target instanceof Element)) {
+      return;
+    }
+
+    const trigger = event.target.closest(
+      '[data-admin-action]',
+    );
+
+    if (!trigger) {
+      return;
+    }
+
+    if (
+      !adminActionCapability
+      || trigger.getAttribute(
+        'data-admin-capability',
+      ) !== adminActionCapability
+    ) {
+      return;
+    }
+
+    const action = trigger.getAttribute(
+      'data-admin-action',
+    );
+
+    const handler =
+      adminActionHandlers[action];
+
+    if (typeof handler !== 'function') {
+      return;
+    }
+
+    const argCount = Number(
+      trigger.getAttribute(
+        'data-admin-arg-count',
+      )
+      || '0',
+    );
+
+    const args = [];
+
+    for (
+      let index = 1;
+      index <= argCount;
+      index += 1
+    ) {
+      args.push(
+        trigger.getAttribute(
+          `data-admin-arg-${index}`,
+        )
+        ?? '',
+      );
+    }
+
+    handler(...args);
+  },
+);
+
+document.addEventListener(
+  'change',
+  (event) => {
+    if (!(event.target instanceof Element)) {
+      return;
+    }
+
+    const input = event.target.closest(
+      '[data-file-name-target]',
+    );
+
+    if (!input) {
+      return;
+    }
+
+    updateFileName(
+      input,
+      input.getAttribute(
+        'data-file-name-target',
+      ),
+    );
+  },
+);
+
+// ================================================
 // 5. إضافة سائق جديد
 // ================================================
 document.getElementById('addDriverForm').addEventListener('submit', function (e) {
@@ -284,7 +448,7 @@ function renderDriverResultFromDB(data) {
   const container = document.getElementById('driverResult');
   const isPaid = driver.financial.paymentStatus === 'paid';
   container.innerHTML = `
-    <h4 style="color:#00d4ff; margin-bottom:15px;">بيانات السائق</h4>
+    <h4 data-presentation="p017">بيانات السائق</h4>
      <div class="row"><span class="label">ID السائق</span><span class="value">${driver.driverId}</span></div>
     <div class="row"><span class="label">الاسم الكامل</span><span class="value">${driver.name}</span></div>
     <div class="row"><span class="label">البريد الإلكتروني</span><span class="value">${driver.email}</span></div>
@@ -294,18 +458,18 @@ function renderDriverResultFromDB(data) {
     <div class="row"><span class="label">المنطقة</span><span class="value">${driver.area}</span></div>
     <div class="row"><span class="label">الحالة</span><span class="value">${getStatusBadge(driver.status)}</span></div>
     <div class="row"><span class="label">حالة الدفع</span><span class="value">${isPaid ? `<span class="paid-badge">مدفوع</span>` : `<span class="unpaid-badge">غير مدفوع (${commission} )</span>`}</span></div>
-    <div class="row"><span class="label">إجمالي الأرباح (صافي)</span><span class="value" style="color:#2ecc71;">${netProfit} </div>
-    <div class="row"><span class="label">أرباح آخر 30 يوم (صافي)</span><span class="value" style="color:#00d4ff;">${last30Profit} </div>
+    <div class="row"><span class="label">إجمالي الأرباح (صافي)</span><span class="value" data-presentation="p002">${netProfit} </div>
+    <div class="row"><span class="label">أرباح آخر 30 يوم (صافي)</span><span class="value" data-presentation="p018">${last30Profit} </div>
     <div class="row"><span class="label">كلمة المرور</span><span class="value">${driver.password || 'غير محدد'}</span></div>
-    <div class="row"><span class="label">عمولة المنصة المستحقة</span><span class="value" style="color:#f39c12; font-weight:800;">${commission} </div>
+    <div class="row"><span class="label">عمولة المنصة المستحقة</span><span class="value" data-presentation="p019">${commission} </div>
     <div class="action-buttons">
-      <button class="action-btn chat" onclick="openChat('driver','${driver._id}')">مراسلة</button>
-      <button class="action-btn report" onclick="viewDriverOrdersViaDB('${driver._id}')">تقرير الطلبات</button>
-      <button class="action-btn change-password" onclick="changeDriverPassword('${driver._id}')" style="padding:5px 12px; font-size:12px;">تغيير كلمة المرور</button>
-      <button class="action-btn docs" onclick="viewDocuments('${driver._id}')">الوثائق</button>
-      <button class="action-btn freeze" onclick="freezeDriver('${driver._id}')">تجميد</button>
-      <button class="action-btn activate" onclick="activateDriver('${driver._id}')">تفعيل</button>
-      <button class="action-btn delete" onclick="deleteDriver('${driver._id}')">حذف نهائي</button>
+      <button class="action-btn chat" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="openChat" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(driver._id))}">مراسلة</button>
+      <button class="action-btn report" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewDriverOrdersViaDB" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}">تقرير الطلبات</button>
+      <button class="action-btn change-password" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="changeDriverPassword" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}" data-presentation="p020">تغيير كلمة المرور</button>
+      <button class="action-btn docs" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewDocuments" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}">الوثائق</button>
+      <button class="action-btn freeze" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="freezeDriver" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}">تجميد</button>
+      <button class="action-btn activate" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="activateDriver" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}">تفعيل</button>
+      <button class="action-btn delete" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="deleteDriver" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}">حذف نهائي</button>
     </div>
   `;
   container.classList.add('show');
@@ -341,7 +505,7 @@ function renderUserResultFromDB(user) {
   const container = document.getElementById('userResult');
   const orderCount = user.orders ? user.orders.length : 0;
   container.innerHTML = `
-    <h4 style="color:#00d4ff; margin-bottom:15px;">بيانات المستخدم</h4>
+    <h4 data-presentation="p017">بيانات المستخدم</h4>
      <div class="row"><span class="label">ID المستخدم</span><span class="value">${user.userId}</span></div>
     <div class="row"><span class="label">الاسم الكامل</span><span class="value">${user.name}</span></div>
     <div class="row"><span class="label">البريد الإلكتروني</span><span class="value">${user.email}</span></div>
@@ -352,12 +516,12 @@ function renderUserResultFromDB(user) {
     <div class="row"><span class="label">عدد الطلبات</span><span class="value">${orderCount}</span></div>
     <div class="row"><span class="label">كلمة المرور</span><span class="value">${user.password || 'غير محدد'}</span></div>
     <div class="action-buttons">
-      <button class="action-btn chat" onclick="openChat('user','${user._id}')">مراسلة</button>
-      <button class="action-btn orders-report" onclick="viewUserOrdersViaDB('${user._id}')">تقرير الطلبات</button>
-      <button class="action-btn change-password" onclick="changeUserPassword('${user._id}')" style="padding:5px 12px; font-size:12px;">تغيير كلمة المرور</button>
-      <button class="action-btn freeze" onclick="freezeUser('${user._id}')">تجميد</button>
-      <button class="action-btn activate" onclick="activateUser('${user._id}')">تفعيل</button>
-      <button class="action-btn delete" onclick="deleteUser('${user._id}')">حذف نهائي</button>
+      <button class="action-btn chat" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="openChat" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(user._id))}">مراسلة</button>
+      <button class="action-btn orders-report" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewUserOrdersViaDB" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(user._id))}">تقرير الطلبات</button>
+      <button class="action-btn change-password" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="changeUserPassword" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(user._id))}" data-presentation="p020">تغيير كلمة المرور</button>
+      <button class="action-btn freeze" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="freezeUser" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(user._id))}">تجميد</button>
+      <button class="action-btn activate" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="activateUser" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(user._id))}">تفعيل</button>
+      <button class="action-btn delete" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="deleteUser" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(user._id))}">حذف نهائي</button>
     </div>
   `;
   container.classList.add('show');
@@ -454,12 +618,12 @@ async function loadDashboardStats() {
     document.getElementById('pendingAmount').textContent = data.pendingAmount;
 
     const driverBadge = document.getElementById('driverReportsBadge');
-    if (data.driverReportsPending > 0) { driverBadge.textContent = data.driverReportsPending; driverBadge.style.display = 'inline-block'; }
-    else { driverBadge.style.display = 'none'; }
+    if (data.driverReportsPending > 0) { driverBadge.textContent = data.driverReportsPending; setInlineDisplay(driverBadge, true); }
+    else { setInlineDisplay(driverBadge, false); }
 
     const userBadge = document.getElementById('userReportsBadge');
-    if (data.userReportsPending > 0) { userBadge.textContent = data.userReportsPending; userBadge.style.display = 'inline-block'; }
-    else { userBadge.style.display = 'none'; }
+    if (data.userReportsPending > 0) { userBadge.textContent = data.userReportsPending; setInlineDisplay(userBadge, true); }
+    else { setInlineDisplay(userBadge, false); }
 
     // Load pending provider count
     try {
@@ -467,7 +631,7 @@ async function loadDashboardStats() {
       const pendingData = await pendingRes.json();
       const pendingBadge = document.getElementById('pendingBadge');
       pendingBadge.textContent = pendingData.length;
-      pendingBadge.style.display = pendingData.length > 0 ? 'inline-block' : 'none';
+      setInlineDisplay(pendingBadge, pendingData.length > 0);
     } catch (_) {}
 
     const topRes = await adminFetch('/admin/api/top-driver');
@@ -491,9 +655,9 @@ async function loadCommissions() {
       const isPaid = driver.paymentStatus === 'paid';
       const statusText = isPaid ? '<span class="status-paid">مدفوع</span>' : `<span class="status-unpaid">غير مدفوع (${driver.commission} )</span>`;
       const actionHtml = !isPaid ?
-        `<button class="action-btn pay-now" onclick="markPaid('${driver._id}')" style="padding:5px 12px; font-size:12px;">تحديد كمدفوع</button>` :
-        '<span style="color:#2ecc71; font-weight:700;">مدفوع</span>';
-      rows += `<tr><td><strong>${driver.name}</strong><br><small style="color:#8892a8;">${driver.driverId}</small></td><td>${driver.phone || 'غير متوفر'}</td><td>${driver.serviceType}</td><td>${driver.commission}</td><td>${statusText}</td><td>${actionHtml}</td></tr>`;
+        `<button class="action-btn pay-now" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="markPaid" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}" data-presentation="p020">تحديد كمدفوع</button>` :
+        '<span data-presentation="p021">مدفوع</span>';
+      rows += `<tr><td><strong>${driver.name}</strong><br><small data-presentation="p008">${driver.driverId}</small></td><td>${driver.phone || 'غير متوفر'}</td><td>${driver.serviceType}</td><td>${driver.commission}</td><td>${statusText}</td><td>${actionHtml}</td></tr>`;
     });
 
     document.getElementById('commissionsContent').innerHTML = `
@@ -548,7 +712,7 @@ async function loadAreas() {
     for (const gov of data.governorateOrder) {
       if (governorateStats[gov]) {
         const s = governorateStats[gov];
-        listHtml += `<div class="area-item" data-gov="${gov}" onclick="selectGovernorate('${gov}')"><span class="name">${gov}</span><span class="counts"><span class="drivers">${s.totalDrivers}</span><span class="users">${s.totalUsers}</span></span></div>`;
+        listHtml += `<div class="area-item" data-gov="${gov}" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="selectGovernorate" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(gov))}"><span class="name">${gov}</span><span class="counts"><span class="drivers">${s.totalDrivers}</span><span class="users">${s.totalUsers}</span></span></div>`;
         if (!firstGov) firstGov = gov;
       }
     }
@@ -568,7 +732,7 @@ function buildGovernorateDetail(gov, stats) {
     totalDrivers += city.drivers; totalUsers += city.users;
     citiesHtml += `<div class="city-item"><span class="city-name">${city.name}</span><span class="city-counts"><span class="drivers">${city.drivers}</span><span class="users">${city.users}</span></span></div>`;
   });
-  return `<h3>${gov}</h3>${citiesHtml}<div class="total-badge"><span class="label">إجمالي المحافظة</span><span><span class="value drivers">${totalDrivers}</span><span class="value users" style="margin-right:20px;">${totalUsers}</span></span></div>`;
+  return `<h3>${gov}</h3>${citiesHtml}<div class="total-badge"><span class="label">إجمالي المحافظة</span><span><span class="value drivers">${totalDrivers}</span><span class="value users" data-presentation="p022">${totalUsers}</span></span></div>`;
 }
 
 function selectGovernorate(gov) {
@@ -592,7 +756,7 @@ async function loadDriverReports() {
       const replyCount = report.replies ? report.replies.length : 0;
       const reporterName = report.reporterId?.fullName || report.reporter || 'غير معروف';
       const targetId = report.reportedPublicId || '';
-      rows += `<tr><td><strong>${report.reportId}</strong></td><td>${reporterName}</td><td>#${targetId}</td><td>${report.category}</td><td>${report.date}</td><td>${getReportStatusBadge(report.status)}</td><td>${report.content.substring(0, 40)}${report.content.length > 40 ? '...' : ''}</td><td><button class="action-btn info" onclick="viewReportDetail('driver','${report.reportId}')" style="padding:5px 12px; font-size:12px;">عرض</button><button class="action-btn reply" onclick="openReplyModal('driver','${report.reportId}')" style="padding:5px 12px; font-size:12px;">رد (${replyCount})</button>${report.status !== 'resolved' ? `<button class="action-btn success" onclick="resolveReport('driver','${report.reportId}')" style="padding:5px 12px; font-size:12px;">حل</button>` : ''}<button class="action-btn danger" onclick="deleteReport('driver','${report.reportId}')" style="padding:5px 12px; font-size:12px;">حذف</button></td></tr>`;
+      rows += `<tr><td><strong>${report.reportId}</strong></td><td>${reporterName}</td><td>#${targetId}</td><td>${report.category}</td><td>${report.date}</td><td>${getReportStatusBadge(report.status)}</td><td>${report.content.substring(0, 40)}${report.content.length > 40 ? '...' : ''}</td><td><button class="action-btn info" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewReportDetail" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">عرض</button><button class="action-btn reply" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="openReplyModal" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">رد (${replyCount})</button>${report.status !== 'resolved' ? `<button class="action-btn success" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="resolveReport" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">حل</button>` : ''}<button class="action-btn danger" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="deleteReport" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">حذف</button></td></tr>`;
     });
     document.getElementById('driverReportsContent').innerHTML = `<div class="commissions-table-container"><h3>قائمة إبلاغات السائقين</h3><table class="commissions-table"><thead><tr><th>رقم الإبلاغ</th><th>المبلغ</th><th>ID السائق</th><th>النوع</th><th>التاريخ</th><th>الحالة</th><th>المحتوى</th><th>الإجراءات</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   } catch (err) { console.error('Error loading driver reports:', err); }
@@ -607,7 +771,7 @@ async function loadUserReports() {
       const replyCount = report.replies ? report.replies.length : 0;
       const reporterName = report.reporterId?.fullName || report.reporter || 'غير معروف';
       const targetId = report.reportedPublicId || '';
-      rows += `<tr><td><strong>${report.reportId}</strong></td><td>${reporterName}</td><td>#${targetId}</td><td>${report.category}</td><td>${report.date}</td><td>${getReportStatusBadge(report.status)}</td><td>${report.content.substring(0, 40)}${report.content.length > 40 ? '...' : ''}</td><td><button class="action-btn info" onclick="viewReportDetail('user','${report.reportId}')" style="padding:5px 12px; font-size:12px;">عرض</button><button class="action-btn reply" onclick="openReplyModal('user','${report.reportId}')" style="padding:5px 12px; font-size:12px;">رد (${replyCount})</button>${report.status !== 'resolved' ? `<button class="action-btn success" onclick="resolveReport('user','${report.reportId}')" style="padding:5px 12px; font-size:12px;">حل</button>` : ''}<button class="action-btn danger" onclick="deleteReport('user','${report.reportId}')" style="padding:5px 12px; font-size:12px;">حذف</button></td></tr>`;
+      rows += `<tr><td><strong>${report.reportId}</strong></td><td>${reporterName}</td><td>#${targetId}</td><td>${report.category}</td><td>${report.date}</td><td>${getReportStatusBadge(report.status)}</td><td>${report.content.substring(0, 40)}${report.content.length > 40 ? '...' : ''}</td><td><button class="action-btn info" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewReportDetail" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">عرض</button><button class="action-btn reply" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="openReplyModal" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">رد (${replyCount})</button>${report.status !== 'resolved' ? `<button class="action-btn success" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="resolveReport" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">حل</button>` : ''}<button class="action-btn danger" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="deleteReport" data-admin-arg-count="2" data-admin-arg-1="user" data-admin-arg-2="${escapeHtml(String(report.reportId))}" data-presentation="p020">حذف</button></td></tr>`;
     });
     document.getElementById('userReportsContent').innerHTML = `<div class="commissions-table-container"><h3>قائمة إبلاغات المستخدمين</h3><table class="commissions-table"><thead><tr><th>رقم الإبلاغ</th><th>المبلغ</th><th>ID المستخدم</th><th>النوع</th><th>التاريخ</th><th>الحالة</th><th>المحتوى</th><th>الإجراءات</th></tr></thead><tbody>${rows}</tbody></table></div>`;
   } catch (err) { console.error('Error loading user reports:', err); }
@@ -624,7 +788,7 @@ async function openReplyModal(type, reportId) {
     const report = data.report;
 
     document.getElementById('reportDetailTitle').textContent = `إبلاغ رقم ${report.reportId} - ${report.category}`;
-    document.getElementById('reportDetailContent').innerHTML = `<div style="background:#0f141c; border-radius:12px; padding:20px; border:1px solid #2a3546;"><div class="row"><span class="label">المرسل:</span><span class="value">${report.reporter}</span></div><div class="row"><span class="label">النوع:</span><span class="value">${report.category}</span></div><div class="row"><span class="label">التاريخ:</span><span class="value">${report.date}</span></div><div class="row"><span class="label">الحالة:</span><span class="value">${getReportStatusBadge(report.status)}</span></div><div style="margin-top:15px; padding-top:15px; border-top:1px solid #2a3546;"><span style="color:#8892a8; display:block; margin-bottom:8px; font-weight:600;">المحتوى الكامل:</span><p style="color:#fff; line-height:1.8; background:#0b0e14; padding:15px; border-radius:10px;">${report.content}</p></div></div>`;
+    document.getElementById('reportDetailContent').innerHTML = `<div data-presentation="p023"><div class="row"><span class="label">المرسل:</span><span class="value">${report.reporter}</span></div><div class="row"><span class="label">النوع:</span><span class="value">${report.category}</span></div><div class="row"><span class="label">التاريخ:</span><span class="value">${report.date}</span></div><div class="row"><span class="label">الحالة:</span><span class="value">${getReportStatusBadge(report.status)}</span></div><div data-presentation="p024"><span data-presentation="p025">المحتوى الكامل:</span><p data-presentation="p026">${report.content}</p></div></div>`;
     renderChatThread(report);
     document.getElementById('reportDetailModal').classList.add('show');
     document.getElementById('replyInput').value = '';
@@ -637,7 +801,7 @@ function renderChatThread(report) {
   const threadDiv = document.getElementById('chatThread');
   threadDiv.innerHTML = '';
   if (!report.replies || report.replies.length === 0) {
-    threadDiv.innerHTML = '<p style="color:#8892a8; text-align:center; padding:20px;">لا توجد ردود حتى الآن.</p>';
+    threadDiv.innerHTML = '<p data-presentation="p027">لا توجد ردود حتى الآن.</p>';
     return;
   }
   report.replies.forEach(msg => {
@@ -719,7 +883,7 @@ async function sendBroadcast(target) {
     const data = await res.json();
     if (data.success) {
       resultDiv.className = 'broadcast-result success';
-      resultDiv.innerHTML = `تم إرسال الرسالة بنجاح إلى <strong>${data.count}</strong> ${target === 'drivers' ? 'سائق' : 'مستخدم'}.<br><span style="font-size:13px; color:#8892a8;">العنوان: ${title}</span><br><span style="font-size:13px; color:#8892a8;">تم الإرسال في: ${data.sentAt}</span>`;
+      resultDiv.innerHTML = `تم إرسال الرسالة بنجاح إلى <strong>${data.count}</strong> ${target === 'drivers' ? 'سائق' : 'مستخدم'}.<br><span data-presentation="p028">العنوان: ${title}</span><br><span data-presentation="p028">تم الإرسال في: ${data.sentAt}</span>`;
     } else {
       resultDiv.className = 'broadcast-result error';
       resultDiv.textContent = data.message;
@@ -840,10 +1004,10 @@ async function viewDocuments(driverId) {
     const listContainer = document.getElementById('documentsList');
     listContainer.innerHTML = '';
     if (!driver.documents || driver.documents.length === 0) {
-      listContainer.innerHTML = '<p style="color:#8892a8; text-align:center; padding:20px;">لا توجد وثائق مسجلة.</p>';
+      listContainer.innerHTML = '<p data-presentation="p027">لا توجد وثائق مسجلة.</p>';
     } else {
       driver.documents.forEach(doc => {
-        const fileDisplay = doc.file && doc.file !== 'لم يتم الرفع' ? `<span style="color:#00d4ff;">${doc.file}</span>` : '<span style="color:#e74c3c;">لم يتم الرفع</span>';
+        const fileDisplay = doc.file && doc.file !== 'لم يتم الرفع' ? `<span data-presentation="p018">${doc.file}</span>` : '<span data-presentation="p003">لم يتم الرفع</span>';
         const div = document.createElement('div');
         div.className = 'doc-item';
         div.innerHTML = `<span class="doc-name">${doc.name}</span><span class="doc-status">${fileDisplay}</span>`;
@@ -871,10 +1035,10 @@ async function viewDriverOrdersViaDB(driverId) {
         <div class="invoice-box">
           <table class="invoice-table"><thead><tr><th>رقم المعاملة</th><th>الوصف</th><th>التاريخ</th><th>المبلغ</th></tr></thead><tbody>${rows}</tbody></table>
           <div class="invoice-total"><span class="total-label">صافي الأرباح</span><span class="total-value">${netProfit} </span></div>
-          <div style="display:flex;justify-content:space-between;margin-top:10px;color:#8892a8;"><span>آخر 30 يوم: ${last30Profit} </span><span>عمولة المنصة: ${totalCommission || 0} </span></div>
+          <div data-presentation="p029"><span>آخر 30 يوم: ${last30Profit} </span><span>عمولة المنصة: ${totalCommission || 0} </span></div>
         </div>`;
     } else {
-      content.innerHTML = '<p style="color:#8892a8;text-align:center;padding:30px;">لا توجد معاملات مسجلة.</p>';
+      content.innerHTML = '<p data-presentation="p030">لا توجد معاملات مسجلة.</p>';
     }
     document.getElementById('reportModal').classList.add('show');
   } catch (err) { alert('حدث خطأ في تحميل التقرير'); }
@@ -895,7 +1059,7 @@ async function viewUserOrdersViaDB(userId) {
       });
       content.innerHTML = `<div class="invoice-box"><table class="invoice-table"><thead><tr><th>رقم الطلب</th><th>النوع</th><th>التاريخ</th><th>الحالة</th><th>المبلغ</th></tr></thead><tbody>${rows}</tbody></table></div>`;
     } else {
-      content.innerHTML = '<p style="color:#8892a8;text-align:center;padding:30px;">لا توجد طلبات مسجلة.</p>';
+      content.innerHTML = '<p data-presentation="p030">لا توجد طلبات مسجلة.</p>';
     }
     document.getElementById('userOrdersModal').classList.add('show');
   } catch (err) { alert('حدث خطأ في تحميل الطلبات'); }
@@ -1007,7 +1171,7 @@ function connectSupportSocket() {
     const badge = document.getElementById('chatBadge');
     const current = parseInt(badge.textContent || '0');
     badge.textContent = current + 1;
-    badge.style.display = 'inline-block';
+    setInlineDisplay(badge, true);
     if (document.getElementById('page-support-chat').classList.contains('active-page')) {
       loadConversations();
       if (activeChatUserId === data.userId) appendChatMessage('user', data.text, data.createdAt);
@@ -1027,7 +1191,7 @@ function renderConversations() {
   const container = document.getElementById('chatConversations');
 
   if (!conversations || conversations.length === 0) {
-    container.innerHTML = '<p style="color:#8892a8;text-align:center;padding:40px;">لا توجد محادثات حالياً</p>';
+    container.innerHTML = '<p data-presentation="p006">لا توجد محادثات حالياً</p>';
     return;
   }
 
@@ -1104,15 +1268,15 @@ async function openSupportChat(
       <div class="chat-header">
         <i class="fas fa-user-circle"></i>
         <span id="chatHeaderIdentity"></span>
-        <button id="resolveChatButton" style="margin-right:auto;padding:6px 14px;border:none;border-radius:20px;background:#2ecc71;color:#fff;font-weight:700;cursor:pointer;font-size:12px;">
+        <button id="resolveChatButton" data-presentation="p031">
           <i class="fas fa-check"></i> حل المشكلة
         </button>
       </div>
       <div class="chat-messages" id="chatMessagesArea">
-        <p style="color:#8892a8;text-align:center;padding:40px;">جاري التحميل...</p>
+        <p data-presentation="p006">جاري التحميل...</p>
       </div>
       <div class="chat-input-area">
-        <span style="color:#8892a8;font-size:13px;">
+        <span data-presentation="p032">
           طلب تواصل من زائر — استخدم البريد الإلكتروني أو رقم الهاتف الظاهر في الرسالة للرد.
         </span>
       </div>
@@ -1121,12 +1285,12 @@ async function openSupportChat(
       <div class="chat-header">
         <i class="fas fa-user-circle"></i>
         <span id="chatHeaderIdentity"></span>
-        <button id="resolveChatButton" style="margin-right:auto;padding:6px 14px;border:none;border-radius:20px;background:#2ecc71;color:#fff;font-weight:700;cursor:pointer;font-size:12px;">
+        <button id="resolveChatButton" data-presentation="p031">
           <i class="fas fa-check"></i> حل المشكلة
         </button>
       </div>
       <div class="chat-messages" id="chatMessagesArea">
-        <p style="color:#8892a8;text-align:center;padding:40px;">جاري التحميل...</p>
+        <p data-presentation="p006">جاري التحميل...</p>
       </div>
       <div class="chat-input-area">
         <input
@@ -1291,9 +1455,9 @@ async function resolveChat(userId) {
   try {
     await adminFetch(`/api/chat/admin/resolve/${userId}`, { method: 'DELETE' });
     activeChatUserId = null;
-    document.getElementById('chatWindow').innerHTML = '<div class="chat-empty-state"><i class="fas fa-check-circle" style="font-size:48px;color:#2ecc71;margin-bottom:16px;"></i><p style="color:#8892a8;">تم حل المشكلة بنجاح</p></div>';
+    document.getElementById('chatWindow').innerHTML = '<div class="chat-empty-state"><i class="fas fa-check-circle" data-presentation="p033"></i><p data-presentation="p008">تم حل المشكلة بنجاح</p></div>';
     loadConversations();
-    document.getElementById('chatBadge').style.display = 'none';
+    setInlineDisplay(document.getElementById('chatBadge'), false);
     document.getElementById('chatBadge').textContent = '0';
   } catch (err) { console.error(err); }
 }
@@ -1312,10 +1476,10 @@ async function loadPendingProviders() {
     const pending = await res.json();
     const badge = document.getElementById('pendingBadge');
     badge.textContent = pending.length;
-    badge.style.display = pending.length > 0 ? 'inline-block' : 'none';
+    setInlineDisplay(badge, pending.length > 0);
 
     if (pending.length === 0) {
-      document.getElementById('pendingProvidersContent').innerHTML = '<p style="color:#8892a8;text-align:center;padding:40px;">لا توجد طلبات تسجيل جديدة</p>';
+      document.getElementById('pendingProvidersContent').innerHTML = '<p data-presentation="p006">لا توجد طلبات تسجيل جديدة</p>';
       return;
     }
 
@@ -1328,9 +1492,9 @@ async function loadPendingProviders() {
         <td>${p.area || 'غير محدد'}</td>
         <td>${new Date(p.createdAt).toLocaleDateString('ar-EG')}</td>
         <td>
-          <button class="action-btn info" onclick="enterDocs('${p._id}','${escapeHtml(p.fullName)}','${p.email}','${p.phone}','${p.area || ''}')" style="padding:5px 14px;font-size:12px;"><i class="fas fa-file-alt"></i> إدخال وثائق</button>
-          <button class="action-btn success" onclick="approveProvider('${p._id}','${p.email}')" style="padding:5px 14px;font-size:12px;"><i class="fas fa-check"></i> قبول</button>
-          <button class="action-btn danger" onclick="rejectProvider('${p._id}')" style="padding:5px 14px;font-size:12px;"><i class="fas fa-times"></i> رفض</button>
+          <button class="action-btn info" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="enterDocs" data-admin-arg-count="5" data-admin-arg-1="${escapeHtml(String(p._id))}" data-admin-arg-2="${escapeHtml(p.fullName)}" data-admin-arg-3="${escapeHtml(String(p.email))}" data-admin-arg-4="${escapeHtml(String(p.phone))}" data-admin-arg-5="${escapeHtml(String(p.area || ''))}" data-presentation="p034"><i class="fas fa-file-alt"></i> إدخال وثائق</button>
+          <button class="action-btn success" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="approveProvider" data-admin-arg-count="2" data-admin-arg-1="${escapeHtml(String(p._id))}" data-admin-arg-2="${escapeHtml(String(p.email))}" data-presentation="p034"><i class="fas fa-check"></i> قبول</button>
+          <button class="action-btn danger" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="rejectProvider" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(p._id))}" data-presentation="p034"><i class="fas fa-times"></i> رفض</button>
         </td>
       </tr>`;
     });

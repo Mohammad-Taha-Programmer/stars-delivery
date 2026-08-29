@@ -18,28 +18,28 @@
     <div id="page-dashboard" class="page-section active-page">
       <div class="top-header">
         <h1>لوحة القيادة <small>التحكم بالعمولات والإحصائيات</small></h1>
-        <div class="live-clock"><i class="fas fa-sync-alt fa-fw" style="margin-left:10px;"></i> <span id="clockDisplay">جاري التحميل...</span></div>
+        <div class="live-clock"><i class="fas fa-sync-alt fa-fw" data-presentation="p001"></i> <span id="clockDisplay">جاري التحميل...</span></div>
       </div>
       <div class="stats-row">
-        <div class="stat-card blue" onclick="openListModal('drivers','all','جميع السائقين')"><span class="icon"><i class="fas fa-users"></i></span><div class="number" id="totalDrivers">0</div><div class="label">إجمالي السائقين</div></div>
-        <div class="stat-card green" onclick="openListModal('drivers','active','السائقين النشطين')"><span class="icon"><i class="fas fa-check-circle"></i></span><div class="number" id="activeDrivers">0</div><div class="label">نشطون (سائقين)</div></div>
-        <div class="stat-card red" onclick="openListModal('drivers','inactive','السائقين غير النشطين')"><span class="icon"><i class="fas fa-times-circle"></i></span><div class="number" id="inactiveDrivers">0</div><div class="label">غير نشطين (سائقين)</div></div>
-        <div class="stat-card blue" onclick="openListModal('users','all','جميع المستخدمين')"><span class="icon"><i class="fas fa-user-friends"></i></span><div class="number" id="totalUsers">0</div><div class="label">إجمالي المستخدمين</div></div>
-        <div class="stat-card green" onclick="openListModal('users','active','المستخدمين النشطين')"><span class="icon"><i class="fas fa-check-circle"></i></span><div class="number" id="activeUsers">0</div><div class="label">نشطون (مستخدمين)</div></div>
-        <div class="stat-card red" onclick="openListModal('users','inactive','المستخدمين غير النشطين')"><span class="icon"><i class="fas fa-times-circle"></i></span><div class="number" id="inactiveUsers">0</div><div class="label">غير نشطين (مستخدمين)</div></div>
+        <div class="stat-card blue" data-admin-action="openListModal" data-admin-arg-count="3" data-admin-arg-1="drivers" data-admin-arg-2="all" data-admin-arg-3="جميع السائقين"><span class="icon"><i class="fas fa-users"></i></span><div class="number" id="totalDrivers">0</div><div class="label">إجمالي السائقين</div></div>
+        <div class="stat-card green" data-admin-action="openListModal" data-admin-arg-count="3" data-admin-arg-1="drivers" data-admin-arg-2="active" data-admin-arg-3="السائقين النشطين"><span class="icon"><i class="fas fa-check-circle"></i></span><div class="number" id="activeDrivers">0</div><div class="label">نشطون (سائقين)</div></div>
+        <div class="stat-card red" data-admin-action="openListModal" data-admin-arg-count="3" data-admin-arg-1="drivers" data-admin-arg-2="inactive" data-admin-arg-3="السائقين غير النشطين"><span class="icon"><i class="fas fa-times-circle"></i></span><div class="number" id="inactiveDrivers">0</div><div class="label">غير نشطين (سائقين)</div></div>
+        <div class="stat-card blue" data-admin-action="openListModal" data-admin-arg-count="3" data-admin-arg-1="users" data-admin-arg-2="all" data-admin-arg-3="جميع المستخدمين"><span class="icon"><i class="fas fa-user-friends"></i></span><div class="number" id="totalUsers">0</div><div class="label">إجمالي المستخدمين</div></div>
+        <div class="stat-card green" data-admin-action="openListModal" data-admin-arg-count="3" data-admin-arg-1="users" data-admin-arg-2="active" data-admin-arg-3="المستخدمين النشطين"><span class="icon"><i class="fas fa-check-circle"></i></span><div class="number" id="activeUsers">0</div><div class="label">نشطون (مستخدمين)</div></div>
+        <div class="stat-card red" data-admin-action="openListModal" data-admin-arg-count="3" data-admin-arg-1="users" data-admin-arg-2="inactive" data-admin-arg-3="المستخدمين غير النشطين"><span class="icon"><i class="fas fa-times-circle"></i></span><div class="number" id="inactiveUsers">0</div><div class="label">غير نشطين (مستخدمين)</div></div>
       </div>
       <div class="triple-metrics">
-        <div class="metric-card card-products"><div class="label"><span><i class="fas fa-shopping-bag"></i> طلبات المنتجات</span><span><i class="fas fa-arrow-up" style="color:#2ecc71;"></i> +12%</span></div><div class="value" id="prodCount">0</div><div class="sub-info"><span><i class="fas fa-clock"></i> متوسط الانتظار: <span id="prodWait">4</span> د</span><span><i class="fas fa-check-circle"></i> نشط: <span id="prodActive">6</span></span></div></div>
-        <div class="metric-card card-passengers"><div class="label"><span><i class="fas fa-user-friends"></i> طلبات الركاب</span><span><i class="fas fa-arrow-up" style="color:#2ecc71;"></i> +8%</span></div><div class="value" id="passCount">0</div><div class="sub-info"><span><i class="fas fa-clock"></i> متوسط الانتظار: <span id="passWait">3</span> د</span><span><i class="fas fa-check-circle"></i> نشط: <span id="passActive">11</span></span></div></div>
-        <div class="metric-card card-cargo"><div class="label"><span><i class="fas fa-truck"></i> طلبات البضائع</span><span><i class="fas fa-arrow-down" style="color:#e74c3c;"></i> -2%</span></div><div class="value" id="cargoCount">0</div><div class="sub-info"><span><i class="fas fa-clock"></i> متوسط الانتظار: <span id="cargoWait">9</span> د</span><span><i class="fas fa-check-circle"></i> نشط: <span id="cargoActive">3</span></span></div></div>
+        <div class="metric-card card-products"><div class="label"><span><i class="fas fa-shopping-bag"></i> طلبات المنتجات</span><span><i class="fas fa-arrow-up" data-presentation="p002"></i> +12%</span></div><div class="value" id="prodCount">0</div><div class="sub-info"><span><i class="fas fa-clock"></i> متوسط الانتظار: <span id="prodWait">4</span> د</span><span><i class="fas fa-check-circle"></i> نشط: <span id="prodActive">6</span></span></div></div>
+        <div class="metric-card card-passengers"><div class="label"><span><i class="fas fa-user-friends"></i> طلبات الركاب</span><span><i class="fas fa-arrow-up" data-presentation="p002"></i> +8%</span></div><div class="value" id="passCount">0</div><div class="sub-info"><span><i class="fas fa-clock"></i> متوسط الانتظار: <span id="passWait">3</span> د</span><span><i class="fas fa-check-circle"></i> نشط: <span id="passActive">11</span></span></div></div>
+        <div class="metric-card card-cargo"><div class="label"><span><i class="fas fa-truck"></i> طلبات البضائع</span><span><i class="fas fa-arrow-down" data-presentation="p003"></i> -2%</span></div><div class="value" id="cargoCount">0</div><div class="sub-info"><span><i class="fas fa-clock"></i> متوسط الانتظار: <span id="cargoWait">9</span> د</span><span><i class="fas fa-check-circle"></i> نشط: <span id="cargoActive">3</span></span></div></div>
       </div>
       <div class="bottom-grid">
         <div class="panel-box">
           <h3><i class="fas fa-hand-holding-usd"></i> ملخص العمولات والإيرادات</h3>
           <div class="commission-stats">
             <div class="commission-item"><div class="info"><span class="title"><i class="fas fa-percent"></i> إجمالي عمولة المنصة (اليوم)</span><span class="number" id="totalCommission">0</span></div><span class="badge-trend up"><i class="fas fa-arrow-up"></i> +8%</span></div>
-            <div class="commission-item" style="border-right-color:#f39c12;"><div class="info"><span class="title"><i class="fas fa-trophy"></i> أعلى سائق تحقيقاً للأرباح</span><span class="number" id="topDriver">---</span></div><span class="badge-trend up" id="topDriverEarn">0 </span></div>
-            <div class="commission-item" style="border-right-color:#2ecc71;"><div class="info"><span class="title"><i class="fas fa-hourglass-half"></i> السائقون المستحقون للصرف</span><span class="number" id="pendingDrivers">0</span></div><span class="badge-trend down">المبلغ: <span id="pendingAmount">0</span></span></div>
+            <div class="commission-item" data-presentation="p004"><div class="info"><span class="title"><i class="fas fa-trophy"></i> أعلى سائق تحقيقاً للأرباح</span><span class="number" id="topDriver">---</span></div><span class="badge-trend up" id="topDriverEarn">0 </span></div>
+            <div class="commission-item" data-presentation="p005"><div class="info"><span class="title"><i class="fas fa-hourglass-half"></i> السائقون المستحقون للصرف</span><span class="number" id="pendingDrivers">0</span></div><span class="badge-trend down">المبلغ: <span id="pendingAmount">0</span></span></div>
           </div>
         </div>
       </div>
@@ -112,10 +112,10 @@
             <div class="doc-section">
               <h4>📄 وثائق السائق (رفع صور)</h4>
               <div class="doc-grid">
-                <div class="doc-item"><label>رخصة القيادة</label><div class="file-input-wrapper"><input type="file" name="docLicense" accept="image/*" onchange="updateFileName(this,'licenseName')"><span class="file-name" id="licenseName">لم يتم الاختيار</span></div></div>
-                <div class="doc-item"><label>الهوية الوطنية</label><div class="file-input-wrapper"><input type="file" name="docId" accept="image/*" onchange="updateFileName(this,'idName')"><span class="file-name" id="idName">لم يتم الاختيار</span></div></div>
-                <div class="doc-item"><label>تأمين المركبة</label><div class="file-input-wrapper"><input type="file" name="docInsurance" accept="image/*" onchange="updateFileName(this,'insuranceName')"><span class="file-name" id="insuranceName">لم يتم الاختيار</span></div></div>
-                <div class="doc-item"><label>صورة السيارة</label><div class="file-input-wrapper"><input type="file" name="docCar" accept="image/*" onchange="updateFileName(this,'carName')"><span class="file-name" id="carName">لم يتم الاختيار</span></div></div>
+                <div class="doc-item"><label>رخصة القيادة</label><div class="file-input-wrapper"><input type="file" name="docLicense" accept="image/*" data-file-name-target="licenseName"><span class="file-name" id="licenseName">لم يتم الاختيار</span></div></div>
+                <div class="doc-item"><label>الهوية الوطنية</label><div class="file-input-wrapper"><input type="file" name="docId" accept="image/*" data-file-name-target="idName"><span class="file-name" id="idName">لم يتم الاختيار</span></div></div>
+                <div class="doc-item"><label>تأمين المركبة</label><div class="file-input-wrapper"><input type="file" name="docInsurance" accept="image/*" data-file-name-target="insuranceName"><span class="file-name" id="insuranceName">لم يتم الاختيار</span></div></div>
+                <div class="doc-item"><label>صورة السيارة</label><div class="file-input-wrapper"><input type="file" name="docCar" accept="image/*" data-file-name-target="carName"><span class="file-name" id="carName">لم يتم الاختيار</span></div></div>
               </div>
             </div>
             <div id="formSuccessMsg" class="success-msg">✅ تم إضافة السائق بنجاح!</div>
@@ -149,12 +149,12 @@
       <div class="top-header"><h1>محادثات الدعم <small>الدردشة المباشرة مع المستخدمين والسائقين</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay13">جاري التحميل...</span></div></div>
       <div class="chat-layout">
         <div class="chat-conversations" id="chatConversations">
-          <p style="color:#8892a8;text-align:center;padding:40px;">جاري تحميل المحادثات...</p>
+          <p data-presentation="p006">جاري تحميل المحادثات...</p>
         </div>
         <div class="chat-window" id="chatWindow">
           <div class="chat-empty-state">
-            <i class="fas fa-comments" style="font-size:48px;color:#2a3546;margin-bottom:16px;"></i>
-            <p style="color:#8892a8;">اختر محادثة من القائمة لعرضها</p>
+            <i class="fas fa-comments" data-presentation="p007"></i>
+            <p data-presentation="p008">اختر محادثة من القائمة لعرضها</p>
           </div>
         </div>
       </div>
@@ -166,7 +166,7 @@
       <div class="broadcast-form">
         <div class="form-group"><label>عنوان الرسالة</label><input type="text" id="driverBroadcastTitle" placeholder="أدخل عنوان الرسالة"></div>
         <div class="form-group"><label>نص الرسالة</label><textarea id="driverBroadcastBody" placeholder="أدخل محتوى الرسالة..."></textarea></div>
-        <button class="btn-send" onclick="sendBroadcast('drivers')"><i class="fas fa-paper-plane"></i> إرسال إلى جميع السائقين</button>
+        <button class="btn-send" data-admin-action="sendBroadcast" data-admin-arg-count="1" data-admin-arg-1="drivers"><i class="fas fa-paper-plane"></i> إرسال إلى جميع السائقين</button>
         <div id="driverBroadcastResult" class="broadcast-result"></div>
       </div>
     </div>
@@ -177,7 +177,7 @@
       <div class="broadcast-form">
         <div class="form-group"><label>عنوان الرسالة</label><input type="text" id="userBroadcastTitle" placeholder="أدخل عنوان الرسالة"></div>
         <div class="form-group"><label>نص الرسالة</label><textarea id="userBroadcastBody" placeholder="أدخل محتوى الرسالة..."></textarea></div>
-        <button class="btn-send" onclick="sendBroadcast('users')"><i class="fas fa-paper-plane"></i> إرسال إلى جميع المستخدمين</button>
+        <button class="btn-send" data-admin-action="sendBroadcast" data-admin-arg-count="1" data-admin-arg-1="users"><i class="fas fa-paper-plane"></i> إرسال إلى جميع المستخدمين</button>
         <div id="userBroadcastResult" class="broadcast-result"></div>
       </div>
     </div>
@@ -193,7 +193,7 @@
       <div class="top-header"><h1>الإعدادات <small>إعدادات النظام العامة</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay9">جاري التحميل...</span></div></div>
       <div class="settings-grid">
         <div class="settings-card"><div class="icon"><i class="fas fa-sign-out-alt"></i></div><h3>تسجيل الخروج</h3><p>قم بتسجيل الخروج من لوحة التحكم.</p><form method="POST" action="/admin/logout"><input type="hidden" name="_csrf" value="<%= csrfToken %>"><button type="submit" class="btn-action logout"><i class="fas fa-door-open"></i> تسجيل الخروج</button></form></div>
-        <div class="settings-card"><div class="icon"><i class="fas fa-key"></i></div><h3>إعادة تعيين كلمة المرور</h3><p>تغيير كلمة المرور الخاصة بحساب المدير.</p><button class="btn-action reset" onclick="openResetPassword()"><i class="fas fa-undo-alt"></i> إعادة تعيين كلمة المرور</button></div>
+        <div class="settings-card"><div class="icon"><i class="fas fa-key"></i></div><h3>إعادة تعيين كلمة المرور</h3><p>تغيير كلمة المرور الخاصة بحساب المدير.</p><button class="btn-action reset" data-admin-action="openResetPassword" data-admin-arg-count="0"><i class="fas fa-undo-alt"></i> إعادة تعيين كلمة المرور</button></div>
       </div>
     </div>
 
