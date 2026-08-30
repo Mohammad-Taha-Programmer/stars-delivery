@@ -76,11 +76,16 @@ test(
     assert.equal(
       (
         adminDriversSource.match(
-          /PendingProvider\.findById\(req\.params\.id\)\.select\('\+password'\)/g,
+          /PendingProvider\s*\.findById\(req\.params\.id\)\s*\.select\(\s*'\+password \+providerDocuments'\s*,?\s*\)/g,
         )
         || []
       ).length,
-      2,
+      1,
+    );
+
+    assert.doesNotMatch(
+      adminDriversSource,
+      /PendingProvider\s*\.findById\(req\.params\.id\)\s*\.select\(\s*'\+password'\s*\)/,
     );
 
     assert.match(

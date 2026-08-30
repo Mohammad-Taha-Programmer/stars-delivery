@@ -1,3 +1,12 @@
+const multer = require('multer');
+const {
+  MAX_PROVIDER_DOCUMENT_SIZE,
+  REQUIRED_PROVIDER_DOCUMENT_FIELDS,
+  hasProviderDocumentUploads,
+  inspectProviderDocumentFiles,
+  persistProviderDocumentFiles,
+  deleteProviderDocuments,
+} = require('../services/providerDocumentStorage');
 const { sendInternalServerError } = require('../security/errorResponse');
 const express = require('express');
 const bcrypt = require('bcryptjs');
@@ -39,7 +48,49 @@ const mobileRegistrationLimiter =
 
 const router = express.Router();
 
-router.post('/register', mobileRegistrationLimiter, async (req, res) => {
+const providerRegistrationUpload =
+  multer({
+    storage:
+      multer.memoryStorage(),
+    limits: {
+      fileSize:
+        MAX_PROVIDER_DOCUMENT_SIZE,
+      files: 2,
+      fields: 12,
+    },
+  }).fields(
+    REQUIRED_PROVIDER_DOCUMENT_FIELDS
+      .map(({ fieldName }) => ({
+        name: fieldName,
+        maxCount: 1,
+      })),
+  );
+
+function providerRegistrationDocuments(
+  req,
+  res,
+  next,
+) {
+  providerRegistrationUpload(
+    req,
+    res,
+    (error) => {
+      if (!error) {
+        next();
+        return;
+      }
+
+      res.status(400).json({
+        error:
+          'Invalid provider documents',
+        code:
+          'INVALID_PROVIDER_DOCUMENT',
+      });
+    },
+  );
+}
+
+router.post('/register', mobileRegistrationLimiter, providerRegistrationDocuments, async (req, res) => {
   try {
     const { fullName, email, phone, password, role, area, privacyPolicy } = req.body;
     const normalizedEmail =
@@ -66,6 +117,37 @@ router.post('/register', mobileRegistrationLimiter, async (req, res) => {
       });
     }
 
+    let inspectedProviderDocuments =
+      null;
+
+    if (role === 'provider') {
+      try {
+        inspectedProviderDocuments =
+          inspectProviderDocumentFiles(
+            req.files,
+          );
+      } catch (error) {
+        return res.status(400).json({
+          error:
+            'Both identity and driver-license documents must be valid JPEG or PNG images.',
+          code:
+            error?.code
+            || 'INVALID_PROVIDER_DOCUMENT',
+        });
+      }
+    } else if (
+      hasProviderDocumentUploads(
+        req.files,
+      )
+    ) {
+      return res.status(400).json({
+        error:
+          'Provider documents are only accepted for provider registration.',
+        code:
+          'INVALID_PROVIDER_DOCUMENT',
+      });
+    }
+
     const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) return res.status(400).json({ error: 'Email already registered' });
     const existingPending = await PendingProvider.findOne({ email: normalizedEmail });
@@ -73,12 +155,52 @@ router.post('/register', mobileRegistrationLimiter, async (req, res) => {
 
     const hashed = await bcrypt.hash(password, 10);
 
-    // Providers go through admin approval flow
+    // Providers go through admin approval flow.
     if (role === 'provider') {
-      await PendingProvider.create({ fullName, email: normalizedEmail, phone, password: hashed, area });
+      let providerDocuments = [];
+
+      try {
+        providerDocuments =
+          await persistProviderDocumentFiles(
+            inspectedProviderDocuments,
+          );
+
+        await PendingProvider.create({
+          fullName,
+          email:
+            normalizedEmail,
+          phone,
+          password:
+            hashed,
+          area,
+          providerDocuments,
+        });
+      } catch (error) {
+        if (providerDocuments.length > 0) {
+          await deleteProviderDocuments(
+            providerDocuments,
+          ).catch(() => {});
+        }
+
+        if (
+          error?.code
+          === 'PROVIDER_DOCUMENT_STORAGE_UNAVAILABLE'
+        ) {
+          return res.status(503).json({
+            error:
+              'Provider document storage is temporarily unavailable.',
+            code:
+              'PROVIDER_DOCUMENT_STORAGE_UNAVAILABLE',
+          });
+        }
+
+        throw error;
+      }
+
       return res.status(201).json({
         pending: true,
-        message: 'تم تقديم طلب التسجيل بنجاح. حسابك قيد المراجعة من قبل الإدارة.',
+        message:
+          'تم تقديم طلب التسجيل بنجاح. حسابك قيد المراجعة من قبل الإدارة.',
       });
     }
 

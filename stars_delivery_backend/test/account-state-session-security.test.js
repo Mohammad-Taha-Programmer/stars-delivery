@@ -316,7 +316,12 @@ test(
 
     assert.match(
       approval,
-      /user\.status = 'active'/,
+      /providerDocuments:\s*pending\.providerDocuments/,
+    );
+
+    assert.match(
+      approval,
+      /PendingProvider\s*\.findByIdAndDelete/,
     );
 
     assert.doesNotMatch(

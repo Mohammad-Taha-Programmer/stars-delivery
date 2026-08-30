@@ -1,3 +1,13 @@
+const fs = require('fs/promises');
+const {
+  REQUIRED_PROVIDER_DOCUMENT_KINDS,
+  deleteProviderDocuments,
+  requiredProviderDocumentsPresent,
+  findProviderDocument,
+  providerDocumentMetadata,
+  providerDocumentPath,
+  providerDocumentDownloadName,
+} = require('../services/providerDocumentStorage');
 const { sendInternalServerError, sendInternalServerFailure } = require('../security/errorResponse');
 const express = require('express');
 const router = express.Router();
@@ -444,6 +454,210 @@ router.delete('/:id', async (req, res) => {
   }
 });
 
+
+async function sendStoredProviderDocument(
+  res,
+  documents,
+  kind,
+) {
+  if (
+    !REQUIRED_PROVIDER_DOCUMENT_KINDS
+      .includes(kind)
+  ) {
+    return res.status(404).json({
+      error:
+        'Provider document not found',
+    });
+  }
+
+  const document =
+    findProviderDocument(
+      documents,
+      kind,
+    );
+
+  if (!document) {
+    return res.status(404).json({
+      error:
+        'Provider document not found',
+    });
+  }
+
+  let filePath;
+
+  try {
+    filePath =
+      providerDocumentPath(
+        document.storageKey,
+      );
+
+    await fs.access(filePath);
+  } catch (_) {
+    return res.status(404).json({
+      error:
+        'Provider document not found',
+    });
+  }
+
+  res.set({
+    'Cache-Control':
+      'private, no-store, max-age=0',
+    Pragma:
+      'no-cache',
+    'X-Content-Type-Options':
+      'nosniff',
+    'Content-Security-Policy':
+      "default-src 'none'; sandbox",
+    'Content-Type':
+      document.contentType,
+    'Content-Disposition':
+      `attachment; filename="${providerDocumentDownloadName(
+        document.kind,
+        document.contentType,
+      )}"`,
+  });
+
+  return res.sendFile(filePath);
+}
+
+router.get(
+  '/pending/:id/documents',
+  async (req, res) => {
+    try {
+      const pending =
+        await PendingProvider
+          .findById(req.params.id)
+          .select(
+            '+providerDocuments',
+          )
+          .lean();
+
+      if (!pending) {
+        return res.status(404).json({
+          error:
+            'Pending provider not found',
+        });
+      }
+
+      return res.json({
+        documents:
+          (pending.providerDocuments || [])
+            .map(
+              providerDocumentMetadata,
+            ),
+        complete:
+          requiredProviderDocumentsPresent(
+            pending.providerDocuments,
+          ),
+      });
+    } catch (_) {
+      return sendInternalServerError(res);
+    }
+  },
+);
+
+router.get(
+  '/pending/:id/documents/:kind',
+  async (req, res) => {
+    try {
+      const pending =
+        await PendingProvider
+          .findById(req.params.id)
+          .select(
+            '+providerDocuments',
+          )
+          .lean();
+
+      if (!pending) {
+        return res.status(404).json({
+          error:
+            'Pending provider not found',
+        });
+      }
+
+      return sendStoredProviderDocument(
+        res,
+        pending.providerDocuments,
+        req.params.kind,
+      );
+    } catch (_) {
+      return sendInternalServerError(res);
+    }
+  },
+);
+
+router.get(
+  '/documents/:id',
+  async (req, res) => {
+    try {
+      const provider =
+        await User
+          .findOne({
+            _id: req.params.id,
+            role: 'provider',
+          })
+          .select(
+            '+providerDocuments',
+          )
+          .lean();
+
+      if (!provider) {
+        return res.status(404).json({
+          error:
+            'Provider not found',
+        });
+      }
+
+      return res.json({
+        documents:
+          (provider.providerDocuments || [])
+            .map(
+              providerDocumentMetadata,
+            ),
+        complete:
+          requiredProviderDocumentsPresent(
+            provider.providerDocuments,
+          ),
+      });
+    } catch (_) {
+      return sendInternalServerError(res);
+    }
+  },
+);
+
+router.get(
+  '/documents/:id/:kind',
+  async (req, res) => {
+    try {
+      const provider =
+        await User
+          .findOne({
+            _id: req.params.id,
+            role: 'provider',
+          })
+          .select(
+            '+providerDocuments',
+          )
+          .lean();
+
+      if (!provider) {
+        return res.status(404).json({
+          error:
+            'Provider not found',
+        });
+      }
+
+      return sendStoredProviderDocument(
+        res,
+        provider.providerDocuments,
+        req.params.kind,
+      );
+    } catch (_) {
+      return sendInternalServerError(res);
+    }
+  },
+);
+
 // Pending Provider Signups
 router.get('/pending', async (req, res) => {
   try {
@@ -454,77 +668,141 @@ router.get('/pending', async (req, res) => {
   }
 });
 
-// Save docs + info from add-driver form for a pending provider
-router.post('/pending/:id', upload.none(), async (req, res) => {
-  try {
-    const pending = await PendingProvider.findById(req.params.id).select('+password');
-    if (!pending) return res.json({ success: false, message: 'طلب التسجيل غير موجود' });
-
-    const { driverServiceType, driverLicenseType, driverArea } = req.body;
-    const publicId = await generatePublicId();
-
-    await User.create({
-      fullName: pending.fullName,
-      name: pending.fullName,
-      email: pending.email,
-      phoneNumbers: [{ number: pending.phone, primary: true }],
-      password: pending.password,
-      role: 'provider',
-      area: driverArea || pending.area || '',
-      publicId,
-      primaryPhone: pending.phone,
-      status: 'pending',
+// Historical fake document route intentionally disabled.
+router.post(
+  '/pending/:id',
+  upload.none(),
+  (req, res) => {
+    return res.status(410).json({
+      success: false,
+      message:
+        'تم إيقاف مسار إدخال الوثائق القديم. يجب مراجعة وثائق التسجيل المرفوعة من تطبيق المزود.',
+      code:
+        'LEGACY_PROVIDER_DOCUMENT_FLOW_DISABLED',
     });
-
-    await PendingProvider.findByIdAndDelete(req.params.id);
-
-    res.json({ success: true, message: `تم حفظ بيانات السائق (${pending.fullName}). يمكنك الآن قبوله من قائمة طلبات التسجيل.` });
-  } catch (err) {
-    sendInternalServerFailure(res);
-  }
-});
+  },
+);
 
 router.post('/pending/:id/approve', async (req, res) => {
-  try {
-    const pending = await PendingProvider.findById(req.params.id).select('+password');
-    if (pending) {
-      // Not yet entered via docs — create user now
-      const publicId = await generatePublicId();
-      await User.create({
-        fullName: pending.fullName,
-        email: pending.email,
-        phoneNumbers: [{ number: pending.phone, primary: true }],
-        password: pending.password,
-        role: 'provider',
-        area: pending.area,
-        publicId,
-        primaryPhone: pending.phone,
-        status: 'active',
-      });
-      await PendingProvider.findByIdAndDelete(req.params.id);
-      return res.json({ success: true, message: `تم قبول السائق (${pending.fullName}) بنجاح` });
-    }
+    try {
+      const pending =
+        await PendingProvider
+          .findById(req.params.id)
+          .select(
+            '+password +providerDocuments',
+          );
 
-    // User already created via docs flow — just activate
-    const user = await User.findOne({ email: req.query.email });
-    if (!user) return res.json({ success: false, message: 'لم يتم العثور على السائق. يرجى إدخال الوثائق أولاً.' });
-    user.status = 'active';
-    await user.save();
-    res.json({ success: true, message: `تم تفعيل حساب السائق (${user.fullName}) بنجاح` });
-  } catch (err) {
-    sendInternalServerFailure(res);
-  }
-});
+      if (!pending) {
+        return res.status(404).json({
+          success: false,
+          message:
+            'طلب التسجيل غير موجود',
+        });
+      }
+
+      if (
+        !requiredProviderDocumentsPresent(
+          pending.providerDocuments,
+        )
+      ) {
+        return res.status(400).json({
+          success: false,
+          message:
+            'لا يمكن قبول المزود قبل اكتمال وثيقة الهوية ورخصة القيادة.',
+          code:
+            'PROVIDER_DOCUMENTS_REQUIRED',
+        });
+      }
+
+      const publicId =
+        await generatePublicId();
+
+      await User.create({
+        fullName:
+          pending.fullName,
+        email:
+          pending.email,
+        phoneNumbers: [{
+          number:
+            pending.phone,
+          primary: true,
+        }],
+        password:
+          pending.password,
+        role:
+          'provider',
+        area:
+          pending.area,
+        publicId,
+        primaryPhone:
+          pending.phone,
+        status:
+          'active',
+        providerDocuments:
+          pending.providerDocuments
+            .map(
+              (document) =>
+                typeof document.toObject
+                  === 'function'
+                  ? document.toObject()
+                  : document,
+            ),
+      });
+
+      await PendingProvider
+        .findByIdAndDelete(
+          req.params.id,
+        );
+
+      return res.json({
+        success: true,
+        message:
+          `تم قبول السائق (${pending.fullName}) بنجاح`,
+      });
+    } catch (_) {
+      return sendInternalServerFailure(res);
+    }
+  },
+);
 
 router.delete('/pending/:id/reject', async (req, res) => {
-  try {
-    const pending = await PendingProvider.findByIdAndDelete(req.params.id);
-    if (!pending) return res.json({ success: false, message: 'طلب التسجيل غير موجود' });
+    try {
+      const pending =
+        await PendingProvider
+          .findOneAndDelete({
+            _id: req.params.id,
+          })
+          .select(
+            '+providerDocuments',
+          );
 
-    res.json({ success: true, message: `تم رفض طلب السائق (${pending.fullName})` });
-  } catch (err) {
-    sendInternalServerFailure(res);
-  }
-});
+      if (!pending) {
+        return res.status(404).json({
+          success: false,
+          message:
+            'طلب التسجيل غير موجود',
+        });
+      }
+
+      try {
+        await deleteProviderDocuments(
+          pending.providerDocuments,
+        );
+      } catch (_) {
+        console.error(
+          'Provider document cleanup failed after rejection.',
+        );
+      }
+
+      return res.json({
+        success: true,
+        message:
+          `تم رفض طلب السائق (${pending.fullName})`,
+      });
+    } catch (_) {
+      return sendInternalServerFailure(res);
+    }
+  },
+);
 
 module.exports = router;

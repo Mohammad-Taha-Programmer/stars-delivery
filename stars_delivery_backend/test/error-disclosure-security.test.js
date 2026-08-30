@@ -279,7 +279,7 @@ test('all STARS-009B admin 500 sites preserve their response shapes through safe
     ],
     [
       'src/routes/adminDrivers.js',
-      { error: 2, failure: 7 },
+      { error: 6, failure: 6 },
     ],
     [
       'src/routes/adminReports.js',
@@ -332,11 +332,11 @@ test('all STARS-009B admin 500 sites preserve their response shapes through safe
     failureTotal += failureCalls.length;
   }
 
-  assert.equal(errorTotal, 10);
-  assert.equal(failureTotal, 16);
+  assert.equal(errorTotal, 14);
+  assert.equal(failureTotal, 15);
   assert.equal(
     errorTotal + failureTotal,
-    26,
+    29,
   );
 });
 
