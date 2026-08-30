@@ -383,37 +383,170 @@ async function addNewDriver() {
   const formData = new FormData(form);
   const pendingId = form.dataset.pendingId;
 
-  const name = formData.get('driverName').toString().trim();
-  const email = formData.get('driverEmail').toString().trim();
-  const phone = formData.get('driverPhone').toString().trim();
+  const name =
+    String(
+      formData.get('driverName')
+      || '',
+    ).trim();
 
-  if (!name || !email || !phone) {
-    document.getElementById('formErrorMsg').textContent = 'الرجاء ملء جميع الحقول المطلوبة';
-    document.getElementById('formErrorMsg').classList.add('show');
-    document.getElementById('formSuccessMsg').classList.remove('show');
+  const email =
+    String(
+      formData.get('driverEmail')
+      || '',
+    ).trim();
+
+  const phone =
+    String(
+      formData.get('driverPhone')
+      || '',
+    ).trim();
+
+  const password =
+    String(
+      formData.get('driverPassword')
+      || '',
+    );
+
+  const passwordConfirm =
+    String(
+      formData.get('driverPasswordConfirm')
+      || '',
+    );
+
+  const errorElement =
+    document.getElementById('formErrorMsg');
+
+  const successElement =
+    document.getElementById('formSuccessMsg');
+
+  if (
+    !name
+    || !email
+    || !phone
+    || (
+      !pendingId
+      && (
+        !password
+        || !passwordConfirm
+      )
+    )
+  ) {
+    errorElement.textContent =
+      'الرجاء ملء جميع الحقول المطلوبة';
+
+    errorElement.classList.add('show');
+    successElement.classList.remove('show');
+    return;
+  }
+
+  if (
+    !pendingId
+    && (
+      password.length < 12
+      || password.length > 128
+    )
+  ) {
+    errorElement.textContent =
+      'كلمة المرور الأولية يجب أن تكون بين 12 و128 حرفاً';
+
+    errorElement.classList.add('show');
+    successElement.classList.remove('show');
+    return;
+  }
+
+  if (
+    !pendingId
+    && password !== passwordConfirm
+  ) {
+    errorElement.textContent =
+      'كلمتا المرور غير متطابقتين';
+
+    errorElement.classList.add('show');
+    successElement.classList.remove('show');
     return;
   }
 
   try {
-    const url = pendingId ? `/admin/drivers/pending/${pendingId}` : '/admin/drivers';
-    const res = await adminFetch(url, { method: 'POST', body: formData });
-    const data = await res.json();
+    const url =
+      pendingId
+        ? `/admin/drivers/pending/${pendingId}`
+        : '/admin/drivers';
+
+    const requestOptions =
+      pendingId
+        ? {
+            method: 'POST',
+            body: formData,
+          }
+        : {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              driverName: name,
+              driverEmail: email,
+              driverPhone: phone,
+              driverServiceType:
+                String(
+                  formData.get('driverServiceType')
+                  || '',
+                ),
+              driverLicenseType:
+                String(
+                  formData.get('driverLicenseType')
+                  || '',
+                ),
+              driverArea:
+                String(
+                  formData.get('driverArea')
+                  || '',
+                ),
+              driverPassword: password,
+              driverPasswordConfirm:
+                passwordConfirm,
+            }),
+          };
+
+    const res =
+      await adminFetch(
+        url,
+        requestOptions,
+      );
+
+    const data =
+      await res.json();
+
     if (data.success) {
-      document.getElementById('formSuccessMsg').textContent = data.message;
-      document.getElementById('formSuccessMsg').classList.add('show');
-      document.getElementById('formErrorMsg').classList.remove('show');
+      successElement.textContent =
+        data.message;
+
+      successElement.classList.add('show');
+      errorElement.classList.remove('show');
+
       form.reset();
       delete form.dataset.pendingId;
+
       loadDashboardStats();
-      setTimeout(() => { document.getElementById('formSuccessMsg').classList.remove('show'); }, 5000);
+
+      setTimeout(
+        () => {
+          successElement.classList.remove('show');
+        },
+        5000,
+      );
     } else {
-      document.getElementById('formErrorMsg').textContent = data.message;
-      document.getElementById('formErrorMsg').classList.add('show');
-      document.getElementById('formSuccessMsg').classList.remove('show');
+      errorElement.textContent =
+        data.message;
+
+      errorElement.classList.add('show');
+      successElement.classList.remove('show');
     }
   } catch (err) {
-    document.getElementById('formErrorMsg').textContent = 'حدث خطأ في الاتصال';
-    document.getElementById('formErrorMsg').classList.add('show');
+    errorElement.textContent =
+      'حدث خطأ في الاتصال';
+
+    errorElement.classList.add('show');
   }
 }
 

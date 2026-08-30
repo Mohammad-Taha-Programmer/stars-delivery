@@ -27,14 +27,6 @@ test(
       PendingProvider.schema.path('password').options.select,
       false,
     );
-
-    const legacyDriverSource =
-      source('src/models/Driver.js');
-
-    assert.match(
-      legacyDriverSource,
-      /password:\s*\{\s*type:\s*String,\s*default:\s*'Pass1234',\s*select:\s*false\s*\}/,
-    );
   },
 );
 

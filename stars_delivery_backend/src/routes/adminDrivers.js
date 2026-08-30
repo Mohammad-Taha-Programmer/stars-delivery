@@ -8,6 +8,10 @@ const Order = require('../models/Order');
 const Notification = require('../models/Notification');
 const PendingProvider = require('../models/PendingProvider');
 const { generatePublicId } = require('../utils/publicId');
+const {
+  MIN_PROVIDER_BOOTSTRAP_PASSWORD_LENGTH,
+  isValidProviderBootstrapPassword,
+} = require('../security/passwordPolicy');
 
 const upload = multer();
 
@@ -67,30 +71,99 @@ router.get('/search', async (req, res) => {
 
 router.post('/', async (req, res) => {
   try {
-    const { driverName, driverEmail, driverPhone, driverServiceType, driverLicenseType, driverArea } = req.body;
-    if (!driverName || !driverEmail || !driverPhone) {
-      return res.json({ success: false, message: 'الرجاء ملء جميع الحقول المطلوبة' });
+    const {
+      driverName,
+      driverEmail,
+      driverPhone,
+      driverServiceType,
+      driverLicenseType,
+      driverArea,
+      driverPassword,
+      driverPasswordConfirm,
+    } = req.body;
+
+    const password =
+      typeof driverPassword === 'string'
+        ? driverPassword
+        : '';
+
+    const passwordConfirm =
+      typeof driverPasswordConfirm === 'string'
+        ? driverPasswordConfirm
+        : '';
+
+    if (
+      !driverName
+      || !driverEmail
+      || !driverPhone
+      || !password
+      || !passwordConfirm
+    ) {
+      return res.json({
+        success: false,
+        message: 'الرجاء ملء جميع الحقول المطلوبة',
+      });
     }
 
-    const exists = await User.findOne({ email: driverEmail.toLowerCase() });
-    if (exists) return res.json({ success: false, message: 'البريد الإلكتروني مسجل بالفعل' });
+    if (password !== passwordConfirm) {
+      return res.json({
+        success: false,
+        message: 'كلمتا المرور غير متطابقتين',
+      });
+    }
 
-    const hashedPassword = await bcrypt.hash('Pass1234', 10);
-    const publicId = await generatePublicId();
-    const user = new User({
-      fullName: driverName,
-      name: driverName,
-      email: driverEmail.toLowerCase(),
-      phoneNumbers: [{ number: driverPhone, primary: true }],
-      password: hashedPassword,
-      role: 'provider',
-      area: driverArea || '',
-      status: 'active',
-      publicId,
-    });
+    if (!isValidProviderBootstrapPassword(password)) {
+      return res.json({
+        success: false,
+        message: `كلمة المرور الأولية يجب أن تكون بين ${MIN_PROVIDER_BOOTSTRAP_PASSWORD_LENGTH} و128 حرفاً وألا تكون كلمة افتراضية واضحة`,
+      });
+    }
+
+    const exists =
+      await User.findOne({
+        email: driverEmail.toLowerCase(),
+      });
+
+    if (exists) {
+      return res.json({
+        success: false,
+        message: 'البريد الإلكتروني مسجل بالفعل',
+      });
+    }
+
+    const hashedPassword =
+      await bcrypt.hash(
+        password,
+        10,
+      );
+
+    const publicId =
+      await generatePublicId();
+
+    const user =
+      new User({
+        fullName: driverName,
+        name: driverName,
+        email: driverEmail.toLowerCase(),
+        phoneNumbers: [
+          {
+            number: driverPhone,
+            primary: true,
+          },
+        ],
+        password: hashedPassword,
+        role: 'provider',
+        area: driverArea || '',
+        status: 'active',
+        publicId,
+      });
 
     await user.save();
-    res.json({ success: true, message: `تم إضافة السائق (${driverName}) بنجاح!`, password: 'Pass1234' });
+
+    res.json({
+      success: true,
+      message: `تم إضافة السائق (${driverName}) بنجاح!`,
+    });
   } catch (err) {
     sendInternalServerFailure(res);
   }

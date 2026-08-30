@@ -16,4 +16,26 @@ function isValidAdminPassword(password) {
     && !/^(change|replace|your|example|placeholder|dummy)[-_ ]/.test(normalized);
 }
 
-module.exports = { MIN_ADMIN_PASSWORD_LENGTH, isValidAdminPassword };
+const MIN_PROVIDER_BOOTSTRAP_PASSWORD_LENGTH = 12;
+const MAX_PROVIDER_BOOTSTRAP_PASSWORD_LENGTH = 128;
+
+function isValidProviderBootstrapPassword(password) {
+  const normalized =
+    typeof password === 'string'
+      ? password.trim().toLowerCase()
+      : '';
+
+  return typeof password === 'string'
+    && password.trim().length >= MIN_PROVIDER_BOOTSTRAP_PASSWORD_LENGTH
+    && password.length <= MAX_PROVIDER_BOOTSTRAP_PASSWORD_LENGTH
+    && !INSECURE_ADMIN_PASSWORDS.has(normalized)
+    && !/^(change|replace|your|example|placeholder|dummy)[-_ ]/.test(normalized);
+}
+
+module.exports = {
+  MIN_ADMIN_PASSWORD_LENGTH,
+  MIN_PROVIDER_BOOTSTRAP_PASSWORD_LENGTH,
+  MAX_PROVIDER_BOOTSTRAP_PASSWORD_LENGTH,
+  isValidAdminPassword,
+  isValidProviderBootstrapPassword,
+};
