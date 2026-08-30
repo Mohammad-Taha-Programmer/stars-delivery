@@ -48,7 +48,6 @@ router.get('/search', async (req, res) => {
       licenseType: match.publicId ? 'موثق' : 'غير موثق',
       area: match.area || 'غير محدد',
       status: match.status === 'blocked' ? 'inactive' : match.status,
-      password: '****',
       financial: {
         paymentStatus: 'unpaid',
         transactions: orders.map(o => ({
@@ -181,7 +180,7 @@ router.delete('/:id', async (req, res) => {
 router.get('/pending', async (req, res) => {
   try {
     const pending = await PendingProvider.find().sort({ createdAt: -1 }).lean();
-    res.json(pending.map(p => ({ ...p, password: undefined })));
+    res.json(pending);
   } catch (err) {
     sendInternalServerError(res);
   }
@@ -190,7 +189,7 @@ router.get('/pending', async (req, res) => {
 // Save docs + info from add-driver form for a pending provider
 router.post('/pending/:id', upload.none(), async (req, res) => {
   try {
-    const pending = await PendingProvider.findById(req.params.id);
+    const pending = await PendingProvider.findById(req.params.id).select('+password');
     if (!pending) return res.json({ success: false, message: 'طلب التسجيل غير موجود' });
 
     const { driverServiceType, driverLicenseType, driverArea } = req.body;
@@ -219,7 +218,7 @@ router.post('/pending/:id', upload.none(), async (req, res) => {
 
 router.post('/pending/:id/approve', async (req, res) => {
   try {
-    const pending = await PendingProvider.findById(req.params.id);
+    const pending = await PendingProvider.findById(req.params.id).select('+password');
     if (pending) {
       // Not yet entered via docs — create user now
       const publicId = await generatePublicId();

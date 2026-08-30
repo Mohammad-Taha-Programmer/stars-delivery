@@ -76,7 +76,7 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ error: 'Invalid credentials' });
     }
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select('+password');
     if (!user) return res.status(400).json({ error: 'Invalid credentials' });
 
     if (user.role !== role) return res.status(400).json({ error: `No account found for this role` });

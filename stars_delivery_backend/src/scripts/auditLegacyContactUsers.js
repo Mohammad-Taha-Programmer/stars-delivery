@@ -10,7 +10,7 @@ async function auditLegacyContactUsers() {
   const users = await User.find({
     email: /@guest\.local$/i,
   })
-    .select('_id email role status password createdAt')
+    .select('_id email role status +password createdAt')
     .lean();
 
   const report = users.map((user) => ({

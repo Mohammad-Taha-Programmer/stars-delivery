@@ -29,7 +29,7 @@ router.post('/login', adminCsrfProtection, adminLoginLimiter, async (req, res) =
     const identifier = String(req.body.identifier || '').trim().toLowerCase();
     const password = typeof req.body.password === 'string' ? req.body.password : '';
     const admin = identifier
-      ? await User.findOne({ email: identifier, role: 'admin', deleted: { $ne: true }, status: 'active' })
+      ? await User.findOne({ email: identifier, role: 'admin', deleted: { $ne: true }, status: 'active' }).select('+password')
       : null;
 
     if (!admin || !(await bcrypt.compare(password, admin.password))) {
@@ -62,7 +62,7 @@ router.post('/reset-password', requireAdminSession, adminCsrfProtection, async (
       role: 'admin',
       deleted: { $ne: true },
       status: 'active',
-    });
+    }).select('+password');
     if (!admin || !(await bcrypt.compare(currentPassword || '', admin.password))) {
       return res.json({ success: false, message: 'كلمة المرور الحالية غير صحيحة' });
     }

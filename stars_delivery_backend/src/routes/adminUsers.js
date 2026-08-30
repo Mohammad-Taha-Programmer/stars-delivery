@@ -31,7 +31,6 @@ router.get('/search', async (req, res) => {
       joinDate: user.createdAt ? user.createdAt.toISOString().split('T')[0] : 'غير محدد',
       area: user.area || 'غير محدد',
       status: user.status === 'blocked' ? 'inactive' : user.status,
-      password: '****',
       orders: orders.map(o => ({
         orderId: o._id.toString().slice(-8),
         type: o.type || 'غير محدد',

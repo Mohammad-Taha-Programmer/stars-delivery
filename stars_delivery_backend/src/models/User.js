@@ -13,7 +13,7 @@ const userSchema = new mongoose.Schema({
     number: { type: String, required: true },
     primary: { type: Boolean, default: false },
   }],
-  password: { type: String, required: true },
+  password: { type: String, required: true, select: false },
   role: { type: String, enum: ['customer', 'provider', 'admin'], required: true },
   area: { type: String, default: '' },
   publicId: { type: String, unique: true, sparse: true },

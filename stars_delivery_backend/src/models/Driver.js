@@ -28,7 +28,7 @@ const driverSchema = new mongoose.Schema({
   area: { type: String, default: 'القدس' },
   governorate: { type: String, default: 'القدس' },
   status: { type: String, enum: ['active', 'inactive', 'pending'], default: 'active' },
-  password: { type: String, default: 'Pass1234' },
+  password: { type: String, default: 'Pass1234', select: false },
   documents: [documentSchema],
   messages: [messageSchema],
   financial: {

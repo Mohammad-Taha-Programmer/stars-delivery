@@ -91,13 +91,11 @@ test('driver and user result HTML encodes displayed API fields', () => {
     '${escapeHtml(driver.email)}',
     '${escapeHtml(driver.phone)}',
     '${escapeHtml(driver.area)}',
-    '${escapeHtml(driver.password || \'غير محدد\')}',
     '${escapeHtml(user.userId)}',
     '${escapeHtml(user.name)}',
     '${escapeHtml(user.email)}',
     '${escapeHtml(user.phone)}',
     '${escapeHtml(user.area)}',
-    '${escapeHtml(user.password || \'غير محدد\')}',
   ]) {
     assert.ok(
       source.includes(marker),
