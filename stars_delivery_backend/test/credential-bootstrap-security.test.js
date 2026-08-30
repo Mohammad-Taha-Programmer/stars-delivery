@@ -119,29 +119,52 @@ test(
         'src/routes/adminDrivers.js',
       );
 
+    const directCreateStart =
+      adminDriversSource.indexOf(
+        "router.post('/',",
+      );
+
+    const directCreateEnd =
+      adminDriversSource.indexOf(
+        "router.put('/:id/status'",
+        directCreateStart,
+      );
+
+    assert.ok(
+      directCreateStart >= 0
+      && directCreateEnd > directCreateStart,
+      'direct provider creation route must exist',
+    );
+
+    const directCreate =
+      adminDriversSource.slice(
+        directCreateStart,
+        directCreateEnd,
+      );
+
     assert.match(
-      adminDriversSource,
+      directCreate,
       /driverPassword,[\s\S]*driverPasswordConfirm,/,
     );
 
     assert.match(
-      adminDriversSource,
+      directCreate,
       /password !== passwordConfirm/,
     );
 
     assert.match(
-      adminDriversSource,
+      directCreate,
       /isValidProviderBootstrapPassword\(password\)/,
     );
 
     assert.match(
-      adminDriversSource,
+      directCreate,
       /bcrypt\.hash\(\s*password,\s*10,\s*\)/,
     );
 
     assert.doesNotMatch(
-      adminDriversSource,
-      /res\.json\(\{[\s\S]{0,250}password\s*:/,
+      directCreate,
+      /res\.json\(\s*\{[^}]*\b(?:password|hashedPassword)\s*:/,
     );
   },
 );

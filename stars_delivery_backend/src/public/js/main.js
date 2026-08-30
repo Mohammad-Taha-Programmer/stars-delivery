@@ -1063,8 +1063,20 @@ async function changeDriverPassword(driverId) {
   const confirmPassword = prompt('أعد إدخال كلمة المرور الجديدة للتأكيد:', '');
   if (!confirmPassword || newPassword !== confirmPassword) { alert('كلمة المرور وتأكيدها غير متطابقين.'); return; }
   try {
-    await adminFetch(`/admin/drivers/${driverId}/password`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: newPassword }) });
-    alert('تم تغيير كلمة المرور بنجاح.');
+    const res = await adminFetch(`/admin/drivers/${driverId}/password`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        password: newPassword,
+        confirmPassword,
+      }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      alert(data.message || 'تعذر تغيير كلمة المرور.');
+      return;
+    }
+    alert(data.message || 'تم تغيير كلمة المرور بنجاح.');
     searchDriverById(driverId);
   } catch (err) { alert('حدث خطأ'); }
 }
@@ -1105,8 +1117,20 @@ async function changeUserPassword(userId) {
   const confirmPassword = prompt('أعد إدخال كلمة المرور الجديدة للتأكيد:', '');
   if (!confirmPassword || newPassword !== confirmPassword) { alert('كلمة المرور وتأكيدها غير متطابقين.'); return; }
   try {
-    await adminFetch(`/admin/users/${userId}/password`, { method: 'PUT', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ password: newPassword }) });
-    alert('تم تغيير كلمة المرور بنجاح.');
+    const res = await adminFetch(`/admin/users/${userId}/password`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        password: newPassword,
+        confirmPassword,
+      }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      alert(data.message || 'تعذر تغيير كلمة المرور.');
+      return;
+    }
+    alert(data.message || 'تم تغيير كلمة المرور بنجاح.');
     searchUserById(userId);
   } catch (err) { alert('حدث خطأ'); }
 }

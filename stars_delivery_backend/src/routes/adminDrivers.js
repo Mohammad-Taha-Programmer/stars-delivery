@@ -9,7 +9,10 @@ const Notification = require('../models/Notification');
 const PendingProvider = require('../models/PendingProvider');
 const { generatePublicId } = require('../utils/publicId');
 const {
+  MIN_MOBILE_PASSWORD_LENGTH,
+  MAX_MOBILE_PASSWORD_LENGTH,
   MIN_PROVIDER_BOOTSTRAP_PASSWORD_LENGTH,
+  isValidMobilePassword,
   isValidProviderBootstrapPassword,
 } = require('../security/passwordPolicy');
 const {
@@ -283,9 +286,45 @@ router.put('/:id/password', async (req, res) => {
   try {
     const driver = await User.findById(req.params.id);
     if (!driver || driver.role !== 'provider') return res.json({ success: false, message: 'السائق غير موجود' });
+
+    const password =
+      typeof req.body?.password === 'string'
+        ? req.body.password
+        : '';
+
+    const confirmPassword =
+      typeof req.body?.confirmPassword === 'string'
+        ? req.body.confirmPassword
+        : '';
+
+    if (!password || !confirmPassword) {
+      return res.json({
+        success: false,
+        message: 'كلمة المرور الجديدة وتأكيدها مطلوبان',
+        code: 'PASSWORD_FIELDS_REQUIRED',
+      });
+    }
+
+    if (!isValidMobilePassword(password)) {
+      return res.json({
+        success: false,
+        message:
+          `كلمة المرور الجديدة يجب أن تكون بين ${MIN_MOBILE_PASSWORD_LENGTH} و${MAX_MOBILE_PASSWORD_LENGTH} حرفاً وألا تكون كلمة افتراضية واضحة`,
+        code: 'PASSWORD_POLICY',
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.json({
+        success: false,
+        message: 'كلمة المرور وتأكيدها غير متطابقين',
+        code: 'PASSWORD_CONFIRMATION_MISMATCH',
+      });
+    }
+
     const hashedPassword =
       await bcrypt.hash(
-        req.body.password,
+        password,
         10,
       );
 
@@ -330,7 +369,11 @@ router.put('/:id/password', async (req, res) => {
       io.in(`user:${driver._id}`)
         .disconnectSockets(true);
     }
-    res.json({ success: true, message: 'تم تغيير كلمة المرور بنجاح' });
+
+    res.json({
+      success: true,
+      message: 'تم تغيير كلمة المرور بنجاح',
+    });
   } catch (err) {
     sendInternalServerFailure(res);
   }

@@ -6,6 +6,11 @@ const User = require('../models/User');
 const Order = require('../models/Order');
 const Notification = require('../models/Notification');
 const {
+  MIN_MOBILE_PASSWORD_LENGTH,
+  MAX_MOBILE_PASSWORD_LENGTH,
+  isValidMobilePassword,
+} = require('../security/passwordPolicy');
+const {
   mobileSessionRotationFilter,
 } = require('../services/mobileSession');
 
@@ -163,9 +168,45 @@ router.put('/:id/password', async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user || user.role === 'admin') return res.json({ success: false, message: 'المستخدم غير موجود' });
+
+    const password =
+      typeof req.body?.password === 'string'
+        ? req.body.password
+        : '';
+
+    const confirmPassword =
+      typeof req.body?.confirmPassword === 'string'
+        ? req.body.confirmPassword
+        : '';
+
+    if (!password || !confirmPassword) {
+      return res.json({
+        success: false,
+        message: 'كلمة المرور الجديدة وتأكيدها مطلوبان',
+        code: 'PASSWORD_FIELDS_REQUIRED',
+      });
+    }
+
+    if (!isValidMobilePassword(password)) {
+      return res.json({
+        success: false,
+        message:
+          `كلمة المرور الجديدة يجب أن تكون بين ${MIN_MOBILE_PASSWORD_LENGTH} و${MAX_MOBILE_PASSWORD_LENGTH} حرفاً وألا تكون كلمة افتراضية واضحة`,
+        code: 'PASSWORD_POLICY',
+      });
+    }
+
+    if (password !== confirmPassword) {
+      return res.json({
+        success: false,
+        message: 'كلمة المرور وتأكيدها غير متطابقين',
+        code: 'PASSWORD_CONFIRMATION_MISMATCH',
+      });
+    }
+
     const hashedPassword =
       await bcrypt.hash(
-        req.body.password,
+        password,
         10,
       );
 
@@ -210,7 +251,11 @@ router.put('/:id/password', async (req, res) => {
       io.in(`user:${user._id}`)
         .disconnectSockets(true);
     }
-    res.json({ success: true });
+
+    res.json({
+      success: true,
+      message: 'تم تغيير كلمة المرور بنجاح',
+    });
   } catch (err) {
     sendInternalServerFailure(res);
   }
