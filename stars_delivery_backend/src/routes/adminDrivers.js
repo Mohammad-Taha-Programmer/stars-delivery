@@ -178,40 +178,98 @@ router.put('/:id/status', async (req, res) => {
     if (!driver || driver.role !== 'provider') return res.json({ success: false, message: 'السائق غير موجود' });
 
     const newStatus = req.body.status === 'active' ? 'active' : 'blocked';
-    driver.status = newStatus;
-    await driver.save();
+    const statusChanged =
+      driver.status !== newStatus;
+
+    if (statusChanged) {
+      const rotationFilter =
+        mobileSessionRotationFilter(driver);
+
+      if (!rotationFilter) {
+        throw new Error(
+          'Invalid mobile session version',
+        );
+      }
+
+      const rotation =
+        await User.updateOne(
+          {
+            _id: driver._id,
+            role: 'provider',
+            ...rotationFilter,
+          },
+          {
+            $set: {
+              status: newStatus,
+            },
+            $inc: {
+              sessionVersion: 1,
+            },
+          },
+          {
+            runValidators: true,
+          },
+        );
+
+      if (rotation.matchedCount !== 1) {
+        throw new Error(
+          'Concurrent account-state rotation',
+        );
+      }
+    }
 
     const io = req.app.get('io');
-    if (io) {
-      if (newStatus === 'blocked') {
-        await Notification.create({
-          userId: driver._id, type: 'broadcast', pinned: true,
-          title: 'تم تجميد حسابك',
-          body: 'تم تجميد حسابك بسبب كثرة البلاغات. يرجى التواصل مع فريق الدعم.',
-          expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        });
-        io.to(`user:${driver._id}`).emit('notification_count', { unreadCount: 1 });
-        io.to(`user:${driver._id}`).emit('broadcast', {
-          title: 'تم تجميد حسابك',
-          body: 'تم تجميد حسابك بسبب كثرة البلاغات. يرجى التواصل مع فريق الدعم.',
-          action: 'contact_support',
-        });
 
-        io.in(`user:${driver._id}`)
-          .disconnectSockets(true);
-      } else {
-        await Notification.create({
-          userId: driver._id, type: 'broadcast', pinned: true,
-          title: 'تم تفعيل حسابك',
-          body: 'مبروك! تم إعادة تفعيل حسابك بنجاح. يمكنك الآن استخدام التطبيق بشكل طبيعي.',
-          expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        });
-        io.to(`user:${driver._id}`).emit('notification_count', { unreadCount: 1 });
-        io.to(`user:${driver._id}`).emit('broadcast', {
-          title: 'تم تفعيل حسابك',
-          body: 'مبروك! تم إعادة تفعيل حسابك بنجاح.',
-          action: '',
-        });
+    if (io) {
+      const shouldDisconnect =
+        statusChanged
+        || newStatus === 'blocked';
+
+      try {
+        if (statusChanged) {
+          if (newStatus === 'blocked') {
+            await Notification.create({
+              userId: driver._id, type: 'broadcast', pinned: true,
+              title: 'تم تجميد حسابك',
+              body: 'تم تجميد حسابك بسبب كثرة البلاغات. يرجى التواصل مع فريق الدعم.',
+              expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            });
+
+            io.to(`user:${driver._id}`).emit(
+              'notification_count',
+              { unreadCount: 1 },
+            );
+
+            io.to(`user:${driver._id}`).emit('broadcast', {
+              title: 'تم تجميد حسابك',
+              body: 'تم تجميد حسابك بسبب كثرة البلاغات. يرجى التواصل مع فريق الدعم.',
+              action: 'contact_support',
+            });
+          } else {
+            await Notification.create({
+              userId: driver._id, type: 'broadcast', pinned: true,
+              title: 'تم تفعيل حسابك',
+              body: 'مبروك! تم إعادة تفعيل حسابك بنجاح. يمكنك الآن استخدام التطبيق بشكل طبيعي.',
+              expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            });
+
+            io.to(`user:${driver._id}`).emit(
+              'notification_count',
+              { unreadCount: 1 },
+            );
+
+            io.to(`user:${driver._id}`).emit('broadcast', {
+              title: 'تم تفعيل حسابك',
+              body: 'مبروك! تم إعادة تفعيل حسابك بنجاح.',
+              action: '',
+            });
+          }
+        }
+      } finally {
+        if (shouldDisconnect) {
+          io.in(`user:${driver._id}`)
+            .disconnectSockets(true);
+        }
       }
     }
 
@@ -282,13 +340,59 @@ router.delete('/:id', async (req, res) => {
   try {
     const driver = await User.findById(req.params.id);
     if (!driver || driver.role !== 'provider') return res.json({ success: false, message: 'السائق غير موجود' });
-    driver.deleted = true;
-    driver.status = 'blocked';
-    await driver.save();
+
+    const stateChanged =
+      driver.deleted !== true
+      || driver.status !== 'blocked';
+
+    if (stateChanged) {
+      const rotationFilter =
+        mobileSessionRotationFilter(driver);
+
+      if (!rotationFilter) {
+        throw new Error(
+          'Invalid mobile session version',
+        );
+      }
+
+      const rotation =
+        await User.updateOne(
+          {
+            _id: driver._id,
+            role: 'provider',
+            ...rotationFilter,
+          },
+          {
+            $set: {
+              deleted: true,
+              status: 'blocked',
+            },
+            $inc: {
+              sessionVersion: 1,
+            },
+          },
+          {
+            runValidators: true,
+          },
+        );
+
+      if (rotation.matchedCount !== 1) {
+        throw new Error(
+          'Concurrent account-state rotation',
+        );
+      }
+    }
 
     const io = req.app.get('io');
+
     if (io) {
-      io.to(`user:${driver._id}`).emit('account_deleted', {});
+      try {
+        io.to(`user:${driver._id}`)
+          .emit('account_deleted', {});
+      } finally {
+        io.in(`user:${driver._id}`)
+          .disconnectSockets(true);
+      }
     }
 
     res.json({ success: true, message: `تم حذف السائق (${driver.fullName}) بنجاح` });

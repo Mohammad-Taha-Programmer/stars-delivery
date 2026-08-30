@@ -58,40 +58,98 @@ router.put('/:id/status', async (req, res) => {
     if (!user || user.role !== 'customer') return res.json({ success: false, message: 'المستخدم غير موجود' });
 
     const newStatus = req.body.status === 'active' ? 'active' : 'blocked';
-    user.status = newStatus;
-    await user.save();
+    const statusChanged =
+      user.status !== newStatus;
+
+    if (statusChanged) {
+      const rotationFilter =
+        mobileSessionRotationFilter(user);
+
+      if (!rotationFilter) {
+        throw new Error(
+          'Invalid mobile session version',
+        );
+      }
+
+      const rotation =
+        await User.updateOne(
+          {
+            _id: user._id,
+            role: 'customer',
+            ...rotationFilter,
+          },
+          {
+            $set: {
+              status: newStatus,
+            },
+            $inc: {
+              sessionVersion: 1,
+            },
+          },
+          {
+            runValidators: true,
+          },
+        );
+
+      if (rotation.matchedCount !== 1) {
+        throw new Error(
+          'Concurrent account-state rotation',
+        );
+      }
+    }
 
     const io = req.app.get('io');
-    if (io) {
-      if (newStatus === 'blocked') {
-        await Notification.create({
-          userId: user._id, type: 'broadcast', pinned: true,
-          title: 'تم تجميد حسابك',
-          body: 'تم تجميد حسابك بسبب كثرة البلاغات. يرجى التواصل مع فريق الدعم.',
-          expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        });
-        io.to(`user:${user._id}`).emit('notification_count', { unreadCount: 1 });
-        io.to(`user:${user._id}`).emit('broadcast', {
-          title: 'تم تجميد حسابك',
-          body: 'تم تجميد حسابك بسبب كثرة البلاغات. يرجى التواصل مع فريق الدعم.',
-          action: 'contact_support',
-        });
 
-        io.in(`user:${user._id}`)
-          .disconnectSockets(true);
-      } else {
-        await Notification.create({
-          userId: user._id, type: 'broadcast', pinned: true,
-          title: 'تم تفعيل حسابك',
-          body: 'مبروك! تم إعادة تفعيل حسابك بنجاح. يمكنك الآن استخدام التطبيق بشكل طبيعي.',
-          expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
-        });
-        io.to(`user:${user._id}`).emit('notification_count', { unreadCount: 1 });
-        io.to(`user:${user._id}`).emit('broadcast', {
-          title: 'تم تفعيل حسابك',
-          body: 'مبروك! تم إعادة تفعيل حسابك بنجاح.',
-          action: '',
-        });
+    if (io) {
+      const shouldDisconnect =
+        statusChanged
+        || newStatus === 'blocked';
+
+      try {
+        if (statusChanged) {
+          if (newStatus === 'blocked') {
+            await Notification.create({
+              userId: user._id, type: 'broadcast', pinned: true,
+              title: 'تم تجميد حسابك',
+              body: 'تم تجميد حسابك بسبب كثرة البلاغات. يرجى التواصل مع فريق الدعم.',
+              expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            });
+
+            io.to(`user:${user._id}`).emit(
+              'notification_count',
+              { unreadCount: 1 },
+            );
+
+            io.to(`user:${user._id}`).emit('broadcast', {
+              title: 'تم تجميد حسابك',
+              body: 'تم تجميد حسابك بسبب كثرة البلاغات. يرجى التواصل مع فريق الدعم.',
+              action: 'contact_support',
+            });
+          } else {
+            await Notification.create({
+              userId: user._id, type: 'broadcast', pinned: true,
+              title: 'تم تفعيل حسابك',
+              body: 'مبروك! تم إعادة تفعيل حسابك بنجاح. يمكنك الآن استخدام التطبيق بشكل طبيعي.',
+              expireAt: new Date(Date.now() + 24 * 60 * 60 * 1000),
+            });
+
+            io.to(`user:${user._id}`).emit(
+              'notification_count',
+              { unreadCount: 1 },
+            );
+
+            io.to(`user:${user._id}`).emit('broadcast', {
+              title: 'تم تفعيل حسابك',
+              body: 'مبروك! تم إعادة تفعيل حسابك بنجاح.',
+              action: '',
+            });
+          }
+        }
+      } finally {
+        if (shouldDisconnect) {
+          io.in(`user:${user._id}`)
+            .disconnectSockets(true);
+        }
       }
     }
 
@@ -162,14 +220,59 @@ router.delete('/:id', async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user || user.role === 'admin') return res.json({ success: false, message: 'المستخدم غير موجود' });
-    // Soft delete: keeps data for legal reasons, prevents login
-    user.deleted = true;
-    user.status = 'blocked';
-    await user.save();
+
+    const stateChanged =
+      user.deleted !== true
+      || user.status !== 'blocked';
+
+    if (stateChanged) {
+      const rotationFilter =
+        mobileSessionRotationFilter(user);
+
+      if (!rotationFilter) {
+        throw new Error(
+          'Invalid mobile session version',
+        );
+      }
+
+      const rotation =
+        await User.updateOne(
+          {
+            _id: user._id,
+            role: user.role,
+            ...rotationFilter,
+          },
+          {
+            $set: {
+              deleted: true,
+              status: 'blocked',
+            },
+            $inc: {
+              sessionVersion: 1,
+            },
+          },
+          {
+            runValidators: true,
+          },
+        );
+
+      if (rotation.matchedCount !== 1) {
+        throw new Error(
+          'Concurrent account-state rotation',
+        );
+      }
+    }
 
     const io = req.app.get('io');
+
     if (io) {
-      io.to(`user:${user._id}`).emit('account_deleted', {});
+      try {
+        io.to(`user:${user._id}`)
+          .emit('account_deleted', {});
+      } finally {
+        io.in(`user:${user._id}`)
+          .disconnectSockets(true);
+      }
     }
 
     res.json({ success: true, message: `تم حذف المستخدم (${user.fullName}) بنجاح` });
