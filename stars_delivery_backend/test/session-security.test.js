@@ -505,7 +505,7 @@ test(
 
     const passwordPosition =
       authSource.indexOf(
-        'const match = await bcrypt.compare',
+        'bcrypt.compare(',
       );
 
     const statePosition =

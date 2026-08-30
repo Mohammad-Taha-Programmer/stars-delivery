@@ -19,12 +19,21 @@ const {
   MAX_MOBILE_PASSWORD_LENGTH,
   isValidMobilePassword,
 } = require('../security/passwordPolicy');
+const {
+  createMobileLoginLimiter,
+  createMobileRegistrationLimiter,
+} = require('../security/mobileAuthRateLimit');
 
 const JWT_SECRET = loadSecurityConfig().jwtSecret;
 
+const invalidCredentialsMessage = 'Invalid credentials';
+const mobileLoginLimiter = createMobileLoginLimiter();
+const mobileRegistrationLimiter =
+  createMobileRegistrationLimiter();
+
 const router = express.Router();
 
-router.post('/register', async (req, res) => {
+router.post('/register', mobileRegistrationLimiter, async (req, res) => {
   try {
     const { fullName, email, phone, password, role, area, privacyPolicy } = req.body;
     if (!isMobileRole(role)) {
@@ -78,7 +87,7 @@ router.post('/register', async (req, res) => {
   }
 });
 
-router.post('/login', async (req, res) => {
+router.post('/login', mobileLoginLimiter, async (req, res) => {
   try {
     const { email, password, role } = req.body;
     if (!isMobileRole(role)) {
@@ -86,16 +95,30 @@ router.post('/login', async (req, res) => {
     }
 
     if (isReservedGuestEmail(email)) {
-      return res.status(400).json({ error: 'Invalid credentials' });
+      return res.status(400).json({
+        error: invalidCredentialsMessage,
+      });
     }
 
     const user = await User.findOne({ email }).select('+password');
-    if (!user) return res.status(400).json({ error: 'Invalid credentials' });
 
-    if (user.role !== role) return res.status(400).json({ error: `No account found for this role` });
+    if (!user) {
+      return res.status(400).json({
+        error: invalidCredentialsMessage,
+      });
+    }
 
-    const match = await bcrypt.compare(password, user.password);
-    if (!match) return res.status(400).json({ error: 'Invalid credentials' });
+    const match =
+      await bcrypt.compare(
+        password,
+        user.password,
+      );
+
+    if (!match || user.role !== role) {
+      return res.status(400).json({
+        error: invalidCredentialsMessage,
+      });
+    }
 
 
     if (!isActiveMobileAccount(user, role)) {

@@ -146,7 +146,7 @@ test(
 
     assert.match(
       loginSource,
-      /bcrypt\.compare\(password,\s*user\.password\)/,
+      /bcrypt\.compare\(\s*password,\s*user\.password,?\s*\)/,
     );
 
     assert.doesNotMatch(
