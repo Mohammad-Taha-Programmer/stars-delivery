@@ -13,6 +13,7 @@ const { isReservedGuestEmail } = require('../services/contactRequest');
 const {
   isActiveMobileAccount,
   publicMobileUser,
+  mobileSessionVersion,
 } = require('../services/mobileSession');
 const {
   MIN_MOBILE_PASSWORD_LENGTH,
@@ -76,7 +77,26 @@ router.post('/register', mobileRegistrationLimiter, async (req, res) => {
       privacyPolicy: privacyPolicy || false,
     });
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    const sessionVersion =
+      mobileSessionVersion(user);
+
+    if (sessionVersion === null) {
+      throw new Error(
+        'Invalid mobile session version',
+      );
+    }
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+        sessionVersion,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: '7d',
+      },
+    );
 
     res.status(201).json({
       token,
@@ -130,7 +150,26 @@ router.post('/login', mobileLoginLimiter, async (req, res) => {
       });
     }
 
-    const token = jwt.sign({ id: user._id, role: user.role }, JWT_SECRET, { expiresIn: '7d' });
+    const sessionVersion =
+      mobileSessionVersion(user);
+
+    if (sessionVersion === null) {
+      throw new Error(
+        'Invalid mobile session version',
+      );
+    }
+
+    const token = jwt.sign(
+      {
+        id: user._id,
+        role: user.role,
+        sessionVersion,
+      },
+      JWT_SECRET,
+      {
+        expiresIn: '7d',
+      },
+    );
 
     const primaryPhone = (user.phoneNumbers || []).find(p => p.primary)?.number || (user.phoneNumbers?.[0]?.number) || '';
 

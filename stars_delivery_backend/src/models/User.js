@@ -14,6 +14,7 @@ const userSchema = new mongoose.Schema({
     primary: { type: Boolean, default: false },
   }],
   password: { type: String, required: true, select: false },
+  sessionVersion: { type: Number, default: 0, min: 0 },
   role: { type: String, enum: ['customer', 'provider', 'admin'], required: true },
   area: { type: String, default: '' },
   publicId: { type: String, unique: true, sparse: true },

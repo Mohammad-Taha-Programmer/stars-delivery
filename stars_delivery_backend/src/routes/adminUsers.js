@@ -5,6 +5,9 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const Order = require('../models/Order');
 const Notification = require('../models/Notification');
+const {
+  mobileSessionRotationFilter,
+} = require('../services/mobileSession');
 
 router.get('/search', async (req, res) => {
   try {
@@ -102,8 +105,53 @@ router.put('/:id/password', async (req, res) => {
   try {
     const user = await User.findById(req.params.id);
     if (!user || user.role === 'admin') return res.json({ success: false, message: 'المستخدم غير موجود' });
-    user.password = await bcrypt.hash(req.body.password, 10);
-    await user.save();
+    const hashedPassword =
+      await bcrypt.hash(
+        req.body.password,
+        10,
+      );
+
+    const rotationFilter =
+      mobileSessionRotationFilter(user);
+
+    if (!rotationFilter) {
+      throw new Error(
+        'Invalid mobile session version',
+      );
+    }
+
+    const rotation =
+      await User.updateOne(
+        {
+          _id: user._id,
+          role: user.role,
+          ...rotationFilter,
+        },
+        {
+          $set: {
+            password: hashedPassword,
+          },
+          $inc: {
+            sessionVersion: 1,
+          },
+        },
+        {
+          runValidators: true,
+        },
+      );
+
+    if (rotation.matchedCount !== 1) {
+      throw new Error(
+        'Concurrent credential rotation',
+      );
+    }
+
+    const io = req.app.get('io');
+
+    if (io) {
+      io.in(`user:${user._id}`)
+        .disconnectSockets(true);
+    }
     res.json({ success: true });
   } catch (err) {
     sendInternalServerFailure(res);

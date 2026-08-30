@@ -48,7 +48,104 @@ function publicMobileUser(user) {
   };
 }
 
+function mobileSessionVersion(
+  userOrVersion,
+) {
+  const value =
+    userOrVersion
+    && typeof userOrVersion === 'object'
+      ? userOrVersion.sessionVersion
+      : userOrVersion;
+
+  // Existing database documents created before STARS-016
+  // do not physically contain this property.
+  if (value === undefined) {
+    return 0;
+  }
+
+  if (
+    !Number.isSafeInteger(value)
+    || value < 0
+  ) {
+    return null;
+  }
+
+  return value;
+}
+
+function tokenMobileSessionVersion(
+  value,
+) {
+  // Existing JWTs issued before STARS-016 carry no claim.
+  if (value === undefined) {
+    return 0;
+  }
+
+  if (
+    !Number.isSafeInteger(value)
+    || value < 0
+  ) {
+    return null;
+  }
+
+  return value;
+}
+
+function mobileSessionVersionMatches(
+  user,
+  tokenVersion,
+) {
+  const persisted =
+    mobileSessionVersion(user);
+
+  const supplied =
+    tokenMobileSessionVersion(
+      tokenVersion,
+    );
+
+  return persisted !== null
+    && supplied !== null
+    && persisted === supplied;
+}
+
+function mobileSessionRotationFilter(
+  user,
+) {
+  const current =
+    mobileSessionVersion(user);
+
+  if (
+    current === null
+    || current >= Number.MAX_SAFE_INTEGER
+  ) {
+    return null;
+  }
+
+  if (current === 0) {
+    return {
+      $or: [
+        {
+          sessionVersion: 0,
+        },
+        {
+          sessionVersion: {
+            $exists: false,
+          },
+        },
+      ],
+    };
+  }
+
+  return {
+    sessionVersion: current,
+  };
+}
+
 module.exports = {
   isActiveMobileAccount,
   publicMobileUser,
+  mobileSessionVersion,
+  tokenMobileSessionVersion,
+  mobileSessionVersionMatches,
+  mobileSessionRotationFilter,
 };

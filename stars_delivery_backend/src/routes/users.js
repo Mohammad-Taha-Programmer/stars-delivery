@@ -5,6 +5,9 @@ const User = require('../models/User');
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
 const {
+  mobileSessionRotationFilter,
+} = require('../services/mobileSession');
+const {
   MIN_MOBILE_PASSWORD_LENGTH,
   MAX_MOBILE_PASSWORD_LENGTH,
   isValidMobilePassword,
@@ -119,13 +122,54 @@ router.put('/password', async (req, res) => {
       });
     }
 
-    user.password =
+    const hashedPassword =
       await bcrypt.hash(
         newPassword,
         10,
       );
 
-    await user.save();
+    const rotationFilter =
+      mobileSessionRotationFilter(user);
+
+    if (!rotationFilter) {
+      throw new Error(
+        'Invalid mobile session version',
+      );
+    }
+
+    const rotation =
+      await User.updateOne(
+        {
+          _id: user._id,
+          role: user.role,
+          ...rotationFilter,
+        },
+        {
+          $set: {
+            password: hashedPassword,
+          },
+          $inc: {
+            sessionVersion: 1,
+          },
+        },
+        {
+          runValidators: true,
+        },
+      );
+
+    if (rotation.matchedCount !== 1) {
+      throw new Error(
+        'Concurrent credential rotation',
+      );
+    }
+
+    const io = req.app.get('io');
+
+    if (io) {
+      io.in(
+        `user:${user._id}`,
+      ).disconnectSockets(true);
+    }
 
     return res.json({
       message: 'Password updated',

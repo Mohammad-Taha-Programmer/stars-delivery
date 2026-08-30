@@ -14,7 +14,10 @@ const { loadAppConfig } = require('./config');
 const { createAdminSessionMiddleware } = require('./middleware/adminSession');
 const requireAdminSession = require('./middleware/requireAdminSession');
 const authenticateSocket = require('./socket/authenticateSocket');
-const { isActiveMobileAccount } = require('./services/mobileSession');
+const {
+  isActiveMobileAccount,
+  mobileSessionVersionMatches,
+} = require('./services/mobileSession');
 const { createOriginGuard, corsOptionsForRequest, socketOriginAllowed } = require('./security/originPolicy');
 const authRoutes = require('./routes/auth');
 const orderRoutes = require('./routes/orders');
@@ -152,8 +155,19 @@ io.use(async (socket, next) => {
       const user =
         await User.findById(
           identity.id,
-          'role status deleted',
+          'role status deleted sessionVersion',
         );
+
+      if (
+        !mobileSessionVersionMatches(
+          user,
+          identity.sessionVersion,
+        )
+      ) {
+        throw new Error(
+          'Invalid authentication',
+        );
+      }
 
       if (
         !isActiveMobileAccount(

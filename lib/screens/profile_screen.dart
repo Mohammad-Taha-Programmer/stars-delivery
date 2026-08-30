@@ -197,6 +197,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         'confirmPassword': confirmPassword,
       });
 
+      // Socket revocation may remove this screen before
+      // the HTTP password-change request returns.
+      if (!mounted) return;
+
       _currentPassCtrl.clear();
       _newPassCtrl.clear();
       _confirmPassCtrl.clear();

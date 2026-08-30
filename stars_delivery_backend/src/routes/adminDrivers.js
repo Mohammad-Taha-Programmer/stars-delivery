@@ -12,6 +12,9 @@ const {
   MIN_PROVIDER_BOOTSTRAP_PASSWORD_LENGTH,
   isValidProviderBootstrapPassword,
 } = require('../security/passwordPolicy');
+const {
+  mobileSessionRotationFilter,
+} = require('../services/mobileSession');
 
 const upload = multer();
 
@@ -222,8 +225,53 @@ router.put('/:id/password', async (req, res) => {
   try {
     const driver = await User.findById(req.params.id);
     if (!driver || driver.role !== 'provider') return res.json({ success: false, message: 'السائق غير موجود' });
-    driver.password = await bcrypt.hash(req.body.password, 10);
-    await driver.save();
+    const hashedPassword =
+      await bcrypt.hash(
+        req.body.password,
+        10,
+      );
+
+    const rotationFilter =
+      mobileSessionRotationFilter(driver);
+
+    if (!rotationFilter) {
+      throw new Error(
+        'Invalid mobile session version',
+      );
+    }
+
+    const rotation =
+      await User.updateOne(
+        {
+          _id: driver._id,
+          role: 'provider',
+          ...rotationFilter,
+        },
+        {
+          $set: {
+            password: hashedPassword,
+          },
+          $inc: {
+            sessionVersion: 1,
+          },
+        },
+        {
+          runValidators: true,
+        },
+      );
+
+    if (rotation.matchedCount !== 1) {
+      throw new Error(
+        'Concurrent credential rotation',
+      );
+    }
+
+    const io = req.app.get('io');
+
+    if (io) {
+      io.in(`user:${driver._id}`)
+        .disconnectSockets(true);
+    }
     res.json({ success: true, message: 'تم تغيير كلمة المرور بنجاح' });
   } catch (err) {
     sendInternalServerFailure(res);

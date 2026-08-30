@@ -9,6 +9,7 @@ const {
 } = require('./mobileRole');
 const {
   isActiveMobileAccount,
+  mobileSessionVersionMatches,
 } = require('../services/mobileSession');
 
 const JWT_SECRET =
@@ -74,7 +75,7 @@ function createAuthMiddleware({
     try {
       user = await UserModel.findById(
         decoded.id,
-        'fullName email phoneNumbers role area publicId status deleted',
+        'fullName email phoneNumbers role area publicId status deleted sessionVersion',
       );
     } catch (err) {
       return next(err);
@@ -86,6 +87,15 @@ function createAuthMiddleware({
     ) {
       return rejectInvalidSession(res);
     }
+
+      if (
+        !mobileSessionVersionMatches(
+          user,
+          decoded.sessionVersion,
+        )
+      ) {
+        return rejectInvalidSession(res);
+      }
 
     if (
       !isActiveMobileAccount(
