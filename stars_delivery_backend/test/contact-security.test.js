@@ -275,29 +275,74 @@ test('legacy guest domain is blocked before registration and login database look
     'utf8',
   );
 
-  const guards =
+  const normalizers =
     authRoute.match(
-      /isReservedGuestEmail\(email\)/g,
+      /normalizeMobileEmail\(email\)/g,
     ) || [];
 
-  assert.equal(guards.length, 2);
+  const guards =
+    authRoute.match(
+      /isReservedGuestEmail\(normalizedEmail\)/g,
+    ) || [];
+
+  assert.equal(
+    normalizers.length,
+    2,
+  );
+
+  assert.equal(
+    guards.length,
+    2,
+  );
+
+  const registrationNormalize =
+    authRoute.indexOf(
+      'normalizeMobileEmail(email)',
+    );
+
+  const registrationGuard =
+    authRoute.indexOf(
+      'isReservedGuestEmail(normalizedEmail)',
+    );
+
+  const registrationLookup =
+    authRoute.indexOf(
+      'const existingUser',
+    );
 
   assert.ok(
-    authRoute.indexOf(
-      'isReservedGuestEmail(email)',
-    )
-    < authRoute.indexOf(
-      'const existingUser',
-    ),
+    registrationNormalize
+    < registrationGuard,
   );
 
   assert.ok(
+    registrationGuard
+    < registrationLookup,
+  );
+
+  const loginNormalize =
     authRoute.lastIndexOf(
-      'isReservedGuestEmail(email)',
-    )
-    < authRoute.indexOf(
+      'normalizeMobileEmail(email)',
+    );
+
+  const loginGuard =
+    authRoute.lastIndexOf(
+      'isReservedGuestEmail(normalizedEmail)',
+    );
+
+  const loginLookup =
+    authRoute.indexOf(
       'const user = await User.findOne',
-    ),
+    );
+
+  assert.ok(
+    loginNormalize
+    < loginGuard,
+  );
+
+  assert.ok(
+    loginGuard
+    < loginLookup,
   );
 });
 

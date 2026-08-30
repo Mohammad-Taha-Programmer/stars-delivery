@@ -36,6 +36,9 @@ test(
     const authSource =
       source('src/routes/auth.js');
 
+    const usersSource =
+      source('src/routes/users.js');
+
     const adminAuthSource =
       source('src/routes/adminAuth.js');
 
@@ -47,7 +50,17 @@ test(
 
     assert.match(
       authSource,
-      /const user = await User\.findOne\(\{ email \}\)\.select\('\+password'\);/,
+      /const user = await User\.findOne\(\{ email: normalizedEmail \}\)\.select\('\+password'\);/,
+    );
+
+    assert.equal(
+      (
+        usersSource.match(
+          /\.select\('\+password'\)/g,
+        )
+        || []
+      ).length,
+      2,
     );
 
     assert.equal(

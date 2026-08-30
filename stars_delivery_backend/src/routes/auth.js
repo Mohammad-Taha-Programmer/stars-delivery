@@ -11,6 +11,10 @@ const { isMobileRole } = require('../middleware/mobileRole');
 const { loadSecurityConfig } = require('../config');
 const { isReservedGuestEmail } = require('../services/contactRequest');
 const {
+  normalizeMobileEmail,
+  isValidMobileEmail,
+} = require('../security/mobileEmail');
+const {
   isActiveMobileAccount,
   publicMobileUser,
   mobileSessionVersion,
@@ -37,12 +41,20 @@ const router = express.Router();
 router.post('/register', mobileRegistrationLimiter, async (req, res) => {
   try {
     const { fullName, email, phone, password, role, area, privacyPolicy } = req.body;
+    const normalizedEmail =
+      normalizeMobileEmail(email);
+
     if (!isMobileRole(role)) {
       return res.status(400).json({ error: 'Invalid registration role' });
     }
 
-    if (isReservedGuestEmail(email)) {
-      return res.status(400).json({ error: 'Invalid email address' });
+    if (
+      !isValidMobileEmail(normalizedEmail)
+      || isReservedGuestEmail(normalizedEmail)
+    ) {
+      return res.status(400).json({
+        error: 'Invalid email address',
+      });
     }
 
     if (!isValidMobilePassword(password)) {
@@ -53,16 +65,16 @@ router.post('/register', mobileRegistrationLimiter, async (req, res) => {
       });
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne({ email: normalizedEmail });
     if (existingUser) return res.status(400).json({ error: 'Email already registered' });
-    const existingPending = await PendingProvider.findOne({ email });
+    const existingPending = await PendingProvider.findOne({ email: normalizedEmail });
     if (existingPending) return res.status(400).json({ error: 'Email already pending review' });
 
     const hashed = await bcrypt.hash(password, 10);
 
     // Providers go through admin approval flow
     if (role === 'provider') {
-      await PendingProvider.create({ fullName, email, phone, password: hashed, area });
+      await PendingProvider.create({ fullName, email: normalizedEmail, phone, password: hashed, area });
       return res.status(201).json({
         pending: true,
         message: 'تم تقديم طلب التسجيل بنجاح. حسابك قيد المراجعة من قبل الإدارة.',
@@ -72,7 +84,7 @@ router.post('/register', mobileRegistrationLimiter, async (req, res) => {
     // Customers register immediately
     const publicId = await generatePublicId();
     const user = await User.create({
-      fullName, email, password: hashed, role, area, publicId,
+      fullName, email: normalizedEmail, password: hashed, role, area, publicId,
       phoneNumbers: [{ number: phone, primary: true }],
       privacyPolicy: privacyPolicy || false,
     });
@@ -110,17 +122,23 @@ router.post('/register', mobileRegistrationLimiter, async (req, res) => {
 router.post('/login', mobileLoginLimiter, async (req, res) => {
   try {
     const { email, password, role } = req.body;
+    const normalizedEmail =
+      normalizeMobileEmail(email);
+
     if (!isMobileRole(role)) {
       return res.status(400).json({ error: 'Invalid login role' });
     }
 
-    if (isReservedGuestEmail(email)) {
+    if (
+      !isValidMobileEmail(normalizedEmail)
+      || isReservedGuestEmail(normalizedEmail)
+    ) {
       return res.status(400).json({
         error: invalidCredentialsMessage,
       });
     }
 
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: normalizedEmail }).select('+password');
 
     if (!user) {
       return res.status(400).json({

@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:dio/dio.dart';
+import '../bloc/auth/auth_bloc.dart';
+import '../bloc/auth/auth_event.dart';
 import '../models/user_model.dart';
 import '../services/api_config.dart';
 import '../services/mobile_api_client.dart';
@@ -137,17 +140,124 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  Future<String?> _promptCurrentPasswordForEmailChange() async {
+    final controller = TextEditingController();
+
+    try {
+      return await showDialog<String>(
+        context: context,
+        builder: (dialogContext) => AlertDialog(
+          title: const Text('تأكيد تغيير البريد'),
+          content: TextField(
+            controller: controller,
+            obscureText: true,
+            autofocus: true,
+            decoration: const InputDecoration(
+              labelText: 'كلمة المرور الحالية',
+              border: OutlineInputBorder(),
+            ),
+            onSubmitted: (value) {
+              if (value.isNotEmpty) {
+                Navigator.of(dialogContext).pop(value);
+              }
+            },
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                final value = controller.text;
+
+                if (value.isNotEmpty) {
+                  Navigator.of(dialogContext).pop(value);
+                }
+              },
+              child: const Text('تأكيد'),
+            ),
+          ],
+        ),
+      );
+    } finally {
+      controller.dispose();
+    }
+  }
+
   Future<void> _saveEmail() async {
-    final email = _emailCtrl.text.trim();
-    if (email.isEmpty) return;
+    final email =
+        _emailCtrl.text.trim().toLowerCase();
+
+    final validationError =
+        Validators.email(email);
+
+    if (validationError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(validationError),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    if (
+      email
+      == widget.user.email.trim().toLowerCase()
+    ) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('البريد لم يتغير'),
+        ),
+      );
+      return;
+    }
+
+    final currentPassword =
+        await _promptCurrentPasswordForEmailChange();
+
+    if (!mounted || currentPassword == null) {
+      return;
+    }
+
     try {
       final dio = _client();
-      await dio.put('/users/profile', data: {'email': email});
+
+      await dio.put(
+        '/users/email',
+        data: {
+          'currentPassword': currentPassword,
+          'newEmail': email,
+          'confirmEmail': email,
+        },
+      );
+
+      // The server rotates sessionVersion and may disconnect
+      // this screen before the HTTP response returns.
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تحديث البريد'), backgroundColor: Colors.green));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'تم تحديث البريد. سجّل الدخول مجدداً بالبريد الجديد.',
+          ),
+          backgroundColor: Colors.green,
+        ),
+      );
+
+      context.read<AuthBloc>().add(
+        LogoutEvent(),
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 

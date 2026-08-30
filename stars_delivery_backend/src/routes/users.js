@@ -2,8 +2,14 @@ const { sendInternalServerError } = require('../security/errorResponse');
 const express = require('express');
 const bcrypt = require('bcryptjs');
 const User = require('../models/User');
+const PendingProvider = require('../models/PendingProvider');
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
+const { isReservedGuestEmail } = require('../services/contactRequest');
+const {
+  normalizeMobileEmail,
+  isValidMobileEmail,
+} = require('../security/mobileEmail');
 const {
   mobileSessionRotationFilter,
 } = require('../services/mobileSession');
@@ -179,6 +185,182 @@ router.put('/password', async (req, res) => {
   }
 });
 
+
+// Self-service recovery email change.
+// The email is a login identifier and future recovery destination,
+// so changing it requires knowledge of the current credential.
+router.put('/email', async (req, res) => {
+  try {
+    const currentPassword =
+      typeof req.body.currentPassword === 'string'
+        ? req.body.currentPassword
+        : '';
+
+    const newEmail =
+      normalizeMobileEmail(
+        req.body.newEmail,
+      );
+
+    const confirmEmail =
+      normalizeMobileEmail(
+        req.body.confirmEmail,
+      );
+
+    if (
+      !currentPassword
+      || !newEmail
+      || !confirmEmail
+    ) {
+      return res.status(400).json({
+        error:
+          'Current password, new email, and confirmation are required',
+        code: 'EMAIL_FIELDS_REQUIRED',
+      });
+    }
+
+    if (
+      !isValidMobileEmail(newEmail)
+      || isReservedGuestEmail(newEmail)
+    ) {
+      return res.status(400).json({
+        error: 'Invalid email address',
+        code: 'EMAIL_INVALID',
+      });
+    }
+
+    if (newEmail !== confirmEmail) {
+      return res.status(400).json({
+        error:
+          'New email and confirmation do not match',
+        code: 'EMAIL_CONFIRMATION_MISMATCH',
+      });
+    }
+
+    const user =
+      await User.findById(
+        req.userId,
+      ).select('+password');
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+      });
+    }
+
+    const currentMatches =
+      await bcrypt.compare(
+        currentPassword,
+        user.password,
+      );
+
+    if (!currentMatches) {
+      return res.status(400).json({
+        error: 'Current password is incorrect',
+        code: 'CURRENT_PASSWORD_INVALID',
+      });
+    }
+
+    const currentEmail =
+      normalizeMobileEmail(
+        user.email,
+      );
+
+    if (newEmail === currentEmail) {
+      return res.json({
+        message: 'Email unchanged',
+        email: user.email,
+        verified: user.verified === true,
+      });
+    }
+
+    const [
+      existingUser,
+      existingPending,
+    ] =
+      await Promise.all([
+        User.exists({
+          email: newEmail,
+          _id: {
+            $ne: user._id,
+          },
+        }),
+        PendingProvider.exists({
+          email: newEmail,
+        }),
+      ]);
+
+    if (
+      existingUser
+      || existingPending
+    ) {
+      return res.status(409).json({
+        error: 'Email is already in use',
+        code: 'EMAIL_IN_USE',
+      });
+    }
+
+    const rotationFilter =
+      mobileSessionRotationFilter(user);
+
+    if (!rotationFilter) {
+      throw new Error(
+        'Invalid mobile session version',
+      );
+    }
+
+    const rotation =
+      await User.updateOne(
+        {
+          _id: user._id,
+          role: user.role,
+          ...rotationFilter,
+        },
+        {
+          $set: {
+            email: newEmail,
+            verified: false,
+          },
+          $inc: {
+            sessionVersion: 1,
+          },
+        },
+        {
+          runValidators: true,
+        },
+      );
+
+    if (rotation.matchedCount !== 1) {
+      throw new Error(
+        'Concurrent recovery identity rotation',
+      );
+    }
+
+    const io = req.app.get('io');
+
+    if (io) {
+      io.in(
+        `user:${user._id}`,
+      ).disconnectSockets(true);
+    }
+
+    return res.json({
+      message:
+        'Email updated. Sign in again with the new email.',
+      email: newEmail,
+      verified: false,
+    });
+  } catch (err) {
+    if (err?.code === 11000) {
+      return res.status(409).json({
+        error: 'Email is already in use',
+        code: 'EMAIL_IN_USE',
+      });
+    }
+
+    return sendInternalServerError(res);
+  }
+});
+
 // Profile update intentionally excludes credential changes.
 router.put('/profile', async (req, res) => {
   try {
@@ -195,19 +377,27 @@ router.put('/profile', async (req, res) => {
       });
     }
 
+    if (
+      Object.prototype.hasOwnProperty.call(
+        req.body,
+        'email',
+      )
+    ) {
+      return res.status(400).json({
+        error:
+          'Use the dedicated email endpoint to change the recovery identity',
+        code: 'EMAIL_ENDPOINT_REQUIRED',
+      });
+    }
+
     const {
       fullName,
-      email,
     } = req.body;
 
     const update = {};
 
     if (fullName) {
       update.fullName = fullName;
-    }
-
-    if (email) {
-      update.email = email.toLowerCase();
     }
 
     if (Object.keys(update).length === 0) {

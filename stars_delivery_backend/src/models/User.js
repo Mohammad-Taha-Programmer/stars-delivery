@@ -8,7 +8,7 @@ const messageSchema = new mongoose.Schema({
 
 const userSchema = new mongoose.Schema({
   fullName: { type: String, required: true },
-  email: { type: String, required: true, unique: true, lowercase: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true },
   phoneNumbers: [{
     number: { type: String, required: true },
     primary: { type: Boolean, default: false },
