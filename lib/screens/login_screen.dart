@@ -15,6 +15,7 @@ import '../services/validators.dart';
 import '../services/api_config.dart';
 import 'home_screen.dart';
 import 'provider_home_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -240,6 +241,24 @@ color: Colors.black.withValues(alpha: 0.1),
                             return null;
                           },
                         ),
+                        if (_isLogin)
+                          Align(
+                            alignment:
+                                AlignmentDirectional.centerEnd,
+                            child: TextButton(
+                              key: const Key(
+                                'forgotPasswordButton',
+                              ),
+                              onPressed:
+                                  _openPasswordRecovery,
+                              child: Text(
+                                AppLocalization.get(
+                                  context,
+                                  'forgot_password',
+                                ),
+                              ),
+                            ),
+                          ),
                         if (!_isLogin) ...[
                           const SizedBox(height: 12),
                           TextFormField(
@@ -371,6 +390,25 @@ color: Colors.black.withValues(alpha: 0.1),
         borderSide: const BorderSide(color: Color(0xFF1a237e), width: 2),
       ),
     );
+  }
+
+  Future<void> _openPasswordRecovery() async {
+    final recoveredEmail =
+        await Navigator.of(context).push<String>(
+      MaterialPageRoute(
+        builder: (_) => ForgotPasswordScreen(
+          initialEmail:
+              _emailController.text.trim(),
+        ),
+      ),
+    );
+
+    if (!mounted || recoveredEmail == null) {
+      return;
+    }
+
+    _emailController.text =
+        recoveredEmail;
   }
 
   void _showContactDialog() {

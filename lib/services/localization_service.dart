@@ -48,6 +48,66 @@ class AppLocalization {
     'min_password': {'ar': 'بين 12 و128 حرفاً', 'en': '12-128 characters'},
     'confirm_password': {'ar': 'تأكيد كلمة المرور', 'en': 'Confirm Password'},
     'password_mismatch': {'ar': 'كلمتا المرور غير متطابقتين', 'en': 'Passwords do not match'},
+    'forgot_password': {
+      'ar': 'نسيت كلمة المرور؟',
+      'en': 'Forgot password?',
+    },
+    'password_recovery': {
+      'ar': 'استعادة كلمة المرور',
+      'en': 'Password Recovery',
+    },
+    'recovery_email_instructions': {
+      'ar': 'أدخل البريد الإلكتروني المرتبط بحسابك.',
+      'en': 'Enter the email address associated with your account.',
+    },
+    'send_recovery_code': {
+      'ar': 'إرسال رمز الاستعادة',
+      'en': 'Send Recovery Code',
+    },
+    'recovery_code': {
+      'ar': 'رمز الاستعادة',
+      'en': 'Recovery Code',
+    },
+    'recovery_code_generic_notice': {
+      'ar': 'إذا كان هناك حساب مؤهل مرتبط بهذا البريد، فسيتم إرسال رمز الاستعادة إليه.',
+      'en': 'If an eligible account exists for this email, a recovery code will be sent.',
+    },
+    'new_password': {
+      'ar': 'كلمة المرور الجديدة',
+      'en': 'New Password',
+    },
+    'reset_password': {
+      'ar': 'تغيير كلمة المرور',
+      'en': 'Reset Password',
+    },
+    'change_recovery_email': {
+      'ar': 'استخدام بريد إلكتروني آخر',
+      'en': 'Use a different email',
+    },
+    'invalid_recovery_code': {
+      'ar': 'يجب أن يتكون رمز الاستعادة من 8 أرقام.',
+      'en': 'Recovery code must contain exactly 8 digits.',
+    },
+    'recovery_invalid': {
+      'ar': 'رمز الاستعادة غير صالح أو منتهي الصلاحية.',
+      'en': 'The recovery code is invalid or expired.',
+    },
+    'recovery_rate_limited': {
+      'ar': 'تم إجراء محاولات كثيرة. حاول مرة أخرى لاحقاً.',
+      'en': 'Too many recovery attempts. Please try again later.',
+    },
+    'recovery_unavailable': {
+      'ar': 'خدمة استعادة كلمة المرور غير متاحة حالياً.',
+      'en': 'Password recovery is temporarily unavailable.',
+    },
+    'recovery_failed': {
+      'ar': 'تعذر إكمال استعادة كلمة المرور. حاول مرة أخرى.',
+      'en': 'Password recovery could not be completed. Please try again.',
+    },
+    'recovery_reset_success': {
+      'ar': 'تم تغيير كلمة المرور. سجل الدخول باستخدام كلمة المرور الجديدة.',
+      'en': 'Password changed. Sign in with your new password.',
+    },
 
     // Create Order
     'delivery_location': {'ar': 'موقع التوصيل', 'en': 'Delivery Location'},
