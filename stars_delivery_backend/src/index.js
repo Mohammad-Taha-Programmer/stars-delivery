@@ -41,6 +41,7 @@ const adminApiRoutes = require('./routes/adminApi');
 const app = express();
 const appConfig = loadAppConfig();
 if (process.env.NODE_ENV === 'production') app.set('trust proxy', 1);
+const isProduction = process.env.NODE_ENV === 'production';
 
 function getLanIp() {
   const ifaces = os.networkInterfaces();
@@ -57,7 +58,7 @@ function getLanIp() {
   const preferred = candidates.find(ip => ip.startsWith('192.168.1.') || ip.startsWith('192.168.0.') || ip.startsWith('10.'));
   return preferred || candidates[0] || '127.0.0.1';
 }
-const lanIp = getLanIp();
+const lanIp = isProduction ? null : getLanIp();
 
 app.use(createOriginGuard({
   allowedOrigins: appConfig.allowedOrigins,
@@ -251,12 +252,28 @@ io.on('connection', async (socket) => {
   app.set('io', io);
 };
 
-app.get('/api/config', (req, res) => {
-  // Return the address the client actually reached us on — guaranteed reachable.
-  let ip = (req.socket.localAddress || '').replace(/^::ffff:/, '');
-  if (!ip || ip === '::1' || ip === '127.0.0.1') ip = lanIp;
-  res.json({ lanIp: ip, port: parseInt(process.env.PORT || '3000') });
-});
+if (!isProduction) {
+  app.get('/api/config', (req, res) => {
+    // Development-only LAN discovery for Android debug builds.
+    let ip = (req.socket.localAddress || '').replace(/^::ffff:/, '');
+
+    if (
+      !ip
+      || ip === '::1'
+      || ip === '127.0.0.1'
+    ) {
+      ip = lanIp;
+    }
+
+    res.json({
+      lanIp: ip,
+      port: parseInt(
+        process.env.PORT || '3000',
+        10,
+      ),
+    });
+  });
+}
 
 app.get('/api/health', (req, res) => {
   const connected =
@@ -316,7 +333,11 @@ const startServer = (retries = 3) => {
 
   server.once('listening', () => {
     console.log(`Server running on port ${PORT} (0.0.0.0)`);
-    console.log(`LAN IP: http://${lanIp}:${PORT}`);
+    if (!isProduction) {
+      console.log(
+        `LAN IP: http://${lanIp}:${PORT}`,
+      );
+    }
   });
 
   server.on('error', (err) => {

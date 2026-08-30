@@ -47,7 +47,7 @@ class SocketService {
   void connect({required String token, String? area}) {
     disconnect();
 
-    final uri = ApiConfig.apiUrl.replaceFirst('/api', '');
+    final uri = ApiConfig.serverUrl;
     _socket = io.io(
       uri,
       io.OptionBuilder()
