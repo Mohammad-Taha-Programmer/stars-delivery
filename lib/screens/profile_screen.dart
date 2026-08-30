@@ -3,6 +3,7 @@ import 'package:dio/dio.dart';
 import '../models/user_model.dart';
 import '../services/api_config.dart';
 import '../services/mobile_api_client.dart';
+import '../services/validators.dart';
 import '../services/responsive.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -17,6 +18,7 @@ class ProfileScreen extends StatefulWidget {
 class _ProfileScreenState extends State<ProfileScreen> {
   final _nameCtrl = TextEditingController();
   final _emailCtrl = TextEditingController();
+  final _currentPassCtrl = TextEditingController();
   final _newPassCtrl = TextEditingController();
   final _confirmPassCtrl = TextEditingController();
   final _freqItemCtrl = TextEditingController();
@@ -39,6 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void dispose() {
     _nameCtrl.dispose();
     _emailCtrl.dispose();
+    _currentPassCtrl.dispose();
     _newPassCtrl.dispose();
     _confirmPassCtrl.dispose();
     _freqItemCtrl.dispose();
@@ -149,26 +152,72 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _changePassword() async {
-    final pass = _newPassCtrl.text;
-    final confirm = _confirmPassCtrl.text;
-    if (pass.isEmpty || pass.length < 6) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كلمة المرور يجب أن تكون 6 أحرف على الأقل'), backgroundColor: Colors.red));
+    final currentPassword = _currentPassCtrl.text;
+    final newPassword = _newPassCtrl.text;
+    final confirmPassword = _confirmPassCtrl.text;
+
+    if (currentPassword.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('أدخل كلمة المرور الحالية'),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
-    if (pass != confirm) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('كلمتا المرور غير متطابقتين'), backgroundColor: Colors.red));
+
+    final validationError = Validators.password(newPassword);
+
+    if (validationError != null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(validationError),
+          backgroundColor: Colors.red,
+        ),
+      );
       return;
     }
+
+    if (newPassword != confirmPassword) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('كلمتا المرور غير متطابقتين'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     try {
       final dio = _client();
-      await dio.put('/users/profile', data: {'password': pass});
+
+      await dio.put('/users/password', data: {
+        'currentPassword': currentPassword,
+        'newPassword': newPassword,
+        'confirmPassword': confirmPassword,
+      });
+
+      _currentPassCtrl.clear();
       _newPassCtrl.clear();
       _confirmPassCtrl.clear();
+
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تغيير كلمة المرور'), backgroundColor: Colors.green));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('تم تغيير كلمة المرور'),
+          backgroundColor: Colors.green,
+        ),
+      );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString()), backgroundColor: Colors.red));
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(e.toString()),
+          backgroundColor: Colors.red,
+        ),
+      );
     }
   }
 
@@ -234,6 +283,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               }),
               const SizedBox(height: 12),
               const Text('تغيير كلمة المرور', style: TextStyle(fontWeight: FontWeight.bold)),
+              const SizedBox(height: 8),
+              TextField(controller: _currentPassCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'كلمة المرور الحالية', border: OutlineInputBorder())),
               const SizedBox(height: 8),
               TextField(controller: _newPassCtrl, obscureText: true, decoration: const InputDecoration(labelText: 'كلمة مرور جديدة', border: OutlineInputBorder())),
               const SizedBox(height: 8),

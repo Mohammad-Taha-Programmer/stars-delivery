@@ -14,6 +14,11 @@ const {
   isActiveMobileAccount,
   publicMobileUser,
 } = require('../services/mobileSession');
+const {
+  MIN_MOBILE_PASSWORD_LENGTH,
+  MAX_MOBILE_PASSWORD_LENGTH,
+  isValidMobilePassword,
+} = require('../security/passwordPolicy');
 
 const JWT_SECRET = loadSecurityConfig().jwtSecret;
 
@@ -28,6 +33,14 @@ router.post('/register', async (req, res) => {
 
     if (isReservedGuestEmail(email)) {
       return res.status(400).json({ error: 'Invalid email address' });
+    }
+
+    if (!isValidMobilePassword(password)) {
+      return res.status(400).json({
+        error:
+          `Password must be between ${MIN_MOBILE_PASSWORD_LENGTH} and ${MAX_MOBILE_PASSWORD_LENGTH} characters and must not be an obvious placeholder`,
+        code: 'PASSWORD_POLICY',
+      });
     }
 
     const existingUser = await User.findOne({ email });

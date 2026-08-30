@@ -1,4 +1,18 @@
 class Validators {
+  static const int minPasswordLength = 12;
+  static const int maxPasswordLength = 128;
+
+  static const Set<String> _insecurePasswords = {
+    'admin123',
+    'do-not-store-a-real-password-here',
+    'changeme',
+    'change-me',
+    'change me',
+  };
+
+  static final RegExp _obviousPlaceholderPattern =
+      RegExp(r'^(change|replace|your|example|placeholder|dummy)[-_ ]');
+
   static String? email(String? value) {
     if (value == null || value.trim().isEmpty) return 'مطلوب / Required';
     final emailRegex = RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$');
@@ -8,7 +22,19 @@ class Validators {
 
   static String? password(String? value) {
     if (value == null || value.isEmpty) return 'مطلوب / Required';
-    if (value.length < 6) return '6 أحرف على الأقل / Min 6 characters';
+
+    final normalized = value.trim().toLowerCase();
+
+    if (value.trim().length < minPasswordLength ||
+        value.length > maxPasswordLength) {
+      return 'بين 12 و128 حرفاً / 12-128 characters';
+    }
+
+    if (_insecurePasswords.contains(normalized) ||
+        _obviousPlaceholderPattern.hasMatch(normalized)) {
+      return 'اختر كلمة مرور غير افتراضية / Avoid obvious placeholder passwords';
+    }
+
     return null;
   }
 

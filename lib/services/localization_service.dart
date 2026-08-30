@@ -45,7 +45,7 @@ class AppLocalization {
     'have_account': {'ar': 'لديك حساب بالفعل؟ ', 'en': 'Already have an account? '},
     'required': {'ar': 'مطلوب', 'en': 'Required'},
     'invalid_email': {'ar': 'بريد إلكتروني غير صالح', 'en': 'Invalid email'},
-    'min_password': {'ar': '6 أحرف على الأقل', 'en': 'Min 6 characters'},
+    'min_password': {'ar': 'بين 12 و128 حرفاً', 'en': '12-128 characters'},
     'confirm_password': {'ar': 'تأكيد كلمة المرور', 'en': 'Confirm Password'},
     'password_mismatch': {'ar': 'كلمتا المرور غير متطابقتين', 'en': 'Passwords do not match'},
 

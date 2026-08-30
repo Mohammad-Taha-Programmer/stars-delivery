@@ -4,6 +4,11 @@ const bcrypt = require('bcryptjs');
 const User = require('../models/User');
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
+const {
+  MIN_MOBILE_PASSWORD_LENGTH,
+  MAX_MOBILE_PASSWORD_LENGTH,
+  isValidMobilePassword,
+} = require('../security/passwordPolicy');
 
 const router = express.Router();
 router.use(auth, requireRole('customer', 'provider'));
@@ -42,23 +47,151 @@ router.get('/location', async (req, res) => {
   }
 });
 
-// Profile update (name, email, password)
+// Self-service password change.
+// This requires both an authenticated mobile session and
+// knowledge of the account's current credential.
+router.put('/password', async (req, res) => {
+  try {
+    const currentPassword =
+      typeof req.body.currentPassword === 'string'
+        ? req.body.currentPassword
+        : '';
+
+    const newPassword =
+      typeof req.body.newPassword === 'string'
+        ? req.body.newPassword
+        : '';
+
+    const confirmPassword =
+      typeof req.body.confirmPassword === 'string'
+        ? req.body.confirmPassword
+        : '';
+
+    if (
+      !currentPassword
+      || !newPassword
+      || !confirmPassword
+    ) {
+      return res.status(400).json({
+        error:
+          'Current password, new password, and confirmation are required',
+        code: 'PASSWORD_FIELDS_REQUIRED',
+      });
+    }
+
+    const user =
+      await User.findById(
+        req.userId,
+      ).select('+password');
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+      });
+    }
+
+    const currentMatches =
+      await bcrypt.compare(
+        currentPassword,
+        user.password,
+      );
+
+    if (!currentMatches) {
+      return res.status(400).json({
+        error: 'Current password is incorrect',
+        code: 'CURRENT_PASSWORD_INVALID',
+      });
+    }
+
+    if (!isValidMobilePassword(newPassword)) {
+      return res.status(400).json({
+        error:
+          `New password must be between ${MIN_MOBILE_PASSWORD_LENGTH} and ${MAX_MOBILE_PASSWORD_LENGTH} characters and must not be an obvious placeholder`,
+        code: 'PASSWORD_POLICY',
+      });
+    }
+
+    if (newPassword !== confirmPassword) {
+      return res.status(400).json({
+        error:
+          'New password and confirmation do not match',
+        code: 'PASSWORD_CONFIRMATION_MISMATCH',
+      });
+    }
+
+    user.password =
+      await bcrypt.hash(
+        newPassword,
+        10,
+      );
+
+    await user.save();
+
+    return res.json({
+      message: 'Password updated',
+    });
+  } catch (err) {
+    return sendInternalServerError(res);
+  }
+});
+
+// Profile update intentionally excludes credential changes.
 router.put('/profile', async (req, res) => {
   try {
-    const { fullName, email, password } = req.body;
+    if (
+      Object.prototype.hasOwnProperty.call(
+        req.body,
+        'password',
+      )
+    ) {
+      return res.status(400).json({
+        error:
+          'Use the dedicated password endpoint to change credentials',
+        code: 'PASSWORD_ENDPOINT_REQUIRED',
+      });
+    }
+
+    const {
+      fullName,
+      email,
+    } = req.body;
+
     const update = {};
-    if (fullName) update.fullName = fullName;
-    if (email) update.email = email.toLowerCase();
-    if (password) update.password = await bcrypt.hash(password, 10);
 
-    if (Object.keys(update).length === 0) return res.status(400).json({ error: 'No fields to update' });
+    if (fullName) {
+      update.fullName = fullName;
+    }
 
-    const user = await User.findByIdAndUpdate(req.userId, update, { new: true });
-    if (!user) return res.status(404).json({ error: 'User not found' });
+    if (email) {
+      update.email = email.toLowerCase();
+    }
 
-    res.json({ message: 'Profile updated' });
+    if (Object.keys(update).length === 0) {
+      return res.status(400).json({
+        error: 'No fields to update',
+      });
+    }
+
+    const user =
+      await User.findByIdAndUpdate(
+        req.userId,
+        update,
+        {
+          new: true,
+        },
+      );
+
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found',
+      });
+    }
+
+    return res.json({
+      message: 'Profile updated',
+    });
   } catch (err) {
-    sendInternalServerError(res);
+    return sendInternalServerError(res);
   }
 });
 

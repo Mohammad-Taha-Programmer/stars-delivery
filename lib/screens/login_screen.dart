@@ -11,6 +11,7 @@ import '../bloc/app/app_event.dart';
 import '../bloc/provider/provider_bloc.dart';
 import '../services/responsive.dart';
 import '../services/localization_service.dart';
+import '../services/validators.dart';
 import '../services/api_config.dart';
 import 'home_screen.dart';
 import 'provider_home_screen.dart';
@@ -223,7 +224,21 @@ color: Colors.black.withValues(alpha: 0.1),
                           controller: _passwordController,
                           decoration: _inputDecoration(AppLocalization.get(context, 'password'), Icons.lock_outline),
                           obscureText: true,
-                          validator: (v) => v!.length < 6 ? AppLocalization.get(context, 'min_password') : null,
+                          validator: (v) {
+                            if (v == null || v.isEmpty) {
+                              return AppLocalization.get(context, 'required');
+                            }
+
+                            if (!_isLogin) {
+                              final passwordError = Validators.password(v);
+
+                              if (passwordError != null) {
+                                return passwordError;
+                              }
+                            }
+
+                            return null;
+                          },
                         ),
                         if (!_isLogin) ...[
                           const SizedBox(height: 12),
