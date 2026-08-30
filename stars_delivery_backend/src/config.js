@@ -48,6 +48,146 @@ function loadSecurityConfig(env = process.env) {
   };
 }
 
+
+function parseRequiredPort(
+  name,
+  env = process.env,
+) {
+  const raw =
+    requiredValue(
+      name,
+      env,
+    );
+
+  const value =
+    Number(raw);
+
+  if (
+    !Number.isSafeInteger(value)
+    || value < 1
+    || value > 65535
+  ) {
+    throw new Error(
+      `${name} must be a valid TCP port`,
+    );
+  }
+
+  return value;
+}
+
+function parseRequiredBoolean(
+  name,
+  env = process.env,
+) {
+  const raw =
+    requiredValue(
+      name,
+      env,
+    ).toLowerCase();
+
+  if (raw === 'true') {
+    return true;
+  }
+
+  if (raw === 'false') {
+    return false;
+  }
+
+  throw new Error(
+    `${name} must be true or false`,
+  );
+}
+
+function loadPasswordRecoverySecurityConfig(
+  env = process.env,
+) {
+  const recoverySecret =
+    validateSecret(
+      'PASSWORD_RECOVERY_SECRET',
+      env.PASSWORD_RECOVERY_SECRET,
+    );
+
+  const jwtSecret =
+    env.JWT_SECRET?.trim();
+
+  const sessionSecret =
+    env.SESSION_SECRET?.trim();
+
+  if (
+    recoverySecret === jwtSecret
+    || recoverySecret === sessionSecret
+  ) {
+    throw new Error(
+      'PASSWORD_RECOVERY_SECRET must be distinct from authentication secrets',
+    );
+  }
+
+  return {
+    recoverySecret,
+  };
+}
+
+function loadPasswordRecoveryMailConfig(
+  env = process.env,
+) {
+  const smtpHost =
+    requiredValue(
+      'SMTP_HOST',
+      env,
+    );
+
+  const smtpPort =
+    parseRequiredPort(
+      'SMTP_PORT',
+      env,
+    );
+
+  const smtpSecure =
+    parseRequiredBoolean(
+      'SMTP_SECURE',
+      env,
+    );
+
+  const smtpFrom =
+    requiredValue(
+      'SMTP_FROM',
+      env,
+    );
+
+  const smtpUser =
+    env.SMTP_USER?.trim()
+    || '';
+
+  const rawPass =
+    typeof env.SMTP_PASS === 'string'
+      ? env.SMTP_PASS
+      : '';
+
+  const hasPass =
+    rawPass.trim().length > 0;
+
+  if (
+    Boolean(smtpUser)
+    !== hasPass
+  ) {
+    throw new Error(
+      'SMTP_USER and SMTP_PASS must either both be supplied or both be omitted',
+    );
+  }
+
+  return {
+    smtpHost,
+    smtpPort,
+    smtpSecure,
+    smtpFrom,
+    smtpUser,
+    smtpPass:
+      hasPass
+        ? rawPass
+        : '',
+  };
+}
+
 function loadAppConfig(env = process.env) {
   const security = loadSecurityConfig(env);
   return {
@@ -62,5 +202,7 @@ module.exports = {
   requiredValue,
   validateSecret,
   loadSecurityConfig,
+  loadPasswordRecoverySecurityConfig,
+  loadPasswordRecoveryMailConfig,
   loadAppConfig,
 };

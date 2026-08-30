@@ -6,6 +6,7 @@ const User = require('../models/User');
 const PendingProvider = require('../models/PendingProvider');
 const auth = require('../middleware/auth');
 const requireRole = require('../middleware/requireRole');
+const passwordRecoveryRouter = require('./passwordRecovery');
 const { generatePublicId } = require('../utils/publicId');
 const { isMobileRole } = require('../middleware/mobileRole');
 const { loadSecurityConfig } = require('../config');
@@ -199,6 +200,11 @@ router.post('/login', mobileLoginLimiter, async (req, res) => {
     sendInternalServerError(res);
   }
 });
+
+router.use(
+  '/password-recovery',
+  passwordRecoveryRouter,
+);
 
 router.get(
   '/me',

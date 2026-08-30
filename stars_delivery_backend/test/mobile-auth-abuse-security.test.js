@@ -400,11 +400,67 @@ test(
       /isValidMobilePassword\(password\)/,
     );
 
-    // Use express-rate-limit's default IP key generator.
-    // Do not parse X-Forwarded-For manually.
+    // Login and registration continue to use
+    // express-rate-limit's default IP key generator.
+    // Password recovery owns a distinct account-scoped limiter,
+    // so keep this historical assertion scoped to the original
+    // login and registration limiter factories.
+    const loginLimiterStart =
+      rateLimitSource.indexOf(
+        'function createMobileLoginLimiter()',
+      );
+
+    const registrationLimiterStart =
+      rateLimitSource.indexOf(
+        'function createMobileRegistrationLimiter()',
+      );
+
+    const recoveryKeyStart =
+      rateLimitSource.indexOf(
+        'function passwordRecoveryAccountKey(',
+      );
+
+    assert.ok(
+      loginLimiterStart >= 0,
+    );
+
+    assert.ok(
+      registrationLimiterStart
+        > loginLimiterStart,
+    );
+
+    assert.ok(
+      recoveryKeyStart
+        > registrationLimiterStart,
+    );
+
+    const loginLimiterSource =
+      rateLimitSource.slice(
+        loginLimiterStart,
+        registrationLimiterStart,
+      );
+
+    const registrationLimiterSource =
+      rateLimitSource.slice(
+        registrationLimiterStart,
+        recoveryKeyStart,
+      );
+
+    assert.doesNotMatch(
+      loginLimiterSource,
+      /keyGenerator\s*:/,
+    );
+
+    assert.doesNotMatch(
+      registrationLimiterSource,
+      /keyGenerator\s*:/,
+    );
+
+    // Preserve the original reverse-proxy boundary:
+    // application code must not parse forwarded-for manually.
     assert.doesNotMatch(
       rateLimitSource,
-      /keyGenerator\s*:/,
+      /x-forwarded-for/i,
     );
 
     assert.match(
