@@ -1,0 +1,14 @@
+# STARS Delivery Android release signing template.
+#
+# Copy this file to android/key.properties.
+# NEVER commit android/key.properties or the referenced keystore.
+# Keep the real upload/release keystore outside the repository
+# and maintain a secure backup.
+#
+# An absolute storeFile path is recommended.
+# On Windows, forward slashes avoid properties escaping issues.
+
+storePassword=
+keyPassword=
+keyAlias=
+storeFile=

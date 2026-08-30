@@ -1,7 +1,80 @@
+import java.io.FileInputStream
+import java.util.Properties
+import org.gradle.api.GradleException
+
 plugins {
     id("com.android.application")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
+}
+
+val releaseSigningProperties =
+    Properties()
+
+val releaseSigningPropertiesFile =
+    rootProject.file("key.properties")
+
+if (releaseSigningPropertiesFile.isFile) {
+    FileInputStream(
+        releaseSigningPropertiesFile,
+    ).use { input ->
+        releaseSigningProperties.load(input)
+    }
+}
+
+val requiredReleaseSigningProperties =
+    listOf(
+        "storePassword",
+        "keyPassword",
+        "keyAlias",
+        "storeFile",
+    )
+
+val releaseSigningStorePath =
+    releaseSigningProperties
+        .getProperty("storeFile")
+        ?.trim()
+        ?.takeIf { it.isNotEmpty() }
+
+val releaseSigningStoreFile =
+    releaseSigningStorePath
+        ?.let { path ->
+            rootProject.file(path)
+        }
+
+fun requireReleaseSigning() {
+    if (!releaseSigningPropertiesFile.isFile) {
+        throw GradleException(
+            "STARS_ANDROID_RELEASE_SIGNING_REQUIRED: " +
+                "android/key.properties is required " +
+                "for Android release artifacts.",
+        )
+    }
+
+    val missing =
+        requiredReleaseSigningProperties
+            .filter { propertyName ->
+                releaseSigningProperties
+                    .getProperty(propertyName)
+                    ?.trim()
+                    .isNullOrEmpty()
+            }
+
+    if (missing.isNotEmpty()) {
+        throw GradleException(
+            "STARS_ANDROID_RELEASE_SIGNING_REQUIRED: " +
+                "missing required signing properties: " +
+                missing.joinToString(", "),
+        )
+    }
+
+    if (releaseSigningStoreFile?.isFile != true) {
+        throw GradleException(
+            "STARS_ANDROID_RELEASE_SIGNING_REQUIRED: " +
+                "the configured release keystore " +
+                "does not exist or is not a file.",
+        )
+    }
 }
 
 android {
@@ -25,11 +98,30 @@ android {
         versionName = flutter.versionName
     }
 
+    signingConfigs {
+        create("release") {
+            keyAlias =
+                releaseSigningProperties
+                    .getProperty("keyAlias")
+                    ?.trim()
+
+            keyPassword =
+                releaseSigningProperties
+                    .getProperty("keyPassword")
+
+            storeFile =
+                releaseSigningStoreFile
+
+            storePassword =
+                releaseSigningProperties
+                    .getProperty("storePassword")
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig =
+                signingConfigs.getByName("release")
         }
     }
 }
@@ -37,6 +129,23 @@ android {
 kotlin {
     compilerOptions {
         jvmTarget = org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17
+    }
+}
+
+val protectedReleaseSigningTasks =
+    setOf(
+        "validateSigningRelease",
+        "signReleaseBundle",
+        "packageRelease",
+        "assembleRelease",
+        "bundleRelease",
+    )
+
+tasks.configureEach {
+    if (name in protectedReleaseSigningTasks) {
+        doFirst {
+            requireReleaseSigning()
+        }
     }
 }
 
