@@ -321,7 +321,17 @@ test(
 
     assert.match(
       approval,
-      /PendingProvider\s*\.findByIdAndDelete/,
+      /PendingProvider\s*\.deleteOne/,
+    );
+
+    assert.match(
+      approval,
+      /executeTransaction/,
+    );
+
+    assert.doesNotMatch(
+      approval,
+      /findByIdAndDelete/,
     );
 
     assert.doesNotMatch(

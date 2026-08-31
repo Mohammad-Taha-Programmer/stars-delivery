@@ -1,4 +1,5 @@
 const fs = require('fs/promises');
+const mongoose = require('mongoose');
 const {
   REQUIRED_PROVIDER_DOCUMENT_KINDS,
   deleteProviderDocuments,
@@ -8,6 +9,7 @@ const {
   providerDocumentPath,
   providerDocumentDownloadName,
 } = require('../services/providerDocumentStorage');
+const { executeTransaction } = require('../services/transaction');
 const { sendInternalServerError, sendInternalServerFailure } = require('../security/errorResponse');
 const express = require('express');
 const router = express.Router();
@@ -684,86 +686,145 @@ router.post(
 );
 
 router.post('/pending/:id/approve', async (req, res) => {
-    try {
-      const pending =
-        await PendingProvider
-          .findById(req.params.id)
-          .select(
-            '+password +providerDocuments',
-          );
+  try {
+    // Public-ID discovery is read-only. The unique User.publicId
+    // index remains the final concurrency boundary.
+    const publicId =
+      await generatePublicId();
 
-      if (!pending) {
-        return res.status(404).json({
-          success: false,
-          message:
-            'طلب التسجيل غير موجود',
-        });
-      }
+    const approvalResult =
+      await executeTransaction({
+        startSession:
+          () => mongoose.startSession(),
 
-      if (
-        !requiredProviderDocumentsPresent(
-          pending.providerDocuments,
-        )
-      ) {
-        return res.status(400).json({
-          success: false,
-          message:
-            'لا يمكن قبول المزود قبل اكتمال وثيقة الهوية ورخصة القيادة.',
-          code:
-            'PROVIDER_DOCUMENTS_REQUIRED',
-        });
-      }
+        work:
+          async (session) => {
+            const pending =
+              await PendingProvider
+                .findById(req.params.id)
+                .select(
+                  '+password +providerDocuments',
+                )
+                .session(session);
 
-      const publicId =
-        await generatePublicId();
+            if (!pending) {
+              return {
+                outcome:
+                  'not_found',
+              };
+            }
 
-      await User.create({
-        fullName:
-          pending.fullName,
-        email:
-          pending.email,
-        phoneNumbers: [{
-          number:
-            pending.phone,
-          primary: true,
-        }],
-        password:
-          pending.password,
-        role:
-          'provider',
-        area:
-          pending.area,
-        publicId,
-        primaryPhone:
-          pending.phone,
-        status:
-          'active',
-        providerDocuments:
-          pending.providerDocuments
-            .map(
-              (document) =>
-                typeof document.toObject
-                  === 'function'
-                  ? document.toObject()
-                  : document,
-            ),
+            if (
+              !requiredProviderDocumentsPresent(
+                pending.providerDocuments,
+              )
+            ) {
+              return {
+                outcome:
+                  'documents_required',
+              };
+            }
+
+            await User.create(
+              [{
+                fullName:
+                  pending.fullName,
+                email:
+                  pending.email,
+                phoneNumbers: [{
+                  number:
+                    pending.phone,
+                  primary:
+                    true,
+                }],
+                password:
+                  pending.password,
+                role:
+                  'provider',
+                area:
+                  pending.area,
+                publicId,
+                primaryPhone:
+                  pending.phone,
+                status:
+                  'active',
+                providerDocuments:
+                  pending.providerDocuments
+                    .map(
+                      (document) =>
+                        typeof document.toObject
+                          === 'function'
+                          ? document.toObject()
+                          : document,
+                    ),
+              }],
+              {
+                session,
+              },
+            );
+
+            const deletion =
+              await PendingProvider
+                .deleteOne(
+                  {
+                    _id:
+                      pending._id,
+                  },
+                  {
+                    session,
+                  },
+                );
+
+            if (
+              deletion.deletedCount !== 1
+            ) {
+              throw new Error(
+                'Pending provider approval conflict',
+              );
+            }
+
+            return {
+              outcome:
+                'approved',
+              fullName:
+                pending.fullName,
+            };
+          },
       });
 
-      await PendingProvider
-        .findByIdAndDelete(
-          req.params.id,
-        );
-
-      return res.json({
-        success: true,
+    if (
+      approvalResult.outcome
+      === 'not_found'
+    ) {
+      return res.status(404).json({
+        success: false,
         message:
-          `تم قبول السائق (${pending.fullName}) بنجاح`,
+          'طلب التسجيل غير موجود',
       });
-    } catch (_) {
-      return sendInternalServerFailure(res);
     }
-  },
-);
+
+    if (
+      approvalResult.outcome
+      === 'documents_required'
+    ) {
+      return res.status(400).json({
+        success: false,
+        message:
+          'لا يمكن قبول المزود قبل اكتمال وثيقة الهوية ورخصة القيادة.',
+        code:
+          'PROVIDER_DOCUMENTS_REQUIRED',
+      });
+    }
+
+    return res.json({
+      success: true,
+      message:
+        `تم قبول السائق (${approvalResult.fullName}) بنجاح`,
+    });
+  } catch (_) {
+    return sendInternalServerFailure(res);
+  }
+});
 
 router.delete('/pending/:id/reject', async (req, res) => {
     try {

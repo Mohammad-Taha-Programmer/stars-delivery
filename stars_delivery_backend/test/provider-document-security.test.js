@@ -613,6 +613,84 @@ test(
       text,
       /providerDocuments:\s*pending\.providerDocuments/,
     );
+
+    const approvalStart =
+      text.indexOf(
+        "router.post('/pending/:id/approve'",
+      );
+
+    const rejectionStart =
+      text.indexOf(
+        "router.delete('/pending/:id/reject'",
+        approvalStart,
+      );
+
+    assert.ok(
+      approvalStart >= 0,
+    );
+
+    assert.ok(
+      rejectionStart > approvalStart,
+    );
+
+    const approval =
+      text.slice(
+        approvalStart,
+        rejectionStart,
+      );
+
+    assert.match(
+      approval,
+      /executeTransaction/,
+    );
+
+    assert.match(
+      approval,
+      /mongoose\.startSession\(\)/,
+    );
+
+    assert.match(
+      approval,
+      /\.session\(session\)/,
+    );
+
+    assert.match(
+      approval,
+      /User\.create\(\s*\[[\s\S]*?\]\s*,\s*\{\s*session,\s*\}\s*,?\s*\)/,
+    );
+
+    assert.match(
+      approval,
+      /PendingProvider\s*\.deleteOne\([\s\S]*?\{\s*session,\s*\}/,
+    );
+
+    assert.match(
+      approval,
+      /deletion\.deletedCount\s*!==\s*1/,
+    );
+
+    assert.doesNotMatch(
+      approval,
+      /findByIdAndDelete/,
+    );
+
+    const createIndex =
+      approval.indexOf(
+        'await User.create',
+      );
+
+    const deleteIndex =
+      approval.indexOf(
+        '.deleteOne(',
+      );
+
+    assert.ok(
+      createIndex >= 0,
+    );
+
+    assert.ok(
+      deleteIndex > createIndex,
+    );
   },
 );
 
