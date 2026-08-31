@@ -15,7 +15,7 @@ const workflowPath = path.join(
 const workflow = fs.readFileSync(
   workflowPath,
   'utf8',
-);
+).replace(/\r\n?/g, '\n');
 
 test(
   'CI runs on pushes pull requests and manual dispatch without privileged triggers',
