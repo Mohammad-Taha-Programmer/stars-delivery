@@ -1,5 +1,7 @@
 import 'package:equatable/equatable.dart';
 
+import '../../services/auth_service.dart';
+
 abstract class AuthEvent extends Equatable {
   const AuthEvent();
 
@@ -32,6 +34,8 @@ class RegisterEvent extends AuthEvent {
   final String role;
   final String area;
   final bool privacyPolicy;
+  final ProviderRegistrationDocument? identityDocument;
+  final ProviderRegistrationDocument? driverLicenseDocument;
 
   const RegisterEvent({
     required this.fullName,
@@ -41,10 +45,23 @@ class RegisterEvent extends AuthEvent {
     required this.role,
     required this.area,
     this.privacyPolicy = true,
+    this.identityDocument,
+    this.driverLicenseDocument,
   });
 
+  // Provider document bytes are intentionally omitted
+  // from Equatable props to avoid accidental diagnostic
+  // serialization or expensive byte-array equality.
   @override
-  List<Object?> get props => [fullName, email, phone, password, role, area, privacyPolicy];
+  List<Object?> get props => [
+    fullName,
+    email,
+    phone,
+    password,
+    role,
+    area,
+    privacyPolicy,
+  ];
 }
 
 class ToggleAuthModeEvent extends AuthEvent {

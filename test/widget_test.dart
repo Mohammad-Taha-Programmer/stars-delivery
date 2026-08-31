@@ -11,10 +11,7 @@ class _WidgetTestTokenVault implements TokenVault {
   Future<String?> read(String key) async => null;
 
   @override
-  Future<void> write(
-    String key,
-    String value,
-  ) async {}
+  Future<void> write(String key, String value) async {}
 
   @override
   Future<void> delete(String key) async {}
@@ -39,14 +36,14 @@ class _WidgetTestAuthGateway implements AuthGateway {
     String role,
     String area, {
     bool privacyPolicy = true,
+    ProviderRegistrationDocument? identityDocument,
+    ProviderRegistrationDocument? driverLicenseDocument,
   }) {
     throw UnimplementedError();
   }
 
   @override
-  Future<Map<String, dynamic>> validateSession(
-    String token,
-  ) {
+  Future<Map<String, dynamic>> validateSession(String token) {
     throw UnimplementedError();
   }
 }
@@ -56,41 +53,25 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets(
-    'App shows login screen',
-    (WidgetTester tester) async {
-      await tester.pumpWidget(
-        StarsDeliveryApp(
-          authBlocFactory: () => AuthBloc(
-            authService: _WidgetTestAuthGateway(),
-            sessionStorage: SessionStorage(
-              vault: _WidgetTestTokenVault(),
-            ),
-            checkOnStart: false,
-          ),
+  testWidgets('App shows login screen', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      StarsDeliveryApp(
+        authBlocFactory: () => AuthBloc(
+          authService: _WidgetTestAuthGateway(),
+          sessionStorage: SessionStorage(vault: _WidgetTestTokenVault()),
+          checkOnStart: false,
         ),
-      );
+      ),
+    );
 
-      expect(
-        find.text('ستارز دليفري'),
-        findsOneWidget,
-      );
+    expect(find.text('ستارز دليفري'), findsOneWidget);
 
-      expect(
-        find.text('عميل'),
-        findsOneWidget,
-      );
+    expect(find.text('عميل'), findsOneWidget);
 
-      expect(
-        find.text('سائق'),
-        findsOneWidget,
-      );
+    expect(find.text('سائق'), findsOneWidget);
 
-      // Explicitly dispose StarsDeliveryApp while the test is active.
-      // BlocProvider owns the factory-created AuthBloc and closes it.
-      await tester.pumpWidget(
-        const SizedBox.shrink(),
-      );
-    },
-  );
+    // Explicitly dispose StarsDeliveryApp while the test is active.
+    // BlocProvider owns the factory-created AuthBloc and closes it.
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

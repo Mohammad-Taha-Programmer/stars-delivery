@@ -24,13 +24,55 @@ class AppLocalization {
     'app_title': {'ar': 'تطبيق التوصيل السريع', 'en': 'Stars Delivery'},
     'stars_delivery': {'ar': 'ستارز دليفري', 'en': 'Stars Delivery'},
     'welcome_back': {'ar': 'مرحباً بعودتك', 'en': 'Welcome back!'},
-    'create_account_hint': {'ar': 'إنشاء حساب جديد', 'en': 'Create your account'},
+    'create_account_hint': {
+      'ar': 'إنشاء حساب جديد',
+      'en': 'Create your account',
+    },
 
     // Roles
     'customer': {'ar': 'عميل', 'en': 'Customer'},
     'provider': {'ar': 'سائق', 'en': 'Provider'},
     'customer_subtitle': {'ar': 'أحتاج توصيل', 'en': 'Need delivery'},
     'provider_subtitle': {'ar': 'أقدم خدمة التوصيل', 'en': 'Offer delivery'},
+
+    'provider_documents_title': {
+      'ar': 'وثائق التحقق من السائق',
+      'en': 'Provider Verification Documents',
+    },
+    'provider_documents_hint': {
+      'ar':
+          'أرفق صورة واضحة للهوية ورخصة القيادة. JPEG أو PNG وبحد أقصى 5 ميجابايت لكل صورة.',
+      'en':
+          'Attach clear identity and driver-license images. JPEG or PNG, maximum 5 MB each.',
+    },
+    'identity_document': {'ar': 'صورة إثبات الهوية', 'en': 'Identity Document'},
+    'driver_license_document': {
+      'ar': 'صورة رخصة القيادة',
+      'en': 'Driver License',
+    },
+    'choose_image': {'ar': 'اختيار صورة', 'en': 'Choose Image'},
+    'replace_image': {'ar': 'تغيير الصورة', 'en': 'Replace Image'},
+    'provider_documents_required': {
+      'ar': 'يجب إرفاق صورة الهوية ورخصة القيادة لإنشاء حساب سائق.',
+      'en':
+          'Identity and driver-license images are required for provider registration.',
+    },
+    'provider_document_empty': {
+      'ar': 'الصورة المختارة فارغة.',
+      'en': 'The selected image is empty.',
+    },
+    'provider_document_too_large': {
+      'ar': 'حجم الصورة يتجاوز 5 ميجابايت.',
+      'en': 'The selected image exceeds 5 MB.',
+    },
+    'provider_document_unsupported': {
+      'ar': 'يُسمح فقط بصور JPEG وPNG.',
+      'en': 'Only JPEG and PNG images are supported.',
+    },
+    'provider_document_pick_failed': {
+      'ar': 'تعذر قراءة الصورة المختارة. حاول مرة أخرى.',
+      'en': 'The selected image could not be read. Please try again.',
+    },
 
     // Auth
     'sign_in': {'ar': 'تسجيل الدخول', 'en': 'Sign In'},
@@ -42,16 +84,19 @@ class AppLocalization {
     'password': {'ar': 'كلمة المرور', 'en': 'Password'},
     'area_region': {'ar': 'المنطقة', 'en': 'Area / Region'},
     'no_account': {'ar': 'ليس لديك حساب؟ ', 'en': "Don't have an account? "},
-    'have_account': {'ar': 'لديك حساب بالفعل؟ ', 'en': 'Already have an account? '},
+    'have_account': {
+      'ar': 'لديك حساب بالفعل؟ ',
+      'en': 'Already have an account? ',
+    },
     'required': {'ar': 'مطلوب', 'en': 'Required'},
     'invalid_email': {'ar': 'بريد إلكتروني غير صالح', 'en': 'Invalid email'},
     'min_password': {'ar': 'بين 12 و128 حرفاً', 'en': '12-128 characters'},
     'confirm_password': {'ar': 'تأكيد كلمة المرور', 'en': 'Confirm Password'},
-    'password_mismatch': {'ar': 'كلمتا المرور غير متطابقتين', 'en': 'Passwords do not match'},
-    'forgot_password': {
-      'ar': 'نسيت كلمة المرور؟',
-      'en': 'Forgot password?',
+    'password_mismatch': {
+      'ar': 'كلمتا المرور غير متطابقتين',
+      'en': 'Passwords do not match',
     },
+    'forgot_password': {'ar': 'نسيت كلمة المرور؟', 'en': 'Forgot password?'},
     'password_recovery': {
       'ar': 'استعادة كلمة المرور',
       'en': 'Password Recovery',
@@ -64,22 +109,15 @@ class AppLocalization {
       'ar': 'إرسال رمز الاستعادة',
       'en': 'Send Recovery Code',
     },
-    'recovery_code': {
-      'ar': 'رمز الاستعادة',
-      'en': 'Recovery Code',
-    },
+    'recovery_code': {'ar': 'رمز الاستعادة', 'en': 'Recovery Code'},
     'recovery_code_generic_notice': {
-      'ar': 'إذا كان هناك حساب مؤهل مرتبط بهذا البريد، فسيتم إرسال رمز الاستعادة إليه.',
-      'en': 'If an eligible account exists for this email, a recovery code will be sent.',
+      'ar':
+          'إذا كان هناك حساب مؤهل مرتبط بهذا البريد، فسيتم إرسال رمز الاستعادة إليه.',
+      'en':
+          'If an eligible account exists for this email, a recovery code will be sent.',
     },
-    'new_password': {
-      'ar': 'كلمة المرور الجديدة',
-      'en': 'New Password',
-    },
-    'reset_password': {
-      'ar': 'تغيير كلمة المرور',
-      'en': 'Reset Password',
-    },
+    'new_password': {'ar': 'كلمة المرور الجديدة', 'en': 'New Password'},
+    'reset_password': {'ar': 'تغيير كلمة المرور', 'en': 'Reset Password'},
     'change_recovery_email': {
       'ar': 'استخدام بريد إلكتروني آخر',
       'en': 'Use a different email',
@@ -111,14 +149,20 @@ class AppLocalization {
 
     // Create Order
     'delivery_location': {'ar': 'موقع التوصيل', 'en': 'Delivery Location'},
-    'location_hint': {'ar': 'إلى أين يأتيك السائق؟', 'en': 'Where should the driver come to you?'},
+    'location_hint': {
+      'ar': 'إلى أين يأتيك السائق؟',
+      'en': 'Where should the driver come to you?',
+    },
     'invalid_phone': {'ar': 'رقم هاتف غير صالح', 'en': 'Invalid phone number'},
 
     // Home
     'new_order': {'ar': 'إنشاء طلب جديد', 'en': 'New Order'},
     'my_orders': {'ar': 'طلباتي', 'en': 'My Orders'},
     'offers_title': {'ar': 'عروض اسعار السائقين', 'en': 'Driver Price Offers'},
-    'report_30': {'ar': 'تقرير الطلبات - آخر 30 يوم', 'en': 'Orders Report - Last 30 Days'},
+    'report_30': {
+      'ar': 'تقرير الطلبات - آخر 30 يوم',
+      'en': 'Orders Report - Last 30 Days',
+    },
 
     // Order types
     'product': {'ar': 'طلب منتج', 'en': 'Product Order'},
@@ -127,12 +171,26 @@ class AppLocalization {
     'product_label': {'ar': 'المنتج المطلوب', 'en': 'Required Product'},
     'people_label': {'ar': 'خدمة النقل المطلوبة', 'en': 'Transport Service'},
     'goods_label': {'ar': 'الشحنة المطلوبة', 'en': 'Required Shipment'},
-    'desc_hint': {'ar': 'اشرح ماذا تريد بالضبط، ليتسنى للسائق اعطائك عرض سعر بقيمة التوصيل وليس بقيمة المنتجات المطلوبة', 'en': 'Describe what you need so the driver can give a delivery price quote'},
+    'desc_hint': {
+      'ar':
+          'اشرح ماذا تريد بالضبط، ليتسنى للسائق اعطائك عرض سعر بقيمة التوصيل وليس بقيمة المنتجات المطلوبة',
+      'en':
+          'Describe what you need so the driver can give a delivery price quote',
+    },
     'phone_label': {'ar': 'رقم الهاتف للتواصل', 'en': 'Contact Phone'},
-    'phone_hint': {'ar': 'هذا الرقم لن يظهر للسائق إلا عند قبولك لعرض السعر', 'en': 'Phone hidden until you accept an offer'},
+    'phone_hint': {
+      'ar': 'هذا الرقم لن يظهر للسائق إلا عند قبولك لعرض السعر',
+      'en': 'Phone hidden until you accept an offer',
+    },
     'submit_order': {'ar': 'إرسال الطلب', 'en': 'Submit Order'},
-    'order_sent': {'ar': 'تم إرسال الطلب إلى مقدمي الخدمة', 'en': 'Order sent to providers'},
-    'max_3_photos': {'ar': 'يمكنك إضافة 3 صور كحد أقصى', 'en': 'Maximum 3 images allowed'},
+    'order_sent': {
+      'ar': 'تم إرسال الطلب إلى مقدمي الخدمة',
+      'en': 'Order sent to providers',
+    },
+    'max_3_photos': {
+      'ar': 'يمكنك إضافة 3 صور كحد أقصى',
+      'en': 'Maximum 3 images allowed',
+    },
     'add_photos': {'ar': 'إضافة صور (حد أقصى 3)', 'en': 'Add Photos (Max 3)'},
     'add_more_photos': {'ar': 'إضافة صورة أخرى', 'en': 'Add Another Photo'},
 
@@ -144,24 +202,51 @@ class AppLocalization {
     'status_completed': {'ar': 'تم التوصيل', 'en': 'Completed'},
 
     // Provider dashboard
-    'provider_dashboard': {'ar': 'لوحة تحكم السائق', 'en': 'Provider Dashboard'},
+    'provider_dashboard': {
+      'ar': 'لوحة تحكم السائق',
+      'en': 'Provider Dashboard',
+    },
     'daily_earnings': {'ar': 'أرباحك هذا اليوم', 'en': 'Daily Earnings'},
     'monthly_earnings': {'ar': 'أرباحك هذا الشهر', 'en': 'Monthly Earnings'},
     'today_orders': {'ar': ' طلبات اليوم', 'en': ' orders today'},
     'order_count': {'ar': ' طلب', 'en': ' orders'},
-    'pending_orders_btn': {'ar': 'طلبات جديدة تنتظر تقديم عرض سعر', 'en': 'New Orders Awaiting Your Offer'},
-    'offered_orders_btn': {'ar': 'الطلبات التي تم تقديم عرض سعر لها', 'en': 'Orders With Submitted Offers'},
-    'active_orders_btn': {'ar': 'طلباتي النشطة - التوصيل والتسليم', 'en': 'My Active Orders - Delivery'},
-    'platform_commission': {'ar': 'عمولة المنصة (مستحقة الدفع):', 'en': 'Platform Commission (Due):'},
-    'commission_body': {'ar': ' شيكل بناء على الطلبات الناجحة', 'en': ' ILS based on successful orders'},
+    'pending_orders_btn': {
+      'ar': 'طلبات جديدة تنتظر تقديم عرض سعر',
+      'en': 'New Orders Awaiting Your Offer',
+    },
+    'offered_orders_btn': {
+      'ar': 'الطلبات التي تم تقديم عرض سعر لها',
+      'en': 'Orders With Submitted Offers',
+    },
+    'active_orders_btn': {
+      'ar': 'طلباتي النشطة - التوصيل والتسليم',
+      'en': 'My Active Orders - Delivery',
+    },
+    'platform_commission': {
+      'ar': 'عمولة المنصة (مستحقة الدفع):',
+      'en': 'Platform Commission (Due):',
+    },
+    'commission_body': {
+      'ar': ' شيكل بناء على الطلبات الناجحة',
+      'en': ' ILS based on successful orders',
+    },
     'ils': {'ar': 'ILS', 'en': 'ILS'},
     'shekel': {'ar': 'شيكل', 'en': 'SHE'},
     'successful_orders': {'ar': 'طلب ناجح', 'en': 'Successful Orders'},
-    'commission_detail': {'ar': 'شيكل بناء على الطلبات الناجحة', 'en': 'SHE based on completed orders'},
+    'commission_detail': {
+      'ar': 'شيكل بناء على الطلبات الناجحة',
+      'en': 'SHE based on completed orders',
+    },
 
     // Offers
-    'delivery_price': {'ar': 'سعر التوصيل (شيكل)', 'en': 'Delivery Price (ILS)'},
-    'delivery_time': {'ar': 'الوقت المطلوب لتوصيل الطرد', 'en': 'Estimated Delivery Time'},
+    'delivery_price': {
+      'ar': 'سعر التوصيل (شيكل)',
+      'en': 'Delivery Price (ILS)',
+    },
+    'delivery_time': {
+      'ar': 'الوقت المطلوب لتوصيل الطرد',
+      'en': 'Estimated Delivery Time',
+    },
     'custom_time': {'ar': 'وقت مخصص (دقائق)', 'en': 'Custom Time (minutes)'},
     'submit_offer': {'ar': 'تقديم عرض سعر', 'en': 'Submit Offer'},
     'send_offer': {'ar': 'إرسال العرض', 'en': 'Send Offer'},
@@ -169,7 +254,10 @@ class AppLocalization {
     'invalid_price': {'ar': 'سعر غير صالح', 'en': 'Invalid price'},
     'offer_sent': {'ar': 'تم إرسال عرض السعر', 'en': 'Offer sent successfully'},
     'your_price': {'ar': 'سعر التوصيل', 'en': 'Delivery Price'},
-    'price_hint': {'ar': 'أدخل سعر التوصيل بالشيكل', 'en': 'Enter delivery price in SHE'},
+    'price_hint': {
+      'ar': 'أدخل سعر التوصيل بالشيكل',
+      'en': 'Enter delivery price in SHE',
+    },
     'offers_list': {'ar': 'عروض الأسعار', 'en': 'Price Offers'},
     'no_offers': {'ar': 'لا توجد عروض بعد', 'en': 'No offers yet'},
     'accepted': {'ar': 'مقبول', 'en': 'Accepted'},
@@ -209,33 +297,57 @@ class AppLocalization {
     'new_offer_received': {'ar': 'عرض سعر جديد:', 'en': 'New offer:'},
 
     // Offers screen
-    'driver_offers_for': {'ar': 'عروض السائقين للطلب', 'en': 'Driver Offers for Order'},
+    'driver_offers_for': {
+      'ar': 'عروض السائقين للطلب',
+      'en': 'Driver Offers for Order',
+    },
     'accept': {'ar': 'قبول', 'en': 'Accept'},
-    'offers_not_loaded': {'ar': 'اضغط على الطلب لعرض عروض الأسعار', 'en': 'Tap order to view offers'},
+    'offers_not_loaded': {
+      'ar': 'اضغط على الطلب لعرض عروض الأسعار',
+      'en': 'Tap order to view offers',
+    },
 
     // My orders screen
-    'tap_to_view_offers': {'ar': 'اضغط لعرض العروض', 'en': 'Tap to view offers'},
+    'tap_to_view_offers': {
+      'ar': 'اضغط لعرض العروض',
+      'en': 'Tap to view offers',
+    },
 
     // Active orders
     'start_delivery': {'ar': 'بدء التوصيل', 'en': 'Start Delivering'},
     'confirm_delivery': {'ar': 'تأكيد التسليم', 'en': 'Confirm Delivery'},
     'status_updated': {'ar': 'تم تحديث الحالة', 'en': 'Status Updated'},
-    'order_completed_msg': {'ar': 'تم اكتمال الطلب بنجاح', 'en': 'Order completed successfully'},
+    'order_completed_msg': {
+      'ar': 'تم اكتمال الطلب بنجاح',
+      'en': 'Order completed successfully',
+    },
     'price': {'ar': 'السعر', 'en': 'Price'},
 
     // Provider dashboard
-    'offered_orders_btn': {'ar': 'الطلبات التي تم تقديم عرض سعر لها', 'en': 'Orders With Submitted Offers'},
+    'offered_orders_btn': {
+      'ar': 'الطلبات التي تم تقديم عرض سعر لها',
+      'en': 'Orders With Submitted Offers',
+    },
 
     // Reports
     'report_driver': {'ar': 'الابلاغ عن سائق', 'en': 'Report a Driver'},
     'report_customer': {'ar': 'الابلاغ عن زبون', 'en': 'Report a Customer'},
-    'report_sent': {'ar': 'تم إرسال البلاغ بنجاح', 'en': 'Report sent successfully'},
+    'report_sent': {
+      'ar': 'تم إرسال البلاغ بنجاح',
+      'en': 'Report sent successfully',
+    },
     'in_review': {'ar': 'قيد المراجعة', 'en': 'In Review'},
     'in_progress': {'ar': 'قيد المعالجة', 'en': 'In Progress'},
     'resolved': {'ar': 'تم الحل', 'en': 'Resolved'},
-    'enter_id': {'ar': 'أدخل ID الشخص المراد الإبلاغ عنه', 'en': 'Enter the ID of the person to report'},
+    'enter_id': {
+      'ar': 'أدخل ID الشخص المراد الإبلاغ عنه',
+      'en': 'Enter the ID of the person to report',
+    },
     'problem_desc': {'ar': 'وصف المشكلة', 'en': 'Problem Description'},
-    'explain_problem': {'ar': 'اشرح المشكلة التي تواجهها', 'en': 'Explain the problem you are facing'},
+    'explain_problem': {
+      'ar': 'اشرح المشكلة التي تواجهها',
+      'en': 'Explain the problem you are facing',
+    },
     'send_report_btn': {'ar': 'إرسال البلاغ', 'en': 'Send Report'},
     'last_reports': {'ar': 'آخر البلاغات', 'en': 'Previous Reports'},
     'no_reports': {'ar': 'لا توجد بلاغات سابقة', 'en': 'No previous reports'},
@@ -243,11 +355,17 @@ class AppLocalization {
     'you': {'ar': 'أنت', 'en': 'You'},
 
     // Chat
-    'start_chat': {'ar': 'ابدأ محادثة مع فريق الدعم', 'en': 'Start a conversation with support'},
+    'start_chat': {
+      'ar': 'ابدأ محادثة مع فريق الدعم',
+      'en': 'Start a conversation with support',
+    },
     'type_message': {'ar': 'اكتب رسالتك...', 'en': 'Type your message...'},
 
     // Time
-    'est_time': {'ar': 'الوقت المطلوب: %d دقيقة', 'en': 'Estimated time: %d minutes'},
+    'est_time': {
+      'ar': 'الوقت المطلوب: %d دقيقة',
+      'en': 'Estimated time: %d minutes',
+    },
     'minutes_suffix': {'ar': 'د', 'en': 'm'},
 
     // Offered orders
@@ -259,8 +377,17 @@ class AppLocalization {
     'email_field': {'ar': 'البريد الإلكتروني', 'en': 'Email'},
     'phone_field': {'ar': 'رقم الجوال', 'en': 'Phone Number'},
     'message_field': {'ar': 'رسالتك', 'en': 'Your Message'},
-    'message_hint': {'ar': 'اكتب مشكلتك هنا...', 'en': 'Type your issue here...'},
-    'contact_success': {'ar': 'تم إرسال رسالتك. سنتواصل معك قريباً.', 'en': 'Message sent. We will contact you soon.'},
-    'contact_failed': {'ar': 'فشل الإرسال. حاول مرة أخرى.', 'en': 'Send failed. Try again.'},
+    'message_hint': {
+      'ar': 'اكتب مشكلتك هنا...',
+      'en': 'Type your issue here...',
+    },
+    'contact_success': {
+      'ar': 'تم إرسال رسالتك. سنتواصل معك قريباً.',
+      'en': 'Message sent. We will contact you soon.',
+    },
+    'contact_failed': {
+      'ar': 'فشل الإرسال. حاول مرة أخرى.',
+      'en': 'Send failed. Try again.',
+    },
   };
 }

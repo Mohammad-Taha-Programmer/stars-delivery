@@ -18,10 +18,7 @@ class FakeTokenVault implements TokenVault {
   }
 
   @override
-  Future<void> write(
-    String key,
-    String value,
-  ) async {
+  Future<void> write(String key, String value) async {
     values[key] = value;
   }
 
@@ -36,31 +33,20 @@ class FakeAuthGateway implements AuthGateway {
 
   Object? validationError;
 
-  Map<String, dynamic>
-      validationResult = {
+  Map<String, dynamic> validationResult = {
     'user': {
-      'id':
-          '64b7c38f3f8b07f0c1234567',
-      'fullName':
-          'Server User',
-      'email':
-          'server@example.com',
-      'phone':
-          '0599000000',
-      'role':
-          'customer',
-      'area':
-          'Ramallah',
-      'publicId':
-          'USR-001',
+      'id': '64b7c38f3f8b07f0c1234567',
+      'fullName': 'Server User',
+      'email': 'server@example.com',
+      'phone': '0599000000',
+      'role': 'customer',
+      'area': 'Ramallah',
+      'publicId': 'USR-001',
     },
   };
 
   @override
-  Future<Map<String, dynamic>>
-      validateSession(
-    String token,
-  ) async {
+  Future<Map<String, dynamic>> validateSession(String token) async {
     validateCalls += 1;
 
     if (validationError != null) {
@@ -80,8 +66,7 @@ class FakeAuthGateway implements AuthGateway {
   }
 
   @override
-  Future<Map<String, dynamic>>
-      register(
+  Future<Map<String, dynamic>> register(
     String fullName,
     String email,
     String phone,
@@ -89,6 +74,8 @@ class FakeAuthGateway implements AuthGateway {
     String role,
     String area, {
     bool privacyPolicy = true,
+    ProviderRegistrationDocument? identityDocument,
+    ProviderRegistrationDocument? driverLicenseDocument,
   }) {
     throw UnimplementedError();
   }
@@ -96,35 +83,19 @@ class FakeAuthGateway implements AuthGateway {
 
 String fakeJwt({
   required DateTime expiresAt,
-  String id =
-      '64b7c38f3f8b07f0c1234567',
+  String id = '64b7c38f3f8b07f0c1234567',
   String role = 'customer',
 }) {
-  String encode(
-    Map<String, dynamic> value,
-  ) {
-    return base64Url
-        .encode(
-          utf8.encode(
-            jsonEncode(value),
-          ),
-        )
-        .replaceAll('=', '');
+  String encode(Map<String, dynamic> value) {
+    return base64Url.encode(utf8.encode(jsonEncode(value))).replaceAll('=', '');
   }
 
-  final header = encode({
-    'alg': 'HS256',
-    'typ': 'JWT',
-  });
+  final header = encode({'alg': 'HS256', 'typ': 'JWT'});
 
   final payload = encode({
     'id': id,
     'role': role,
-    'exp':
-        expiresAt
-            .toUtc()
-            .millisecondsSinceEpoch ~/
-        1000,
+    'exp': expiresAt.toUtc().millisecondsSinceEpoch ~/ 1000,
   });
 
   return '$header.$payload.signature';
@@ -132,475 +103,240 @@ String fakeJwt({
 
 void main() {
   setUp(() {
-    SharedPreferences
-        .setMockInitialValues({});
+    SharedPreferences.setMockInitialValues({});
   });
 
-  test(
-    'JWT restore guard accepts only future mobile sessions',
-    () {
-      final now =
-          DateTime.utc(
-        2026,
-        8,
-        29,
-        12,
-      );
+  test('JWT restore guard accepts only future mobile sessions', () {
+    final now = DateTime.utc(2026, 8, 29, 12);
 
-      final valid = fakeJwt(
-        expiresAt: now.add(
-          const Duration(hours: 1),
-        ),
-      );
+    final valid = fakeJwt(expiresAt: now.add(const Duration(hours: 1)));
 
-      final expired = fakeJwt(
-        expiresAt: now.subtract(
-          const Duration(seconds: 1),
-        ),
-      );
+    final expired = fakeJwt(
+      expiresAt: now.subtract(const Duration(seconds: 1)),
+    );
 
-      final admin = fakeJwt(
-        expiresAt: now.add(
-          const Duration(hours: 1),
-        ),
-        role: 'admin',
-      );
+    final admin = fakeJwt(
+      expiresAt: now.add(const Duration(hours: 1)),
+      role: 'admin',
+    );
 
-      expect(
-        JwtToken.isRestorable(
-          valid,
-          now: now,
-        ),
-        isTrue,
-      );
+    expect(JwtToken.isRestorable(valid, now: now), isTrue);
 
-      expect(
-        JwtToken.isRestorable(
-          expired,
-          now: now,
-          clockSkew:
-              Duration.zero,
-        ),
-        isFalse,
-      );
+    expect(
+      JwtToken.isRestorable(expired, now: now, clockSkew: Duration.zero),
+      isFalse,
+    );
 
-      expect(
-        JwtToken.isRestorable(
-          admin,
-          now: now,
-        ),
-        isFalse,
-      );
+    expect(JwtToken.isRestorable(admin, now: now), isFalse);
 
-      expect(
-        JwtToken.isRestorable(
-          'not-a-jwt',
-          now: now,
-        ),
-        isFalse,
-      );
-    },
-  );
+    expect(JwtToken.isRestorable('not-a-jwt', now: now), isFalse);
+  });
 
   test(
     'legacy SharedPreferences session migrates once into secure vault',
     () async {
-      SharedPreferences
-          .setMockInitialValues({
-        SessionStorage.legacyTokenKey:
-            'legacy-token',
-        SessionStorage.legacyUserKey:
-            '{"legacy":true}',
+      SharedPreferences.setMockInitialValues({
+        SessionStorage.legacyTokenKey: 'legacy-token',
+        SessionStorage.legacyUserKey: '{"legacy":true}',
       });
 
-      final vault =
-          FakeTokenVault();
+      final vault = FakeTokenVault();
 
-      final storage =
-          SessionStorage(
-        vault: vault,
-      );
+      final storage = SessionStorage(vault: vault);
 
-      final token =
-          await storage.readToken();
+      final token = await storage.readToken();
 
-      expect(
-        token,
-        'legacy-token',
-      );
+      expect(token, 'legacy-token');
 
-      expect(
-        vault.values[
-          SessionStorage.secureTokenKey
-        ],
-        'legacy-token',
-      );
+      expect(vault.values[SessionStorage.secureTokenKey], 'legacy-token');
 
-      final prefs =
-          await SharedPreferences
-              .getInstance();
+      final prefs = await SharedPreferences.getInstance();
 
-      expect(
-        prefs.getString(
-          SessionStorage.legacyTokenKey,
-        ),
-        isNull,
-      );
+      expect(prefs.getString(SessionStorage.legacyTokenKey), isNull);
 
-      expect(
-        prefs.getString(
-          SessionStorage.legacyUserKey,
-        ),
-        isNull,
-      );
+      expect(prefs.getString(SessionStorage.legacyUserKey), isNull);
     },
   );
 
-  test(
-    'writing secure token removes legacy preference cache',
-    () async {
-      SharedPreferences
-          .setMockInitialValues({
-        SessionStorage.legacyTokenKey:
-            'old-token',
-        SessionStorage.legacyUserKey:
-            '{"old":true}',
-      });
+  test('writing secure token removes legacy preference cache', () async {
+    SharedPreferences.setMockInitialValues({
+      SessionStorage.legacyTokenKey: 'old-token',
+      SessionStorage.legacyUserKey: '{"old":true}',
+    });
 
-      final vault =
-          FakeTokenVault();
+    final vault = FakeTokenVault();
 
-      final storage =
-          SessionStorage(
-        vault: vault,
-      );
+    final storage = SessionStorage(vault: vault);
 
-      await storage.writeToken(
-        'new-secure-token',
-      );
+    await storage.writeToken('new-secure-token');
 
-      expect(
-        vault.values[
-          SessionStorage.secureTokenKey
-        ],
-        'new-secure-token',
-      );
+    expect(vault.values[SessionStorage.secureTokenKey], 'new-secure-token');
 
-      final prefs =
-          await SharedPreferences
-              .getInstance();
+    final prefs = await SharedPreferences.getInstance();
 
-      expect(
-        prefs.getString(
-          SessionStorage.legacyTokenKey,
+    expect(prefs.getString(SessionStorage.legacyTokenKey), isNull);
+
+    expect(prefs.getString(SessionStorage.legacyUserKey), isNull);
+  });
+
+  test('startup restores only after authoritative server validation', () async {
+    final vault = FakeTokenVault();
+
+    final token = fakeJwt(
+      expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
+    );
+
+    vault.values[SessionStorage.secureTokenKey] = token;
+
+    final gateway = FakeAuthGateway();
+
+    final bloc = AuthBloc(
+      authService: gateway,
+      sessionStorage: SessionStorage(vault: vault),
+      checkOnStart: false,
+    );
+
+    final expectation = expectLater(
+      bloc.stream,
+      emitsInOrder([
+        isA<AuthLoading>(),
+        isA<AuthSuccess>().having(
+          (state) => state.user.email,
+          'server user',
+          'server@example.com',
         ),
-        isNull,
+      ]),
+    );
+
+    bloc.add(CheckAuthEvent());
+
+    await expectation;
+
+    expect(gateway.validateCalls, 1);
+
+    await bloc.close();
+  });
+
+  test('expired secure token is cleared without server call', () async {
+    final vault = FakeTokenVault();
+
+    vault.values[SessionStorage.secureTokenKey] = fakeJwt(
+      expiresAt: DateTime.now().toUtc().subtract(const Duration(minutes: 1)),
+    );
+
+    final gateway = FakeAuthGateway();
+
+    final bloc = AuthBloc(
+      authService: gateway,
+      sessionStorage: SessionStorage(vault: vault),
+      checkOnStart: false,
+    );
+
+    final expectation = expectLater(
+      bloc.stream,
+      emitsInOrder([isA<AuthLoading>(), isA<AuthInitial>()]),
+    );
+
+    bloc.add(CheckAuthEvent());
+
+    await expectation;
+
+    expect(gateway.validateCalls, 0);
+
+    expect(vault.values[SessionStorage.secureTokenKey], isNull);
+
+    await bloc.close();
+  });
+
+  test('server-rejected session is cleared', () async {
+    final vault = FakeTokenVault();
+
+    vault.values[SessionStorage.secureTokenKey] = fakeJwt(
+      expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
+    );
+
+    final gateway = FakeAuthGateway()
+      ..validationError = const SessionRejectedException(
+        statusCode: 403,
+        message: 'Account is not active',
       );
 
-      expect(
-        prefs.getString(
-          SessionStorage.legacyUserKey,
-        ),
-        isNull,
-      );
-    },
-  );
+    final bloc = AuthBloc(
+      authService: gateway,
+      sessionStorage: SessionStorage(vault: vault),
+      checkOnStart: false,
+    );
 
-  test(
-    'startup restores only after authoritative server validation',
-    () async {
-      final vault =
-          FakeTokenVault();
+    final expectation = expectLater(
+      bloc.stream,
+      emitsInOrder([isA<AuthLoading>(), isA<AuthInitial>()]),
+    );
 
-      final token =
-          fakeJwt(
-        expiresAt:
-            DateTime.now()
-                .toUtc()
-                .add(
-          const Duration(hours: 1),
-        ),
-      );
+    bloc.add(CheckAuthEvent());
 
-      vault.values[
-        SessionStorage.secureTokenKey
-      ] = token;
+    await expectation;
 
-      final gateway =
-          FakeAuthGateway();
+    expect(gateway.validateCalls, 1);
 
-      final bloc = AuthBloc(
-        authService: gateway,
-        sessionStorage:
-            SessionStorage(
-          vault: vault,
-        ),
-        checkOnStart: false,
-      );
+    expect(vault.values[SessionStorage.secureTokenKey], isNull);
 
-      final expectation =
-          expectLater(
-        bloc.stream,
-        emitsInOrder([
-          isA<AuthLoading>(),
-          isA<AuthSuccess>().having(
-            (state) =>
-                state.user.email,
-            'server user',
-            'server@example.com',
-          ),
-        ]),
-      );
+    await bloc.close();
+  });
 
-      bloc.add(CheckAuthEvent());
+  test('temporary network failure preserves secure token', () async {
+    final vault = FakeTokenVault();
 
-      await expectation;
+    final token = fakeJwt(
+      expiresAt: DateTime.now().toUtc().add(const Duration(hours: 1)),
+    );
 
-      expect(
-        gateway.validateCalls,
-        1,
-      );
+    vault.values[SessionStorage.secureTokenKey] = token;
 
-      await bloc.close();
-    },
-  );
+    final gateway = FakeAuthGateway()
+      ..validationError = Exception('network unavailable');
 
-  test(
-    'expired secure token is cleared without server call',
-    () async {
-      final vault =
-          FakeTokenVault();
+    final bloc = AuthBloc(
+      authService: gateway,
+      sessionStorage: SessionStorage(vault: vault),
+      checkOnStart: false,
+    );
 
-      vault.values[
-        SessionStorage.secureTokenKey
-      ] = fakeJwt(
-        expiresAt:
-            DateTime.now()
-                .toUtc()
-                .subtract(
-          const Duration(minutes: 1),
-        ),
-      );
+    final expectation = expectLater(
+      bloc.stream,
+      emitsInOrder([isA<AuthLoading>(), isA<AuthError>()]),
+    );
 
-      final gateway =
-          FakeAuthGateway();
+    bloc.add(CheckAuthEvent());
 
-      final bloc = AuthBloc(
-        authService: gateway,
-        sessionStorage:
-            SessionStorage(
-          vault: vault,
-        ),
-        checkOnStart: false,
-      );
+    await expectation;
 
-      final expectation =
-          expectLater(
-        bloc.stream,
-        emitsInOrder([
-          isA<AuthLoading>(),
-          isA<AuthInitial>(),
-        ]),
-      );
+    expect(gateway.validateCalls, 1);
 
-      bloc.add(CheckAuthEvent());
+    expect(vault.values[SessionStorage.secureTokenKey], token);
 
-      await expectation;
+    await bloc.close();
+  });
 
-      expect(
-        gateway.validateCalls,
-        0,
-      );
+  test('logout clear removes secure and legacy session values', () async {
+    SharedPreferences.setMockInitialValues({
+      SessionStorage.legacyTokenKey: 'legacy-token',
+      SessionStorage.legacyUserKey: '{"legacy":true}',
+    });
 
-      expect(
-        vault.values[
-          SessionStorage.secureTokenKey
-        ],
-        isNull,
-      );
+    final vault = FakeTokenVault();
 
-      await bloc.close();
-    },
-  );
+    vault.values[SessionStorage.secureTokenKey] = 'secure-token';
 
-  test(
-    'server-rejected session is cleared',
-    () async {
-      final vault =
-          FakeTokenVault();
+    final storage = SessionStorage(vault: vault);
 
-      vault.values[
-        SessionStorage.secureTokenKey
-      ] = fakeJwt(
-        expiresAt:
-            DateTime.now()
-                .toUtc()
-                .add(
-          const Duration(hours: 1),
-        ),
-      );
+    await storage.clear();
 
-      final gateway =
-          FakeAuthGateway()
-            ..validationError =
-                const SessionRejectedException(
-          statusCode: 403,
-          message:
-              'Account is not active',
-        );
+    expect(vault.values[SessionStorage.secureTokenKey], isNull);
 
-      final bloc = AuthBloc(
-        authService: gateway,
-        sessionStorage:
-            SessionStorage(
-          vault: vault,
-        ),
-        checkOnStart: false,
-      );
+    final prefs = await SharedPreferences.getInstance();
 
-      final expectation =
-          expectLater(
-        bloc.stream,
-        emitsInOrder([
-          isA<AuthLoading>(),
-          isA<AuthInitial>(),
-        ]),
-      );
+    expect(prefs.getString(SessionStorage.legacyTokenKey), isNull);
 
-      bloc.add(CheckAuthEvent());
-
-      await expectation;
-
-      expect(
-        gateway.validateCalls,
-        1,
-      );
-
-      expect(
-        vault.values[
-          SessionStorage.secureTokenKey
-        ],
-        isNull,
-      );
-
-      await bloc.close();
-    },
-  );
-
-  test(
-    'temporary network failure preserves secure token',
-    () async {
-      final vault =
-          FakeTokenVault();
-
-      final token =
-          fakeJwt(
-        expiresAt:
-            DateTime.now()
-                .toUtc()
-                .add(
-          const Duration(hours: 1),
-        ),
-      );
-
-      vault.values[
-        SessionStorage.secureTokenKey
-      ] = token;
-
-      final gateway =
-          FakeAuthGateway()
-            ..validationError =
-                Exception(
-          'network unavailable',
-        );
-
-      final bloc = AuthBloc(
-        authService: gateway,
-        sessionStorage:
-            SessionStorage(
-          vault: vault,
-        ),
-        checkOnStart: false,
-      );
-
-      final expectation =
-          expectLater(
-        bloc.stream,
-        emitsInOrder([
-          isA<AuthLoading>(),
-          isA<AuthError>(),
-        ]),
-      );
-
-      bloc.add(CheckAuthEvent());
-
-      await expectation;
-
-      expect(
-        gateway.validateCalls,
-        1,
-      );
-
-      expect(
-        vault.values[
-          SessionStorage.secureTokenKey
-        ],
-        token,
-      );
-
-      await bloc.close();
-    },
-  );
-
-  test(
-    'logout clear removes secure and legacy session values',
-    () async {
-      SharedPreferences
-          .setMockInitialValues({
-        SessionStorage.legacyTokenKey:
-            'legacy-token',
-        SessionStorage.legacyUserKey:
-            '{"legacy":true}',
-      });
-
-      final vault =
-          FakeTokenVault();
-
-      vault.values[
-        SessionStorage.secureTokenKey
-      ] = 'secure-token';
-
-      final storage =
-          SessionStorage(
-        vault: vault,
-      );
-
-      await storage.clear();
-
-      expect(
-        vault.values[
-          SessionStorage.secureTokenKey
-        ],
-        isNull,
-      );
-
-      final prefs =
-          await SharedPreferences
-              .getInstance();
-
-      expect(
-        prefs.getString(
-          SessionStorage.legacyTokenKey,
-        ),
-        isNull,
-      );
-
-      expect(
-        prefs.getString(
-          SessionStorage.legacyUserKey,
-        ),
-        isNull,
-      );
-    },
-  );
+    expect(prefs.getString(SessionStorage.legacyUserKey), isNull);
+  });
 }
