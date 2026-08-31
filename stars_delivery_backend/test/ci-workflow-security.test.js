@@ -181,6 +181,11 @@ test(
 
     assert.match(
       workflow,
+      /run: npm run test:integration/,
+    );
+
+    assert.match(
+      workflow,
       /npm audit --omit=dev --audit-level=high/,
     );
   },

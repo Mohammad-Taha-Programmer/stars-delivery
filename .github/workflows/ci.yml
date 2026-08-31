@@ -50,6 +50,10 @@ jobs:
         working-directory: stars_delivery_backend
         run: npm test
 
+      - name: Run backend integration smoke
+        working-directory: stars_delivery_backend
+        run: npm run test:integration
+
       - name: Audit production backend dependencies
         working-directory: stars_delivery_backend
         run: npm audit --omit=dev --audit-level=high
