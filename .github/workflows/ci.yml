@@ -1,0 +1,126 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: Backend security and tests
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020 # v7.0.0
+        with:
+          node-version: '24.13.1'
+          package-manager-cache: false
+
+      - name: Show Node toolchain
+        run: |
+          node --version
+          npm --version
+
+      - name: Install backend dependencies
+        working-directory: stars_delivery_backend
+        run: npm ci
+
+      - name: Verify backend lockfile remains unchanged
+        run: git diff --exit-code -- stars_delivery_backend/package-lock.json
+
+      - name: Check backend entrypoint syntax
+        working-directory: stars_delivery_backend
+        run: npm run check
+
+      - name: Run backend test suite
+        working-directory: stars_delivery_backend
+        run: npm test
+
+      - name: Audit production backend dependencies
+        working-directory: stars_delivery_backend
+        run: npm audit --omit=dev --audit-level=high
+
+  flutter:
+    name: Flutter tests and analyzer baseline
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2.23.0
+        with:
+          channel: stable
+          flutter-version: '3.44.4'
+          cache: false
+          pub-cache: false
+
+      - name: Show Flutter toolchain
+        run: flutter --version
+
+      - name: Resolve Flutter dependencies
+        run: flutter pub get
+
+      - name: Verify Flutter lockfile remains unchanged
+        run: git diff --exit-code -- pubspec.lock
+
+      - name: Run Flutter tests
+        run: flutter test
+
+      - name: Enforce approved Flutter analyzer baseline
+        shell: bash
+        run: |
+          set +e
+
+          ANALYZE_LOG="$(mktemp)"
+
+          flutter analyze 2>&1 |
+            tee "$ANALYZE_LOG"
+
+          ANALYZE_RC=${PIPESTATUS[0]}
+
+          ANALYZE_COUNT="$(
+            grep -Eo \
+              '[0-9]+ issues found\.' \
+              "$ANALYZE_LOG" |
+            tail -1 |
+            awk '{print $1}'
+          )"
+
+          ANALYZE_ERRORS="$(
+            grep -Ec \
+              '^[[:space:]]*error[[:space:]]+-' \
+              "$ANALYZE_LOG" \
+              || true
+          )"
+
+          rm -f "$ANALYZE_LOG"
+
+          echo "Analyzer RC: $ANALYZE_RC"
+          echo "Analyzer issues: ${ANALYZE_COUNT:-UNKNOWN}"
+          echo "Analyzer errors: ${ANALYZE_ERRORS:-UNKNOWN}"
+
+          if [ "$ANALYZE_RC" -ne 1 ] ||
+             [ "$ANALYZE_COUNT" != "30" ] ||
+             [ "$ANALYZE_ERRORS" != "0" ]; then
+            echo "::error::Flutter analyzer baseline drifted from the approved 30 non-error issues."
+            exit 1
+          fi
