@@ -11,7 +11,9 @@
     "admin:bootstrap": "node src/scripts/adminBootstrap.js",
     "offers:audit-duplicates": "node src/scripts/auditOfferDuplicates.js",
     "contacts:audit-legacy-users": "node src/scripts/auditLegacyContactUsers.js",
-    "test:integration": "node --test integration/mobile-auth.integration.js"
+    "test:integration": "node --test integration/mobile-auth.integration.js",
+    "ops:backup": "node src/scripts/backupRestore.js backup",
+    "ops:restore": "node src/scripts/backupRestore.js restore"
   },
   "keywords": [],
   "author": "",
