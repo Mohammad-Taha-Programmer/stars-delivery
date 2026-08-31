@@ -81,7 +81,7 @@
     <div id="page-add-driver" class="page-section">
       <div class="top-header"><h1>إضافة سائق جديد <small>تسجيل وتفعيل سائق على المنصة</small></h1><div class="live-clock"><i class="fas fa-clock"></i> <span id="clockDisplay10">جاري التحميل...</span></div></div>
       <div class="add-driver-form">
-        <form id="addDriverForm" enctype="multipart/form-data">
+        <form id="addDriverForm">
           <div class="form-grid">
             <div class="form-group"><label>رقم ID السائق (اختياري)</label><input type="text" name="driverCustomId" placeholder="اتركه فارغاً للتوليد التلقائي"></div>
             <div class="form-group"><label><span class="required">*</span> الاسم الكامل</label><input type="text" name="driverName" placeholder="أدخل الاسم الكامل" required></div>
@@ -110,15 +110,6 @@
               <select name="driverArea" id="driverAreaSelect" required>
                 <option value="">اختر المنطقة...</option>
               </select>
-            </div>
-            <div class="doc-section">
-              <h4>📄 وثائق السائق (رفع صور)</h4>
-              <div class="doc-grid">
-                <div class="doc-item"><label>رخصة القيادة</label><div class="file-input-wrapper"><input type="file" name="docLicense" accept="image/*" data-file-name-target="licenseName"><span class="file-name" id="licenseName">لم يتم الاختيار</span></div></div>
-                <div class="doc-item"><label>الهوية الوطنية</label><div class="file-input-wrapper"><input type="file" name="docId" accept="image/*" data-file-name-target="idName"><span class="file-name" id="idName">لم يتم الاختيار</span></div></div>
-                <div class="doc-item"><label>تأمين المركبة</label><div class="file-input-wrapper"><input type="file" name="docInsurance" accept="image/*" data-file-name-target="insuranceName"><span class="file-name" id="insuranceName">لم يتم الاختيار</span></div></div>
-                <div class="doc-item"><label>صورة السيارة</label><div class="file-input-wrapper"><input type="file" name="docCar" accept="image/*" data-file-name-target="carName"><span class="file-name" id="carName">لم يتم الاختيار</span></div></div>
-              </div>
             </div>
             <div id="formSuccessMsg" class="success-msg">✅ تم إضافة السائق بنجاح!</div>
             <div id="formErrorMsg" class="error-msg-form">❌ الرجاء ملء جميع الحقول المطلوبة.</div>

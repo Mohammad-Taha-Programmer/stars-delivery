@@ -194,7 +194,17 @@ test(
 
     assert.match(
       browserSource,
-      /!pendingId[\s\S]*password !== passwordConfirm/,
+      /if\s*\(\s*password !== passwordConfirm\s*\)/,
+    );
+
+    assert.doesNotMatch(
+      browserSource,
+      /const pendingId = form\.dataset\.pendingId;/,
+    );
+
+    assert.doesNotMatch(
+      browserSource,
+      /\/admin\/drivers\/pending\/\$\{pendingId\}/,
     );
 
     assert.match(
@@ -204,7 +214,7 @@ test(
 
     assert.match(
       browserSource,
-      /driverPassword: password/,
+      /driverPassword:\s*password/,
     );
 
     assert.match(

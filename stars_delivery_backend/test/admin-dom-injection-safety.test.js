@@ -171,8 +171,13 @@ test('report table builders encode reporter, category, ids, dates, and preview c
 
 test('documents, financial rows, orders, broadcast, and pending providers encode visible text', () => {
   for (const marker of [
-    '${escapeHtml(doc.file)}',
-    '${escapeHtml(doc.name)}',
+    '${escapeHtml(completionText)}',
+    '${escapeHtml(label)}',
+    '${escapeHtml(document.contentType)}',
+    '${escapeHtml(formatProviderDocumentBytes(document.size))}',
+    '${escapeHtml(formatProviderDocumentDate(document.uploadedAt))}',
+    'href="${escapeHtml(downloadUrl)}"',
+    '${escapeHtml(documentStatusText)}',
     '${escapeHtml(t.id.slice(-8))}',
     '${escapeHtml(t.desc)}',
     '${escapeHtml(t.date)}',
@@ -185,16 +190,46 @@ test('documents, financial rows, orders, broadcast, and pending providers encode
     '${escapeHtml(data.count)}',
     '${escapeHtml(title)}',
     '${escapeHtml(data.sentAt)}',
-    '${escapeHtml(p.fullName)}',
-    '${escapeHtml(p.email)}',
-    '${escapeHtml(p.phone)}',
-    '${escapeHtml(p.area || \'غير محدد\')}',
+    '${escapeHtml(provider.fullName)}',
+    '${escapeHtml(provider.email)}',
+    '${escapeHtml(provider.phone)}',
+    '${escapeHtml(provider.area || \'غير محدد\')}',
   ]) {
     assert.ok(
       source.includes(marker),
       marker,
     );
   }
+
+  assert.match(
+    source,
+    /\/admin\/drivers\/documents\/\$\{encodedId\}/,
+  );
+
+  assert.match(
+    source,
+    /\/admin\/drivers\/pending\/\$\{encodedId\}\/documents/,
+  );
+
+  assert.match(
+    source,
+    /metadata\.complete !== true/,
+  );
+
+  assert.doesNotMatch(
+    source,
+    /driver\.documents/,
+  );
+
+  assert.doesNotMatch(
+    source,
+    /function enterDocs\(/,
+  );
+
+  assert.doesNotMatch(
+    source,
+    /\/admin\/drivers\/pending\/\$\{pendingId\}/,
+  );
 });
 
 test('STARS-011 preserves strict-CSP action capability and safe support chat rendering', () => {

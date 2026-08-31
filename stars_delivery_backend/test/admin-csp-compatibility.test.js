@@ -80,7 +80,7 @@ test('presentation tokens preserve all migrated inline styles externally', () =>
 
   assert.equal(
     tokenMatches.length,
-    64,
+    63,
   );
 
   const tokens = new Set(
@@ -129,7 +129,7 @@ test('delegated browser actions replace legacy inline handlers', () => {
 
   assert.equal(
     fileChangeTargets.length,
-    4,
+    0,
   );
 
   assert.match(
@@ -142,9 +142,9 @@ test('delegated browser actions replace legacy inline handlers', () => {
     /closest\(\s*'\[data-admin-action\]'/,
   );
 
-  assert.match(
+  assert.doesNotMatch(
     browserSource,
-    /closest\(\s*'\[data-file-name-target\]'/,
+    /data-file-name-target/,
   );
 });
 

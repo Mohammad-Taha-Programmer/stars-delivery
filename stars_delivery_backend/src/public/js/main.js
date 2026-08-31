@@ -137,7 +137,6 @@ document.querySelectorAll('.sidebar ul li[data-page]').forEach(item => {
       if (page === 'add-driver') {
         document.getElementById('formSuccessMsg').classList.remove('show');
         document.getElementById('formErrorMsg').classList.remove('show');
-        delete document.getElementById('addDriverForm').dataset.pendingId;
       }
       if (page === 'pending-providers') loadPendingProviders();
     if (page === 'broadcast-drivers' || page === 'broadcast-users') {
@@ -203,12 +202,6 @@ function getReportStatusBadge(status) {
   return map[status] || escapeHtml(status);
 }
 
-function updateFileName(input, spanId) {
-  const span = document.getElementById(spanId);
-  if (input.files && input.files.length > 0) span.textContent = input.files[0].name;
-  else span.textContent = 'لم يتم الاختيار';
-}
-
 // ================================================
 // STARS-010B1 CSP compatibility
 // ================================================
@@ -242,7 +235,6 @@ const adminActionHandlers = Object.freeze({
   deleteDriver,
   deleteReport,
   deleteUser,
-  enterDocs,
   freezeDriver,
   freezeUser,
   handleResetPassword,
@@ -258,6 +250,7 @@ const adminActionHandlers = Object.freeze({
   sendChatMessage,
   sendReply,
   viewDocuments,
+  viewPendingProviderDocuments,
   viewDriverOrdersViaDB,
   viewReportDetail,
   viewUserOrdersViaDB,
@@ -346,30 +339,6 @@ document.addEventListener(
   },
 );
 
-document.addEventListener(
-  'change',
-  (event) => {
-    if (!(event.target instanceof Element)) {
-      return;
-    }
-
-    const input = event.target.closest(
-      '[data-file-name-target]',
-    );
-
-    if (!input) {
-      return;
-    }
-
-    updateFileName(
-      input,
-      input.getAttribute(
-        'data-file-name-target',
-      ),
-    );
-  },
-);
-
 // ================================================
 // 5. إضافة سائق جديد
 // ================================================
@@ -381,8 +350,6 @@ document.getElementById('addDriverForm').addEventListener('submit', function (e)
 async function addNewDriver() {
   const form = document.getElementById('addDriverForm');
   const formData = new FormData(form);
-  const pendingId = form.dataset.pendingId;
-
   const name =
     String(
       formData.get('driverName')
@@ -423,13 +390,8 @@ async function addNewDriver() {
     !name
     || !email
     || !phone
-    || (
-      !pendingId
-      && (
-        !password
-        || !passwordConfirm
-      )
-    )
+    || !password
+    || !passwordConfirm
   ) {
     errorElement.textContent =
       'الرجاء ملء جميع الحقول المطلوبة';
@@ -440,11 +402,8 @@ async function addNewDriver() {
   }
 
   if (
-    !pendingId
-    && (
-      password.length < 12
-      || password.length > 128
-    )
+    password.length < 12
+    || password.length > 128
   ) {
     errorElement.textContent =
       'كلمة المرور الأولية يجب أن تكون بين 12 و128 حرفاً';
@@ -455,8 +414,7 @@ async function addNewDriver() {
   }
 
   if (
-    !pendingId
-    && password !== passwordConfirm
+    password !== passwordConfirm
   ) {
     errorElement.textContent =
       'كلمتا المرور غير متطابقتين';
@@ -467,51 +425,46 @@ async function addNewDriver() {
   }
 
   try {
-    const url =
-      pendingId
-        ? `/admin/drivers/pending/${pendingId}`
-        : '/admin/drivers';
-
-    const requestOptions =
-      pendingId
-        ? {
-            method: 'POST',
-            body: formData,
-          }
-        : {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              driverName: name,
-              driverEmail: email,
-              driverPhone: phone,
-              driverServiceType:
-                String(
-                  formData.get('driverServiceType')
-                  || '',
-                ),
-              driverLicenseType:
-                String(
-                  formData.get('driverLicenseType')
-                  || '',
-                ),
-              driverArea:
-                String(
-                  formData.get('driverArea')
-                  || '',
-                ),
-              driverPassword: password,
-              driverPasswordConfirm:
-                passwordConfirm,
-            }),
-          };
-
     const res =
       await adminFetch(
-        url,
-        requestOptions,
+        '/admin/drivers',
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type':
+              'application/json',
+          },
+          body: JSON.stringify({
+            driverName: name,
+            driverEmail: email,
+            driverPhone: phone,
+            driverServiceType:
+              String(
+                formData.get(
+                  'driverServiceType',
+                )
+                || '',
+              ),
+            driverLicenseType:
+              String(
+                formData.get(
+                  'driverLicenseType',
+                )
+                || '',
+              ),
+            driverArea:
+              String(
+                formData.get(
+                  'driverArea',
+                )
+                || '',
+              ),
+            driverPassword:
+              password,
+            driverPasswordConfirm:
+              passwordConfirm,
+          }),
+        },
       );
 
     const data =
@@ -525,8 +478,6 @@ async function addNewDriver() {
       errorElement.classList.remove('show');
 
       form.reset();
-      delete form.dataset.pendingId;
-
       loadDashboardStats();
 
       setTimeout(
@@ -598,7 +549,7 @@ function renderDriverResultFromDB(data) {
       <button class="action-btn chat" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="openChat" data-admin-arg-count="2" data-admin-arg-1="driver" data-admin-arg-2="${escapeHtml(String(driver._id))}">مراسلة</button>
       <button class="action-btn report" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewDriverOrdersViaDB" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}">تقرير الطلبات</button>
       <button class="action-btn change-password" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="changeDriverPassword" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}" data-presentation="p020">تغيير كلمة المرور</button>
-      <button class="action-btn docs" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewDocuments" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}">الوثائق</button>
+      <button class="action-btn docs" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewDocuments" data-admin-arg-count="2" data-admin-arg-1="${escapeHtml(String(driver._id))}" data-admin-arg-2="${escapeHtml(String(driver.name || ''))}">الوثائق</button>
       <button class="action-btn freeze" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="freezeDriver" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}">تجميد</button>
       <button class="action-btn activate" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="activateDriver" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}">تفعيل</button>
       <button class="action-btn delete" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="deleteDriver" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(driver._id))}">حذف نهائي</button>
@@ -1148,29 +1099,279 @@ function searchUserById(id) {
 // ================================================
 // 15. عرض الوثائق وطلبات السائق/المستخدم
 // ================================================
-async function viewDocuments(driverId) {
-  try {
-    const res = await adminFetch(`/admin/drivers/search?id=${driverId}`);
-    const data = await res.json();
-    if (data.error) { alert(data.error); return; }
-    const driver = data.driver;
+const providerDocumentKinds =
+  Object.freeze([
+    'identity_document',
+    'driver_license',
+  ]);
 
-    document.getElementById('docDriverName').textContent = `اسم السائق: ${driver.name} (${driver.driverId})`;
-    const listContainer = document.getElementById('documentsList');
-    listContainer.innerHTML = '';
-    if (!driver.documents || driver.documents.length === 0) {
-      listContainer.innerHTML = '<p data-presentation="p027">لا توجد وثائق مسجلة.</p>';
-    } else {
-      driver.documents.forEach(doc => {
-        const fileDisplay = doc.file && doc.file !== 'لم يتم الرفع' ? `<span data-presentation="p018">${escapeHtml(doc.file)}</span>` : '<span data-presentation="p003">لم يتم الرفع</span>';
-        const div = document.createElement('div');
-        div.className = 'doc-item';
-        div.innerHTML = `<span class="doc-name">${escapeHtml(doc.name)}</span><span class="doc-status">${fileDisplay}</span>`;
-        listContainer.appendChild(div);
-      });
+const providerDocumentLabels =
+  Object.freeze({
+    identity_document:
+      'وثيقة الهوية',
+    driver_license:
+      'رخصة القيادة',
+  });
+
+function formatProviderDocumentBytes(size) {
+  const numeric =
+    Number(size);
+
+  if (
+    !Number.isFinite(numeric)
+    || numeric < 0
+  ) {
+    return 'غير معروف';
+  }
+
+  if (numeric < 1024) {
+    return `${numeric} B`;
+  }
+
+  if (numeric < 1024 * 1024) {
+    return `${(
+      numeric / 1024
+    ).toFixed(1)} KB`;
+  }
+
+  return `${(
+    numeric / (1024 * 1024)
+  ).toFixed(2)} MB`;
+}
+
+function formatProviderDocumentDate(value) {
+  const parsed =
+    new Date(value);
+
+  if (
+    Number.isNaN(
+      parsed.getTime(),
+    )
+  ) {
+    return 'غير معروف';
+  }
+
+  return parsed.toLocaleString(
+    'ar-EG',
+  );
+}
+
+function providerDocumentDownloadUrl(
+  scope,
+  providerId,
+  kind,
+) {
+  const encodedId =
+    encodeURIComponent(
+      String(providerId),
+    );
+
+  const encodedKind =
+    encodeURIComponent(
+      String(kind),
+    );
+
+  if (scope === 'pending') {
+    return (
+      `/admin/drivers/pending/${encodedId}`
+      + `/documents/${encodedKind}`
+    );
+  }
+
+  return (
+    `/admin/drivers/documents/${encodedId}`
+    + `/${encodedKind}`
+  );
+}
+
+function renderProviderDocumentReview(
+  data,
+  scope,
+  providerId,
+) {
+  const listContainer =
+    document.getElementById(
+      'documentsList',
+    );
+
+  const documents =
+    Array.isArray(
+      data.documents,
+    )
+      ? data.documents
+      : [];
+
+  const complete =
+    data.complete === true;
+
+  const completionText =
+    complete
+      ? 'الوثيقتان المطلوبتان مكتملتان'
+      : 'الوثائق المطلوبة غير مكتملة';
+
+  const completionClass =
+    complete
+      ? 'paid-badge'
+      : 'unpaid-badge';
+
+  let html =
+    `<div class="doc-item">`
+    + `<span class="doc-name">حالة المراجعة</span>`
+    + `<span class="doc-status">`
+    + `<span class="${completionClass}">`
+    + `${escapeHtml(completionText)}`
+    + `</span>`
+    + `</span>`
+    + `</div>`;
+
+  for (
+    const kind
+    of providerDocumentKinds
+  ) {
+    const document =
+      documents.find(
+        (candidate) =>
+          candidate
+          && candidate.kind === kind,
+      );
+
+    const label =
+      providerDocumentLabels[kind];
+
+    if (!document) {
+      html +=
+        `<div class="doc-item">`
+        + `<span class="doc-name">`
+        + `${escapeHtml(label)}`
+        + `</span>`
+        + `<span class="doc-status">`
+        + `<span data-presentation="p003">`
+        + `غير متوفرة`
+        + `</span>`
+        + `</span>`
+        + `</div>`;
+
+      continue;
     }
-    document.getElementById('documentsModal').classList.add('show');
-  } catch (err) { alert('حدث خطأ في تحميل الوثائق'); }
+
+    const downloadUrl =
+      providerDocumentDownloadUrl(
+        scope,
+        providerId,
+        kind,
+      );
+
+    html +=
+      `<div class="doc-item">`
+      + `<span class="doc-name">`
+      + `${escapeHtml(label)}`
+      + `</span>`
+      + `<span class="doc-status">`
+      + `${escapeHtml(document.contentType)}`
+      + ` · `
+      + `${escapeHtml(formatProviderDocumentBytes(document.size))}`
+      + ` · `
+      + `${escapeHtml(formatProviderDocumentDate(document.uploadedAt))}`
+      + ` &nbsp; `
+      + `<a class="action-btn info" `
+      + `href="${escapeHtml(downloadUrl)}" `
+      + `download>`
+      + `<i class="fas fa-download"></i> تنزيل`
+      + `</a>`
+      + `</span>`
+      + `</div>`;
+  }
+
+  listContainer.innerHTML =
+    html;
+}
+
+async function openProviderDocuments(
+  scope,
+  providerId,
+  providerName,
+) {
+  const encodedId =
+    encodeURIComponent(
+      String(providerId),
+    );
+
+  const metadataUrl =
+    scope === 'pending'
+      ? (
+          `/admin/drivers/pending/${encodedId}`
+          + '/documents'
+        )
+      : (
+          `/admin/drivers/documents/${encodedId}`
+        );
+
+  try {
+    const res =
+      await adminFetch(
+        metadataUrl,
+      );
+
+    const data =
+      await res.json();
+
+    if (!res.ok) {
+      alert(
+        data.error
+        || 'تعذر تحميل وثائق المزود',
+      );
+      return;
+    }
+
+    document
+      .getElementById(
+        'docDriverName',
+      )
+      .textContent =
+        providerName
+          ? `اسم السائق: ${providerName}`
+          : `معرف السائق: ${providerId}`;
+
+    renderProviderDocumentReview(
+      data,
+      scope,
+      providerId,
+    );
+
+    document
+      .getElementById(
+        'documentsModal',
+      )
+      .classList.add(
+        'show',
+      );
+  } catch (_) {
+    alert(
+      'حدث خطأ في تحميل الوثائق',
+    );
+  }
+}
+
+async function viewDocuments(
+  driverId,
+  driverName = '',
+) {
+  return openProviderDocuments(
+    'active',
+    driverId,
+    driverName,
+  );
+}
+
+async function viewPendingProviderDocuments(
+  pendingId,
+  providerName = '',
+) {
+  return openProviderDocuments(
+    'pending',
+    pendingId,
+    providerName,
+  );
 }
 
 async function viewDriverOrdersViaDB(driverId) {
@@ -1633,58 +1834,256 @@ function escapeHtml(value) {
 // ================================================
 async function loadPendingProviders() {
   try {
-    const res = await adminFetch('/admin/drivers/pending');
-    const pending = await res.json();
-    const badge = document.getElementById('pendingBadge');
-    badge.textContent = pending.length;
-    setInlineDisplay(badge, pending.length > 0);
+    const res =
+      await adminFetch(
+        '/admin/drivers/pending',
+      );
+
+    const pending =
+      await res.json();
+
+    const badge =
+      document.getElementById(
+        'pendingBadge',
+      );
+
+    badge.textContent =
+      pending.length;
+
+    setInlineDisplay(
+      badge,
+      pending.length > 0,
+    );
 
     if (pending.length === 0) {
-      document.getElementById('pendingProvidersContent').innerHTML = '<p data-presentation="p006">لا توجد طلبات تسجيل جديدة</p>';
+      document
+        .getElementById(
+          'pendingProvidersContent',
+        )
+        .innerHTML =
+          '<p data-presentation="p006">'
+          + 'لا توجد طلبات تسجيل جديدة'
+          + '</p>';
+
       return;
     }
 
-    let rows = '';
-    pending.forEach(p => {
-      rows += `<tr>
-        <td><strong>${escapeHtml(p.fullName)}</strong></td>
-        <td>${escapeHtml(p.email)}</td>
-        <td>${escapeHtml(p.phone)}</td>
-        <td>${escapeHtml(p.area || 'غير محدد')}</td>
-        <td>${escapeHtml(new Date(p.createdAt).toLocaleDateString('ar-EG'))}</td>
-        <td>
-          <button class="action-btn info" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="enterDocs" data-admin-arg-count="5" data-admin-arg-1="${escapeHtml(String(p._id))}" data-admin-arg-2="${escapeHtml(p.fullName)}" data-admin-arg-3="${escapeHtml(String(p.email))}" data-admin-arg-4="${escapeHtml(String(p.phone))}" data-admin-arg-5="${escapeHtml(String(p.area || ''))}" data-presentation="p034"><i class="fas fa-file-alt"></i> إدخال وثائق</button>
-          <button class="action-btn success" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="approveProvider" data-admin-arg-count="2" data-admin-arg-1="${escapeHtml(String(p._id))}" data-admin-arg-2="${escapeHtml(String(p.email))}" data-presentation="p034"><i class="fas fa-check"></i> قبول</button>
-          <button class="action-btn danger" data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="rejectProvider" data-admin-arg-count="1" data-admin-arg-1="${escapeHtml(String(p._id))}" data-presentation="p034"><i class="fas fa-times"></i> رفض</button>
-        </td>
-      </tr>`;
-    });
+    const reviewedPending =
+      await Promise.all(
+        pending.map(
+          async (provider) => {
+            try {
+              const documentsResponse =
+                await adminFetch(
+                  `/admin/drivers/pending/${
+                    encodeURIComponent(
+                      String(
+                        provider._id,
+                      ),
+                    )
+                  }/documents`,
+                );
 
-    document.getElementById('pendingProvidersContent').innerHTML = `
-      <div class="commissions-table-container">
-        <h3>قائمة طلبات التسجيل</h3>
-        <table class="commissions-table">
-          <thead><tr><th>الاسم</th><th>البريد</th><th>الجوال</th><th>المنطقة</th><th>تاريخ التسجيل</th><th>الإجراءات</th></tr></thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </div>`;
-  } catch (err) { console.error('Error loading pending providers:', err); }
+              if (
+                !documentsResponse.ok
+              ) {
+                return {
+                  ...provider,
+                  documentReview: {
+                    documents: [],
+                    complete: false,
+                    unavailable: true,
+                  },
+                };
+              }
+
+              const documentReview =
+                await documentsResponse.json();
+
+              return {
+                ...provider,
+                documentReview: {
+                  ...documentReview,
+                  unavailable: false,
+                },
+              };
+            } catch (_) {
+              return {
+                ...provider,
+                documentReview: {
+                  documents: [],
+                  complete: false,
+                  unavailable: true,
+                },
+              };
+            }
+          },
+        ),
+      );
+
+    let rows = '';
+
+    reviewedPending.forEach(
+      (provider) => {
+        const review =
+          provider.documentReview
+          || {
+            documents: [],
+            complete: false,
+            unavailable: true,
+          };
+
+        const documentStatusText =
+          review.unavailable
+            ? 'تعذر التحقق'
+            : (
+                review.complete
+                  ? 'مكتملة'
+                  : 'ناقصة'
+              );
+
+        const statusClass =
+          review.complete
+          && !review.unavailable
+            ? 'paid-badge'
+            : 'unpaid-badge';
+
+        const approveButton =
+          review.complete
+          && !review.unavailable
+            ? (
+                `<button class="action-btn success" `
+                + `data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="approveProvider" `
+                + `data-admin-arg-count="1" `
+                + `data-admin-arg-1="${escapeHtml(String(provider._id))}" `
+                + `data-presentation="p034">`
+                + `<i class="fas fa-check"></i> قبول`
+                + `</button>`
+              )
+            : (
+                `<button class="action-btn success" `
+                + `type="button" disabled `
+                + `title="يجب اكتمال وثيقة الهوية ورخصة القيادة قبل القبول" `
+                + `data-presentation="p034">`
+                + `<i class="fas fa-check"></i> قبول`
+                + `</button>`
+              );
+
+        rows +=
+          `<tr>`
+          + `<td><strong>${escapeHtml(provider.fullName)}</strong></td>`
+          + `<td>${escapeHtml(provider.email)}</td>`
+          + `<td>${escapeHtml(provider.phone)}</td>`
+          + `<td>${escapeHtml(provider.area || 'غير محدد')}</td>`
+          + `<td>${escapeHtml(new Date(provider.createdAt).toLocaleDateString('ar-EG'))}</td>`
+          + `<td><span class="${statusClass}">${escapeHtml(documentStatusText)}</span></td>`
+          + `<td>`
+          + `<button class="action-btn info" `
+          + `data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="viewPendingProviderDocuments" `
+          + `data-admin-arg-count="2" `
+          + `data-admin-arg-1="${escapeHtml(String(provider._id))}" `
+          + `data-admin-arg-2="${escapeHtml(String(provider.fullName || ''))}" `
+          + `data-presentation="p034">`
+          + `<i class="fas fa-file-alt"></i> مراجعة الوثائق`
+          + `</button>`
+          + approveButton
+          + `<button class="action-btn danger" `
+          + `data-admin-capability="${escapeHtml(adminActionCapability || '')}" data-admin-action="rejectProvider" `
+          + `data-admin-arg-count="1" `
+          + `data-admin-arg-1="${escapeHtml(String(provider._id))}" `
+          + `data-presentation="p034">`
+          + `<i class="fas fa-times"></i> رفض`
+          + `</button>`
+          + `</td>`
+          + `</tr>`;
+      },
+    );
+
+    document
+      .getElementById(
+        'pendingProvidersContent',
+      )
+      .innerHTML =
+        `<div class="commissions-table-container">`
+        + `<h3>قائمة طلبات التسجيل</h3>`
+        + `<table class="commissions-table">`
+        + `<thead><tr>`
+        + `<th>الاسم</th>`
+        + `<th>البريد</th>`
+        + `<th>الجوال</th>`
+        + `<th>المنطقة</th>`
+        + `<th>تاريخ التسجيل</th>`
+        + `<th>الوثائق</th>`
+        + `<th>الإجراءات</th>`
+        + `</tr></thead>`
+        + `<tbody>${rows}</tbody>`
+        + `</table>`
+        + `</div>`;
+  } catch (err) {
+    console.error(
+      'Error loading pending providers:',
+      err,
+    );
+  }
 }
 
-async function approveProvider(id, email) {
-  if (!confirm('هل أنت متأكد من قبول طلب هذا السائق؟')) return;
+async function approveProvider(id) {
   try {
-    const url = email ? `/admin/drivers/pending/${id}/approve?email=${encodeURIComponent(email)}` : `/admin/drivers/pending/${id}/approve`;
-    const res = await adminFetch(url, { method: 'POST' });
-    const data = await res.json();
+    const encodedId =
+      encodeURIComponent(
+        String(id),
+      );
+
+    const metadataResponse =
+      await adminFetch(
+        `/admin/drivers/pending/${encodedId}/documents`,
+      );
+
+    const metadata =
+      await metadataResponse.json();
+
+    if (
+      !metadataResponse.ok
+      || metadata.complete !== true
+    ) {
+      alert(
+        'لا يمكن قبول المزود قبل اكتمال وثيقة الهوية ورخصة القيادة.',
+      );
+      return;
+    }
+
+    if (
+      !confirm(
+        'تم التحقق من اكتمال الوثيقتين. هل أنت متأكد من قبول طلب هذا السائق؟',
+      )
+    ) {
+      return;
+    }
+
+    const res =
+      await adminFetch(
+        `/admin/drivers/pending/${encodedId}/approve`,
+        {
+          method: 'POST',
+        },
+      );
+
+    const data =
+      await res.json();
+
     if (data.success) {
       alert(data.message);
       loadPendingProviders();
       loadDashboardStats();
     } else {
-      alert(data.message);
+      alert(
+        data.message
+        || 'تعذر قبول المزود',
+      );
     }
-  } catch (err) { alert('حدث خطأ'); }
+  } catch (_) {
+    alert('حدث خطأ');
+  }
 }
 
 async function rejectProvider(id) {
@@ -1701,24 +2100,6 @@ async function rejectProvider(id) {
   } catch (err) { alert('حدث خطأ'); }
 }
 
-function enterDocs(pendingId, name, email, phone, area) {
-  // Store pending ID for the add-driver form to reference
-  document.getElementById('addDriverForm').dataset.pendingId = pendingId;
-  // Pre-fill fields
-  document.querySelector('input[name="driverName"]').value = name;
-  document.querySelector('input[name="driverEmail"]').value = email;
-  document.querySelector('input[name="driverPhone"]').value = phone;
-  const areaSelect = document.getElementById('driverAreaSelect');
-  if (areaSelect) {
-    for (const opt of areaSelect.options) {
-      if (opt.value === area) { opt.selected = true; break; }
-    }
-  }
-  // Switch to add-driver page
-  switchPage('add-driver');
-  document.querySelectorAll('.sidebar ul li').forEach(li => li.classList.remove('active'));
-  document.querySelector('.sidebar ul li[data-page="add-driver"]').classList.add('active');
-}
 document.addEventListener('DOMContentLoaded', () => {
   loadDashboardStats();
   loadCommissions();
